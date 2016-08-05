@@ -1,0 +1,13 @@
+/// This file links to the header files in the src/Core directory and provides standard library support.
+
+// STL 
+#include <cmath>
+#include <iostream>
+#include <string>
+#include <sstream>
+#include <stdexcept>
+#include <vector>
+
+
+// Core
+#include "src/Core/Error.h"
