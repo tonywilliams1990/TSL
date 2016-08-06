@@ -9,7 +9,6 @@
 #include <iostream>
 #include <stdexcept>
 
-
 namespace TSL
 {
 
@@ -32,7 +31,7 @@ namespace TSL
       std::cout << "----------------------------------------------------" << std::endl;
     }
 
-  };
+  };	// End of class Error
 
 }  // End of namespace TSL
 
