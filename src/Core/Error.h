@@ -1,4 +1,6 @@
-/* Texception class - collection of exceptions */
+/* Error.h - Defines a class for simple error handling.
+   Created - 06/08/2016
+*/
 
 #ifndef ERROR_H
 #define ERROR_H
