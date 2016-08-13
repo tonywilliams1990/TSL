@@ -14,3 +14,4 @@
 // Core
 #include "src/Core/Error.h"
 #include "src/Core/Matrix.h"
+#include "src/Core/Vector.h"

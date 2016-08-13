@@ -87,7 +87,7 @@ namespace TSL
 			template <class Type>
 			friend std::ostream& operator<<( std::ostream& os, const Matrix<Type>& m );	
 
-			/// Element-wise operations:
+			/*----- Element-wise operations -----*/
 
 			/// Apply functions
 			template<class F>	void apply(F f)
@@ -100,13 +100,94 @@ namespace TSL
 				for (std::size_t i=0; i<CONTAINER.size(); ++ i ) { f( CONTAINER[i], c ); }
 			}	
 
-			/*----- Element-wise operations -----*/
+			/// Element-wise operations:
 
 			Matrix& operator=(const T& c)  { this->apply(Assign<T>(),c);   			return *this; }
 			Matrix& operator+=(const T& c) { this->apply(Add_assign<T>(),c);   	return *this; }
 			Matrix& operator*=(const T& c) { this->apply(Mul_assign<T>(),c);   	return *this; }
 			Matrix& operator-=(const T& c) { this->apply(Minus_assign<T>(),c); 	return *this; }
 			Matrix& operator/=(const T& c) { this->apply(Div_assign<T>(),c);   	return *this; }
+
+			/*----- Methods -----*/
+
+			/// Return the number of rows in the matrix
+			std::size_t rows() const
+			{
+				return ROWS;
+			}
+
+			/// Return the number of columns in the matrix
+			std::size_t cols() const
+			{
+				return COLS;
+			}
+
+			/// Return the number of elements in the matrix
+			std::size_t numel() const
+			{
+				return CONTAINER.size();
+			}	
+
+			/// Fill the matrix with specified elements (same as assign operator)
+			void fill( const T& elem )
+			{
+				this->apply( Assign<T>(), elem);
+			}
+
+			/// Fill the leading diagonal with specified elements
+			void fill_diag( const T& elem )
+			{
+				std::size_t N( ROWS );
+				if ( COLS < ROWS )
+				{
+					N = COLS;
+				}
+				for (std::size_t i=0; i < N; ++i)
+				{
+					CONTAINER[ i*COLS + i ] = elem;
+				}
+			}
+
+			/// Fill a diagonal band of the matrix
+      void fill_band( const std::size_t& offset, const T& value )
+			{
+				for ( std::size_t row = 0; row < ROWS; ++row )
+        {
+            if ( ( row + offset < COLS ) && ( row + offset >= 0 ) )
+            {
+                CONTAINER[ row*COLS + row + offset ] = value;
+            }
+        }
+			}
+
+			/// Fill the main three diagonals of the matrix
+      void fill_tridiag( const T& L, const T& D, const T& U )
+			{
+				// Fill the lower band
+        for ( std::size_t row = 0; row < ROWS; ++row )
+        {
+            if ( ( row - 1 < COLS ) && ( row - 1 >= 0 ) )
+            {
+                CONTAINER[ row*COLS + row - 1 ] = L;
+            }
+        }
+        // Fill the main diagonal
+        for ( std::size_t row = 0; row < ROWS; ++row )
+        {
+            if ( ( row < COLS ) && ( row >= 0 ) )
+            {
+                CONTAINER[ row*COLS + row ] = D;
+            }
+        }
+        // Fill the upper band
+        for ( std::size_t row = 0; row < ROWS; ++row )
+        {
+            if ( ( row + 1 < COLS ) && ( row + 1 >= 0 ) )
+            {
+                CONTAINER[ row*COLS + row + 1 ] = U;
+            }
+        }
+			}
 			
 
 	};	// End of class Matrix
@@ -126,7 +207,6 @@ namespace TSL
 			}
 			std::cout << std::endl;
 		}
-
 		return os;
 	}
 
