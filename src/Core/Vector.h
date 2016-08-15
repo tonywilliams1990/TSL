@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <iostream>
 #include <iomanip>
+#include <functional>
 
 #include "Error.h"
 #include "Matrix.h"
@@ -24,6 +25,10 @@ namespace TSL
 			std::vector<T> CONTAINER;		// Container for storing the elements
 
 		public:
+
+			typedef typename std::vector<T>::iterator iter;
+
+			/* ----- Constructors and destructor ----- */ 
 			
 			/// Constructor for an empty vector of unspecified size
 			Vector() { }
@@ -55,7 +60,7 @@ namespace TSL
 			const T& operator() ( const std::size_t& i ) const
 			{
 					// Range check 
-					if ( i<0 || CONTAINER.size()<=i )	{ throw Error( "Vector range error" );}
+					if ( i<0 || CONTAINER.size()<=i )	{ throw Error( "Vector range error." );}
 					return this->CONTAINER[ i ];
 			}
 
@@ -63,13 +68,52 @@ namespace TSL
 			T& operator() ( const std::size_t& i )
 			{
 					// Range check 
-					if ( i<0 || CONTAINER.size()<=i )	{ throw Error( "Vector range error" );}
+					if ( i<0 || CONTAINER.size()<=i )	{ throw Error( "Vector range error." );}
 					return this->CONTAINER[ i ];
 			}
 
 			/// Output operator <<
 			template <class Type>
 			friend std::ostream& operator<<( std::ostream& os, const Vector<Type>& v );	
+
+			/// Binary +
+			Vector<T> operator+( const Vector<T>& v_plus ) const
+			{
+				if ( v_plus.size() != size() ) { throw Error( "(+): Vectors must be of equal length." );}
+				Vector<T> result( v_plus.size() );
+				std::transform (CONTAINER.begin(), CONTAINER.end(), v_plus.CONTAINER.begin(), 
+						result.CONTAINER.begin(), std::plus<T>());
+				return result;
+			}
+
+			/// Binary -
+			Vector<T> operator-( const Vector<T>& v_minus ) const
+			{
+				if ( v_minus.size() != size() ) { throw Error( "(-): Vectors must be of equal length." );}
+				Vector<T> result( v_minus.size() );
+				std::transform (CONTAINER.begin(), CONTAINER.end(), v_minus.CONTAINER.begin(), 
+						result.CONTAINER.begin(), std::minus<T>());
+				return result;
+			}
+
+			/// Addition assignment +=
+			Vector<T>& operator+=( const Vector<T>& v_plus )
+			{
+				if ( v_plus.size() != size() ) { throw Error( "(+=): Vectors must be of equal length." );}
+				
+				std::transform (CONTAINER.begin(), CONTAINER.end(), v_plus.CONTAINER.begin(), 
+						CONTAINER.begin(), std::plus<T>());
+				return *this;
+			}
+
+			/// Subtraction assignment -=
+			Vector<T>& operator-=( const Vector<T>& v_minus )
+			{
+				if ( v_minus.size() != size() ) { throw Error( "(-=): Vectors must be of equal length." );}
+				std::transform (CONTAINER.begin(), CONTAINER.end(), v_minus.CONTAINER.begin(), 
+						CONTAINER.begin(), std::minus<T>());
+				return *this;
+			}
 
 			/*----- Element-wise operations -----*/
 
@@ -91,6 +135,21 @@ namespace TSL
 			Vector& operator*=(const T& c) { this->apply(Mul_assign<T>(),c);   	return *this; }
 			Vector& operator-=(const T& c) { this->apply(Minus_assign<T>(),c); 	return *this; }
 			Vector& operator/=(const T& c) { this->apply(Div_assign<T>(),c);   	return *this; }
+
+			/// Scalar multiplication
+			Vector<T> operator*( const T& m ) const
+			{
+				Vector<T> result( *this );
+				result *= m;
+				return result;
+			}
+			// Friend function so the operator can be on either side
+			friend Vector<T> operator*( const T& m, Vector<T>& v )
+			{
+				return v * m;
+			}	
+
+			
 
 			/* ----- Methods ----- */
 
@@ -126,8 +185,22 @@ namespace TSL
 
 			/// Create a linearly spaced vector (of doubles) with n elements
 			void linspace( const double& a, const double& b, const std::size_t& n );
+	
 
 			
+			/* ----- Iterators ----- */
+
+			/// Iterator pointing to the first element
+			iter begin()
+			{
+				return CONTAINER.begin();
+			}
+
+			/// Iterator pointing to the last element
+			iter end()
+			{
+				return CONTAINER.end();
+			}
 
 	};	// End of class Vector
 
