@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <iostream>
 #include <iomanip>
+#include <iterator>
 
 #include "Error.h"
 
@@ -20,13 +21,9 @@ namespace TSL
 	/// Function objects for various apply() operations:
 
 	template<class T> struct Assign { void operator()(T& a, const T& c) { a = c; } };
-
 	template<class T> struct Add_assign { void operator()(T& a, const T& c) { a += c; } };
-
 	template<class T> struct Mul_assign { void operator()(T& a, const T& c) { a *= c; } };
-	
 	template<class T> struct Minus_assign { void operator()(T& a, const T& c) { a -= c; } };
-
 	template<class T> struct Div_assign { void operator()(T& a, const T& c) { a /= c; } };
 
 	//-----------------------------------------------------------------------------------------------
@@ -40,6 +37,8 @@ namespace TSL
 			std::vector<T> CONTAINER;		// Container for storing the elements
 
 		public:
+
+			typedef typename std::vector<T>::iterator iter;
 			
 			/// Constructor for an empty matrix of unspecified size
 			Matrix() : ROWS( 0 ), COLS( 0 ) { }
@@ -69,7 +68,6 @@ namespace TSL
 					// Range check 
 					if ( i<0 || ROWS<=i )	{ throw Error( "Matrix range error: dimension 1" );}
 					if ( j<0 || COLS<=j )	{ throw Error( "Matrix range error: dimension 2" );}
-					
 					return this->CONTAINER[ i*COLS + j ];
 			}
 		
@@ -79,13 +77,73 @@ namespace TSL
 					// Range check 
 					if ( i<0 || ROWS<=i )	{ throw Error( "Matrix range error: dimension 1" );}
 					if ( j<0 || COLS<=j )	{ throw Error( "Matrix range error: dimension 2" );}
-
 					return this->CONTAINER[ i*COLS + j ];
 			}
 
 			/// Output operator <<
 			template <class Type>
 			friend std::ostream& operator<<( std::ostream& os, const Matrix<Type>& m );	
+
+			/// Binary +
+			Matrix<T> operator+( const Matrix<T>& m_plus ) const
+			{
+				if ( m_plus.ROWS != ROWS ) { throw Error( "Matrix error: dimension 1 " );}
+				if ( m_plus.COLS != COLS ) { throw Error( "Matrix error: dimension 2 " );}
+				Matrix<T> result( *this );
+				std::transform( CONTAINER.begin(), CONTAINER.end(), m_plus.CONTAINER.begin(),
+								result.CONTAINER.begin(), std::plus<T>() );
+				return result;
+			}
+
+			/// Binary -
+			Matrix<T> operator-( const Matrix<T>& m_minus ) const
+			{
+				if ( m_minus.ROWS != ROWS ) { throw Error( "Matrix error: dimension 1 " );}
+				if ( m_minus.COLS != COLS ) { throw Error( "Matrix error: dimension 2 " );}
+				Matrix<T> result( *this );
+				std::transform( CONTAINER.begin(), CONTAINER.end(), m_minus.CONTAINER.begin(),
+								result.CONTAINER.begin(), std::minus<T>() );
+				return result;
+			}
+
+			/// Unary +
+			Matrix<T> operator+() const
+			{
+				return *this;
+			}
+
+			/// Unary -
+			Matrix<T> operator-() const
+			{
+				Matrix<T> result( *this );
+				std::transform (CONTAINER.begin(), CONTAINER.end(),result.CONTAINER.begin(),
+						 std::negate<T>());
+				return result;
+			}
+
+			/// Matrix multiplication A*B
+			Matrix<T> operator*( const Matrix<T>& B ) const
+			{
+				if ( COLS != B.ROWS ) { throw Error( "Matrix error (*): dimensions do not agree." );}
+				Matrix<T> result;
+				result.CONTAINER.resize( ROWS * B.COLS );
+				result.ROWS = ROWS;
+				result.COLS = B.COLS;
+				std::size_t n( ROWS ), p( B.COLS ), m( COLS );
+				Matrix<T> temp( B );
+				temp.transpose_in_place();
+				for ( std::size_t i=0; i<n; ++i )
+				{
+					for ( std::size_t j=0; j<p; ++j )
+					{
+						for ( std::size_t k=0; k<m; ++k )
+						{
+							result.CONTAINER[ i*p + j ] += CONTAINER[ i*m + k ] * temp.CONTAINER[ j*m + k ];
+						}
+					}
+				} 
+				return result;
+			}
 
 			/*----- Element-wise operations -----*/
 
@@ -187,6 +245,40 @@ namespace TSL
                 CONTAINER[ row*COLS + row + 1 ] = U;
             }
         }
+			}
+
+			/// Transpose the matrix in place
+			void transpose_in_place()
+			{
+				const std::size_t m = COLS;
+				iter first = CONTAINER.begin();
+				iter last  = CONTAINER.end();
+				const std::size_t mn1 = last - first - 1;
+				const std::size_t n = (last - first) / m;
+				std::vector<bool> visited( last - first );
+				iter cycle = first;
+				
+				while (++cycle != last )
+				{
+					if	(visited[cycle - first])
+						continue;
+					std::size_t a = cycle -first;
+					do {
+							a = a == mn1 ? mn1 : (n * a) % mn1;
+							std::swap(*(first + a), *cycle);
+							visited[a] = true;
+					} while ((first+a) != cycle);
+				}
+				COLS = ROWS;
+				ROWS = m;				
+			}
+
+			/// Return the transpose of a matrix
+			Matrix<T> transpose() const
+			{
+				Matrix<T> temp( *this );
+				temp.transpose_in_place();
+				return temp;
 			}
 			
 

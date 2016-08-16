@@ -11,6 +11,7 @@
 #include <iostream>
 #include <iomanip>
 #include <functional>
+#include <numeric>
 
 #include "Error.h"
 #include "Matrix.h"
@@ -57,7 +58,7 @@ namespace TSL
 			/* ----- Operator overloading ----- */
 			
 			/// Indexing operator ( read only )
-			const T& operator() ( const std::size_t& i ) const
+			const T& operator[] ( const std::size_t& i ) const
 			{
 					// Range check 
 					if ( i<0 || CONTAINER.size()<=i )	{ throw Error( "Vector range error." );}
@@ -65,7 +66,7 @@ namespace TSL
 			}
 
 			/// Indexing operator ( read/write )
-			T& operator() ( const std::size_t& i )
+			T& operator[] ( const std::size_t& i )
 			{
 					// Range check 
 					if ( i<0 || CONTAINER.size()<=i )	{ throw Error( "Vector range error." );}
@@ -93,6 +94,21 @@ namespace TSL
 				Vector<T> result( v_minus.size() );
 				std::transform (CONTAINER.begin(), CONTAINER.end(), v_minus.CONTAINER.begin(), 
 						result.CONTAINER.begin(), std::minus<T>());
+				return result;
+			}
+
+			/// Unary +
+			Vector<T> operator+() const
+			{
+				return *this;
+			}		
+
+			/// Unary -
+			Vector<T> operator-() const
+			{
+				Vector<T> result( size() );
+				std::transform (CONTAINER.begin(), CONTAINER.end(),result.CONTAINER.begin(),
+						 std::negate<T>());
 				return result;
 			}
 
@@ -143,14 +159,46 @@ namespace TSL
 				result *= m;
 				return result;
 			}
-			// Friend function so the operator can be on either side
+			// Friend function so the * operator can be on either side
 			friend Vector<T> operator*( const T& m, Vector<T>& v )
 			{
 				return v * m;
 			}	
 
-			
+			/// Scalar division
+			Vector<T> operator/( const T& m ) const
+			{
+				Vector<T> result( *this );
+				result /= m;
+				return result;
+			}
 
+			/// Element-wise addition
+			Vector<T> operator+( const T& m ) const
+			{
+				Vector<T> result( *this );
+				result += m;
+				return result;
+			}
+			// Friend function so the + operator can be on either side
+			friend Vector<T> operator+( const T& m, Vector<T>& v )
+			{
+				return v + m;
+			}
+
+			/// Element-wise subtraction
+			Vector<T> operator-( const T& m ) const
+			{
+				Vector<T> result( *this );
+				result -= m;
+				return result;
+			}
+			// Friend function so the - operator can be on either side
+			friend Vector<T> operator-( const T& m, Vector<T>& v )
+			{
+				return -v + m;
+			}
+			
 			/* ----- Methods ----- */
 
 			/// Size of the vector
@@ -186,7 +234,85 @@ namespace TSL
 			/// Create a linearly spaced vector (of doubles) with n elements
 			void linspace( const double& a, const double& b, const std::size_t& n );
 	
+			/// Swap elements i and j
+			void swap( const std::size_t& i, const std::size_t& j )
+			{
+				if ( i<0 || CONTAINER.size()<=i )	{ throw Error( "Vector range error." );}
+				if ( j<0 || CONTAINER.size()<=j )	{ throw Error( "Vector range error." );}
+				std::swap<T>( CONTAINER[ i ], CONTAINER[ j ] );
+			}
 
+			/// Sum of the elements in the vector in a given range
+			T sum( const std::size_t& start, const std::size_t& end ) const
+			{
+				if ( start<0 || CONTAINER.size()<=start )	{ throw Error( "Sum: range error." );}
+				if ( end<0 || CONTAINER.size()<=end )	{ throw Error( "Sum: range error." );} 
+				if ( start > end ) { throw Error( "Sum: index error (end < start)." );}
+				T S( CONTAINER[start] ); // First value
+				for ( std::size_t i=start+1; i<=end; ++i )
+				{
+					S += CONTAINER[ i ];
+				}
+				return S;	
+			}
+
+			/// Sum of all elements
+			T sum(  ) const
+			{
+				T S( CONTAINER[0] ); // First value
+				for ( std::size_t i=1; i<CONTAINER.size(); ++i )
+				{
+					S += CONTAINER[ i ];
+				}
+				return S;	
+			}
+
+			/* ----- Norms ----- */
+
+			/// L1 norm: sum of absolute values
+			double norm_1() const
+			{
+				double sum( 0.0 );
+				for (size_t i=0; i < CONTAINER.size(); ++i)
+				{
+					sum += std::abs( CONTAINER[ i ] );
+				}
+				return sum;
+			}	
+
+			// L2 norm: square root of the sum of the squares 
+			double norm_2() const
+			{
+				double sum( 0.0 );
+				for (size_t i=0; i < CONTAINER.size(); ++i)
+				{
+					sum += std::pow( std::abs( CONTAINER[ i ] ), 2.0 );
+				}
+				return std::sqrt( sum );
+			}
+
+			// Lp norm: p-th root of the sum of the absolute values raised to the power p
+			double norm_p( const double& p ) const
+			{
+				if ( p < 1.0 ) { throw Error( "Lp norm error: p < 1.0" );}
+				double sum( 0.0 );
+				for (size_t i=0; i < CONTAINER.size(); ++i)
+				{
+					sum += std::pow( std::abs( CONTAINER[ i ] ), p );
+				}
+				return std::pow( sum , 1.0/p );
+			}
+
+			// Inf norm: largest absolute value element (p -> infinity)
+			double norm_inf() const
+			{
+				std::vector<double> abs_vals;		
+				for (size_t i=0; i < CONTAINER.size(); ++i)
+				{
+					abs_vals.push_back( std::abs( CONTAINER[ i ] ) );
+				}
+				return *std::max_element(abs_vals.begin(), abs_vals.end());
+			}
 			
 			/* ----- Iterators ----- */
 
@@ -212,7 +338,7 @@ namespace TSL
 
 		for (std::size_t i = 0; i<v.CONTAINER.size(); ++i)
 		{
-			os << v(i) << "  ";
+			os << v[i] << "  ";
 		}
 		return os;
 	}
