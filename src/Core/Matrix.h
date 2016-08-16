@@ -145,6 +145,26 @@ namespace TSL
 				return result;
 			}
 
+			/// Addition assignment +=
+			Matrix<T>& operator+=( const Matrix<T>& m_plus )
+			{
+				if ( m_plus.ROWS != ROWS ) { throw Error( "Matrix error: dimension 1 " );}
+				if ( m_plus.COLS != COLS ) { throw Error( "Matrix error: dimension 2 " );}
+				std::transform (CONTAINER.begin(), CONTAINER.end(), m_plus.CONTAINER.begin(), 
+						CONTAINER.begin(), std::plus<T>());
+				return *this;
+			}
+
+			/// Subtraction assignment -=
+			Matrix<T>& operator-=( const Matrix<T>& m_minus )
+			{
+				if ( m_minus.ROWS != ROWS ) { throw Error( "Matrix error: dimension 1 " );}
+				if ( m_minus.COLS != COLS ) { throw Error( "Matrix error: dimension 2 " );}
+				std::transform (CONTAINER.begin(), CONTAINER.end(), m_minus.CONTAINER.begin(), 
+						CONTAINER.begin(), std::minus<T>());
+				return *this;
+			}
+
 			/*----- Element-wise operations -----*/
 
 			/// Apply functions
@@ -280,7 +300,83 @@ namespace TSL
 				temp.transpose_in_place();
 				return temp;
 			}
+
+			/// Resize the matrix ( clears all elements )
+      void resize( const std::size_t& rows, const std::size_t& cols )
+			{
+				CONTAINER.clear();
+				CONTAINER.resize( rows * cols );
+				ROWS = rows;
+				COLS = cols;
+			}
 			
+			/* ----- Norms ----- */
+
+      // Return the maximum absolute column sum of the matrix
+      double norm_1() const
+			{
+        double max( 0.0 );
+        for ( std::size_t j = 0; j < COLS; ++j )
+        {
+            double sum( 0.0 );
+            for ( std::size_t i = 0; i < ROWS; ++i )
+            {
+                sum += std::abs( CONTAINER[ i*COLS + j ] );
+            }
+            max = std::max( max, sum );
+        }
+        return max;
+    	}
+
+      // Return the maximum absolute row sum of the matrix
+      double norm_inf() const
+			{
+        double max( 0.0 );
+        for ( std::size_t i = 0; i < ROWS; ++i )
+        {
+            double sum( 0.0 );
+            for ( std::size_t j = 0; j < COLS; ++j )
+            {
+                sum += std::abs( CONTAINER[ i*COLS + j ] );
+            }
+            max = std::max( max, sum );
+        }
+        return max;
+    	}
+
+      // Return the Frobenius norm of the matrix
+      double norm_frob() const
+			{
+				return this->norm_p( 2.0 );
+			}	
+
+      // Return the entrywise max-norm of the matrix
+      double norm_max() const
+			{
+        double max( 0.0 );
+        for ( std::size_t i = 0; i < ROWS; ++i )
+        {
+            for ( std::size_t j = 0; j < COLS; ++j )
+            {
+                max = std::max( max, std::abs( CONTAINER[ i*COLS + j ] ) );
+            } 
+        }
+        return max;
+    	}
+
+      // Return the entrywise p-norm of the matrix (p=2 is Frobenius, p=inf is max norm)
+      double norm_p( const double& p ) const
+			{
+        double sum( 0.0 );
+        for ( std::size_t i = 0; i < ROWS; ++i )
+        {
+            for ( std::size_t j = 0; j < COLS; ++j )
+            {
+                sum += std::pow( std::abs( CONTAINER[ i*COLS + j ] ), p );
+            }
+        }
+        return std::pow( sum , 1.0/p );
+    	}
 
 	};	// End of class Matrix
 
