@@ -16,3 +16,4 @@
 #include "src/Core/Matrix.h"
 #include "src/Core/Vector.h"
 #include "src/Core/Timer.h"
+#include "src/Core/LinearAlgebra.h"

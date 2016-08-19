@@ -227,15 +227,15 @@ namespace TSL
 			}
 
 			/// Fill a diagonal band of the matrix
-      void fill_band( const std::size_t& offset, const T& value )
+			void fill_band( const std::size_t& offset, const T& value )
 			{
 				for ( std::size_t row = 0; row < ROWS; ++row )
-        {
+				{
             if ( ( row + offset < COLS ) && ( row + offset >= 0 ) )
             {
                 CONTAINER[ row*COLS + row + offset ] = value;
             }
-        }
+				}
 			}
 
 			/// Fill the main three diagonals of the matrix
@@ -309,7 +309,21 @@ namespace TSL
 				ROWS = rows;
 				COLS = cols;
 			}
-			
+
+			/// Swap the selected rows of the matrix
+			void swap_rows( const std::size_t& row_1, const std::size_t& row_2 )
+			{
+				if ( row_1<0 || ROWS<=row_1 )	{ throw Error( "Matrix range error: swap rows" );}
+				if ( row_2<0 || ROWS<=row_2 )	{ throw Error( "Matrix range error: swap rows" );}
+				T temp;
+				for (std::size_t k=0; k<COLS; ++k )
+				{
+					temp = CONTAINER[ row_1 * COLS + k ];
+				 	CONTAINER[ row_1 * COLS + k ] = CONTAINER[ row_2 * COLS + k ];
+					CONTAINER[ row_2 * COLS + k ] = temp;
+				}
+			}			
+
 			/* ----- Norms ----- */
 
       // Return the maximum absolute column sum of the matrix
