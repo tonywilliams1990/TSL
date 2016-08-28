@@ -1,0 +1,17 @@
+import os.path
+import glob
+
+Import( 'env opts incdir libdir topdir libs ' )
+
+print "----- Building TNoddy codes -----"
+
+# Testing codes
+
+env.Program( 'Test/Matrix_test.out' , ['Test/Matrix_test.cpp'] , OPTS = opts, LIBS = libs )  #Matrix
+
+
+
+# Project codes
+
+#env.Program( 'Project/Base_Flow_Transpiration.out' , ['Project/Base_Flow_Transpiration.cpp'] , OPTS = opts, LIBS = libs )
+#env.Program( 'Project/Eigenvalue_Problem.out' , ['Project/Eigenvalue_Problem.cpp'] , OPTS = opts, LIBS = libs )

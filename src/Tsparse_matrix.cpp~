@@ -1,0 +1,191 @@
+/* Tsparse_matrix class - Encapsulates the Eigen sparse matrix container
+*/
+#include "Tsparse_matrix.h"
+
+namespace TNoddy
+{
+    // Constructor for a sparse matrix
+    template <typename T> 
+	Tsparse_matrix<T>::Tsparse_matrix( const std::size_t& rows, const std::size_t& cols )
+    {
+        ROWS = rows;
+        COLS = cols;
+        S_MATRIX.reserve( ROWS );
+        Tsparse_vector<T> sparse_row( COLS );
+        for ( std::size_t i = 0; i < ROWS; ++i )
+        {
+          S_MATRIX.push_back( sparse_row );
+        }
+    }
+
+    // Copy constructor
+    template <typename T>
+    Tsparse_matrix<T>::Tsparse_matrix( const Tsparse_matrix<T>& source )
+    {
+        *this = source;
+    }
+
+    // Destructor
+	template <typename T>
+  	Tsparse_matrix<T>::~Tsparse_matrix( )
+  	{}
+
+    /* ----- Methods ----- */
+                
+    // Return the number of rows in the matrix
+    template <typename T>
+    std::size_t Tsparse_matrix<T>::rows() const
+    {
+        return ROWS;
+    }
+
+    // Return the number of columns in the matrix
+    template <typename T>
+    std::size_t Tsparse_matrix<T>::cols() const
+    {
+        return COLS;
+    }
+
+    // Return the number of elements in the matrix
+    template <typename T>
+    std::size_t Tsparse_matrix<T>::numel() const
+    {
+        std::size_t sum( 0 );
+        for ( std::size_t i = 0; i < ROWS; ++i )
+        {
+          sum += S_MATRIX[ i ].numel();
+        }
+        return sum;
+    }
+
+    // Scale the matrix by m
+    template <typename T>
+    void Tsparse_matrix<T>::scale( const T& m )
+    {
+        for ( std::size_t i = 0; i < ROWS; ++i )
+        {
+          S_MATRIX[ i ] *= m;
+        }
+    }
+
+	// Clear all the elements from the matrix
+	template <typename T>
+	void Tsparse_matrix<T>::clear()
+	{
+		for ( std::size_t i = 0; i < ROWS; ++i )
+        {
+          S_MATRIX[ i ].clear();
+        }
+	}
+
+    /* ----- Norms ----- */
+    
+    // Return the maximum L1 norm of all the rows
+    template <typename T>
+    double Tsparse_matrix<T>::norm_1() const
+    {
+        double max( 0.0 );
+        for ( std::size_t i = 0; i < ROWS; ++i )
+        {
+          max = std::max( max, S_MATRIX[ i ].norm_1() );
+        }
+        return max;
+    }
+
+    // Return the maximum L2 norm of all the rows
+    template <typename T>
+    double Tsparse_matrix<T>::norm_2() const
+    {
+        double max( 0.0 );
+        for ( std::size_t i = 0; i < ROWS; ++i )
+        {
+          max = std::max( max, S_MATRIX[ i ].norm_2() );
+        }
+        return max;
+    }
+
+    // Return the maximum infinity norm of all the rows
+    template <typename T>
+    double Tsparse_matrix<T>::norm_inf() const
+    {
+        double max( 0.0 );
+        for ( std::size_t i = 0; i < ROWS; ++i )
+        {
+          max = std::max( max, S_MATRIX[ i ].norm_inf() );
+        }
+        return max;
+    }
+
+    // Return the Frobenius norm
+    template <typename T>
+    double Tsparse_matrix<T>::norm_frob() const
+    {
+        double sum ( 0.0 );
+        for ( std::size_t i = 0; i < ROWS; ++i )
+        {
+          sum += S_MATRIX[ i ].norm_2();
+        }
+        return sum;
+    }
+
+    /* ----- Solve linear system of equations ----- */
+
+    // Solve system of equations Ax=b where x and b are vectors
+    template <typename T>  
+    Tvector<T> Tsparse_matrix<T>::solve( const Tvector<T>& b ) const
+    {
+        
+        assert( ROWS == b.size() );                                 // Check dimensions are compatible
+	    // Convert Tvector to an Eigen matrix
+	    Eigen::Matrix<T, -1, 1> B;
+	    B.resize(b.size(),1);
+	    for (std::size_t i=0; i<b.size(); ++i)
+	    {
+		    B(i,0) = b.CONTAINER[i];
+	    }
+        
+        // Convert Tsparse_matrix to an Eigen::SparseMatrix
+        Eigen::SparseMatrix<T> A(ROWS,COLS);  // Declare Eigen sparse matrix
+        std::vector<Eigen::Triplet<T>> triplet_list;                // Declare list of triplets 
+        for ( std::size_t i=0; i<ROWS; ++i )
+        {
+            if ( !S_MATRIX[i].isempty() )                           // Check that the row is not empty 
+            {   
+                std::vector<std::size_t> index;
+                std::vector<T> element;
+                index = S_MATRIX[i].index_list();
+                element = S_MATRIX[i].element_list();
+                std::size_t J = index.size();
+                for ( std::size_t j=0; j<J; ++j )
+                {
+                    triplet_list.push_back( Eigen::Triplet<T>( i, index[j], element[j] ));
+                }
+            }
+        } 
+        A.setFromTriplets(triplet_list.begin(), triplet_list.end());
+        
+        // Setup and solve the system
+        Eigen::SparseLU< Eigen::SparseMatrix<T> > solverA;
+		//Eigen::BiCGSTAB<Eigen::SparseMatrix<T>> solverA;
+		//solverA.analyzePattern(A);
+		//solverA.factorize(A);
+        solverA.compute(A);
+
+        Eigen::Matrix<T, -1, 1> X;
+	    X.resize(b.size(),1);
+        X = solverA.solve(B);
+        
+        // Convert back to a Tvector 
+	    Tvector<T> x(COLS,0.0);
+	    for (std::size_t i=0; i<COLS; ++i)
+	    {
+		    x.CONTAINER[i] = X(i,0);
+	    }	
+	    return x;
+    }   
+
+  	// Templated versions
+  	template class Tsparse_matrix<double>;
+	template class Tsparse_matrix< std::complex<double> >;
+
+} // End of namespace TNoddy

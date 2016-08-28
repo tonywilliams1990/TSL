@@ -1,0 +1,332 @@
+/* Tmatrix class - Encapsulates the Eigen matrix container
+*/
+#include "Tmatrix.h"
+
+namespace TNoddy
+{
+
+	// Constructor - empty and unspecified size
+	template <typename T>
+	Tmatrix<T>::Tmatrix()
+	{
+		ROWS = 0;	
+		COLS = 0;
+	}
+
+	// Constructor for a matrix with specfied initial elements
+	template <typename T>
+	Tmatrix<T>::Tmatrix( const std::size_t& rows, const std::size_t& cols, const T& elem )
+	{
+		ROWS = rows;
+		COLS = cols;
+		MATRIX.resize( ROWS, COLS );
+		// Fill the matrix
+		for (std::size_t j=0; j<COLS; ++j)
+		{
+			for (std::size_t i=0; i<ROWS; ++i)
+			{
+				MATRIX( i, j ) = elem;
+			}
+		}
+	}
+
+	// Copy constructor
+	template <typename T>
+	Tmatrix<T>::Tmatrix( const Tmatrix<T>& source )
+	{	
+		ROWS = source.ROWS;
+		COLS = source.COLS;			
+		MATRIX.resize(ROWS, COLS);
+		MATRIX = source.MATRIX;		
+	}
+
+	// Destructor
+	template <typename T>
+  	Tmatrix<T>::~Tmatrix( )
+  	{}
+
+	/* ----- Methods ----- */
+
+	// Return the number of elements in the matrix
+	template <typename T>
+	std::size_t Tmatrix<T>::numel() const
+	{	
+		return ROWS * COLS;
+	}
+
+	// Fill the matrix with specified elements
+	template <typename T>
+	void Tmatrix<T>::fill( const T& elem )
+	{
+		// Column-major order filling
+		for (std::size_t j=0; j<COLS; ++j)
+		{
+			for (std::size_t i=0; i < ROWS; ++i)
+			{
+				MATRIX( i, j ) = elem;
+			}
+		}
+	}
+
+	// Fill the leading diagonal with specified elements
+	template <typename T>
+	void Tmatrix<T>::fill_diag( const T& elem )
+	{
+		std::size_t N( ROWS );
+		if ( COLS < ROWS )
+		{
+			N = COLS;
+		}
+		for (std::size_t i=0; i < N; ++i)
+		{
+			MATRIX( i, i ) = elem;
+		}
+	}
+
+    // Fill a diagonal band of the matrix
+    template <typename T>
+    void Tmatrix<T>::fill_band( const std::size_t& offset, const T& value )
+    {
+        for ( std::size_t row = 0; row < ROWS; ++row )
+        {
+            if ( ( row + offset < COLS ) && ( row + offset >= 0 ) )
+            {
+                MATRIX( row, row + offset ) = value;
+            }
+        }
+    }
+
+    // Fill the main three diagonals of the matrix
+    template <typename T>
+    void Tmatrix<T>::fill_tridiag( const T& L, const T& D, const T& U )
+    {
+        // Fill the lower band
+        for ( std::size_t row = 0; row < ROWS; ++row )
+        {
+            if ( ( row - 1 < COLS ) && ( row - 1 >= 0 ) )
+            {
+                MATRIX( row, row - 1 ) = value;
+            }
+        }
+
+        // Fill the main diagonal
+        for ( std::size_t row = 0; row < ROWS; ++row )
+        {
+            if ( ( row < COLS ) && ( row >= 0 ) )
+            {
+                MATRIX( row, row ) = value;
+            }
+        }
+
+        // Fill the upper band
+        for ( std::size_t row = 0; row < ROWS; ++row )
+        {
+            if ( ( row + 1 < COLS ) && ( row + 1 >= 0 ) )
+            {
+                MATRIX( row, row + 1 ) = value;
+            }
+        }
+    }
+
+	// Return the trace of the matrix
+	template <typename T>
+	T Tmatrix<T>::trace() const
+	{
+		Tmatrix<T> temp( *this );
+		return temp.MATRIX.trace();
+	}
+
+	// Return the sum of all the elements in the matrix
+	template <typename T>
+	T Tmatrix<T>::sum() const
+	{
+		Tmatrix<T> temp( *this );
+		return temp.MATRIX.sum();
+	}
+
+	// Return the product of all the elements in the matrix
+	template <typename T>
+	T Tmatrix<T>::prod() const
+	{
+		Tmatrix<T> temp( *this );
+		return temp.MATRIX.prod();
+	}
+
+	// Return the mean of all the elements in the matrix
+	template <typename T>
+	T Tmatrix<T>::mean() const
+	{
+		Tmatrix<T> temp( *this );
+		return temp.MATRIX.mean();
+	}
+
+    // Set a column of the matrix
+    template <typename T>
+    void Tmatrix<T>::set_col( const std::size_t& col, const Tvector<T>& x )
+    {
+        for ( std::size_t row = 0; row < ROWS; ++row )
+        {
+            MATRIX( row, col ) = x[ row ];
+        }
+    }
+
+    // Resize the matrix ( sets all elements equal to zero )
+    template <typename T>
+    void Tmatrix<T>::resize( const std::size_t& rows, const std::size_t& cols )
+    {
+        ROWS = rows;
+		COLS = cols;
+        MATRIX.resize( rows, cols );
+		// Fill the matrix
+		for (std::size_t j=0; j<cols; ++j)
+		{
+			for (std::size_t i=0; i<rows; ++i)
+			{
+				MATRIX( i, j ) = 0.0;
+			}
+		}
+    }
+
+    /* ----- Norms ----- */
+
+    // Return the maximum absolute column sum of the matrix
+    template <typename T>
+    double Tmatrix<T>::norm_1() const
+    {
+        double max( 0.0 );
+        for ( std::size_t j = 0; j < COLS; ++j )
+        {
+            double sum( 0.0 );
+            for ( std::size_t i = 0; i < ROWS; ++i )
+            {
+                sum += std::abs( MATRIX( i, j ) );
+            }
+            max = std::max( max, sum );
+        }
+        return max;
+    }
+
+    // Return the maximum absolute row sum of the matrix
+    template <typename T>
+    double Tmatrix<T>::norm_inf() const
+    {
+        double max( 0.0 );
+        for ( std::size_t i = 0; i < ROWS; ++i )
+        {
+            double sum( 0.0 );
+            for ( std::size_t j = 0; j < COLS; ++j )
+            {
+                sum += std::abs( MATRIX( i, j ) );
+            }
+            max = std::max( max, sum );
+        }
+        return max;
+    }
+
+    // Return the Frobenius norm of the matrix
+    template <typename T>
+    double Tmatrix<T>::norm_frob() const
+    {
+        return MATRIX.norm();
+    }
+
+    // Return the entrywise max-norm of the matrix
+    template <typename T>
+    double Tmatrix<T>::norm_max() const
+    {
+        double max( 0.0 );
+        for ( std::size_t i = 0; i < ROWS; ++i )
+        {
+            for ( std::size_t j = 0; j < COLS; ++j )
+            {
+                max = std::max( max, std::abs( MATRIX( i, j ) ) );
+            } 
+        }
+        return max;
+    }
+
+    // Return the entrywise p-norm of the matrix
+    template <typename T>
+    double Tmatrix<T>::norm_p( const double& p ) const
+    {
+        double sum( 0.0 );
+        for ( std::size_t i = 0; i < ROWS; ++i )
+        {
+            for ( std::size_t j = 0; j < COLS; ++j )
+            {
+                sum += std::pow( std::abs( MATRIX( i, j ) ), p );
+            }
+        }
+        return std::pow( sum , 1.0/p );
+    }
+
+    /* ----- Solve linear system of equations ----- */
+
+    // Solve system of equations Ax=b where x and b are vectors
+    template <typename T>
+    Tvector<T> Tmatrix<T>::solve( const Tvector<T>& b, const std::string method ) const
+    {
+	    assert( ROWS == b.size() ); // Check dimensions are compatible
+	    // Convert Tvector to an Eigen matrix
+	    Eigen::Matrix<T, -1, 1> B;
+	    B.resize(b.size(),1);
+	    for (std::size_t i=0; i<b.size(); ++i)
+	    {
+		    B(i,0) = b.CONTAINER[i];
+	    }
+	    // Solve the system
+	    Eigen::Matrix<T, -1, 1> X;
+	    X.resize(b.size(),1);
+        assert( method == "LU" || method == "QR" || method == "PartialLU" );
+        if ( method == "LU" )
+        {
+            X = MATRIX.fullPivLu().solve(B);
+        }
+        if ( method == "PartialLU" )
+        {
+            X = MATRIX.partialPivLu().solve(B);
+        }
+        if ( method == "QR" )
+        {
+            X = MATRIX.fullPivHouseholderQr().solve(B);
+        }
+	    
+	    // Convert back to a Tvector 
+	    Tvector<T> x(COLS,0.0);
+	    for (std::size_t i=0; i<COLS; ++i)
+	    {
+		    x.CONTAINER[i] = X(i,0);
+	    }	
+	    return x;
+    }  
+                
+    // Solve system of equations AX=B where X and B are matrices
+    template <typename T>
+    Tmatrix<T> Tmatrix<T>::solve( const Tmatrix<T>& B, const std::string method ) const
+    {
+        Tmatrix<T> A( *this );
+        assert( A.ROWS == B.ROWS ); // Check dimensions are compatible
+        Tmatrix<T> X;
+        X.ROWS = A.COLS;
+        X.COLS = B.COLS;
+        assert( method == "LU" || method == "QR" || method == "PartialLU" );
+        if ( method == "LU" )
+        {
+            X.MATRIX = A.MATRIX.fullPivLu().solve(B.MATRIX);
+        }
+        if ( method == "PartialLU" )
+        {
+            X.MATRIX = A.MATRIX.partialPivLu().solve(B.MATRIX);
+        }
+        if ( method == "QR" )
+        {
+            X.MATRIX = A.MATRIX.fullPivHouseholderQr().solve(B.MATRIX);
+        }
+        return X;
+    }
+
+  	// Templated versions
+  	template class Tmatrix<double>;
+	template class Tmatrix< std::complex<double> >;
+
+} // End of namespace TNoddy

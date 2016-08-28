@@ -1,0 +1,151 @@
+/* Tsparse_matrix class - Encapsulates the Eigen sparse matrix container
+*/
+
+#ifndef TSPARSE_MATRIX_H
+#define TSPARSE_MATRIX_H
+
+#include <iostream>
+#include <vector>
+#include <Eigen/SparseCore>
+#include <Eigen/Dense>
+#include <Eigen/SparseLU>
+#include <Eigen/IterativeLinearSolvers>
+#include <Eigen/SparseCholesky>
+
+#include "Tvector.h"
+#include "Tsparse_vector.h"
+
+namespace Tlib
+{
+	// Templated sparse matrix class
+	template <typename T>
+
+	
+	class Tsparse_matrix 
+	{
+        typedef typename std::map< std::size_t, T >::const_iterator citer;
+        typedef typename std::map< std::size_t, T >::iterator iter;
+		
+		private:
+				std::size_t ROWS;								// Maximum number of rows 
+				std::size_t COLS;								// Maximum number of columns
+				std::vector< Tsparse_vector<T> > S_MATRIX;		// Sparse matrix object
+
+		public:
+                // Constructor for a sparse matrix 
+				Tsparse_matrix( const std::size_t& rows, const std::size_t& cols);
+
+                // Copy constructor
+                Tsparse_matrix( const Tsparse_matrix<T>& source );
+
+                // Destructor
+	   		    ~Tsparse_matrix();
+
+                /* ----- Operator overloading ----- */
+                
+                // Assignment
+    			Tsparse_matrix& operator=( const Tsparse_matrix& original );
+
+                // Indexing operator (read only)
+				const T& operator() ( const std::size_t& i, const std::size_t& j ) const;
+
+                // Indexing operator (read/write)
+				T& operator() ( const std::size_t& i, const std::size_t& j );
+
+                // Output operator <<
+		        template <class Type>
+		        friend std::ostream& operator<<( std::ostream& os, const Tsparse_matrix<Type>& mat );
+
+                /* ----- Methods ----- */
+                
+                // Return the number of rows in the matrix
+                std::size_t rows() const;
+
+                // Return the number of columns in the matrix
+                std::size_t cols() const;
+
+                // Return the number of elements in the matrix
+                std::size_t numel() const;
+
+                // Scale the matrix by m
+                void scale( const T& m );
+
+				// Clear all the elements from the matrix
+				void clear();
+
+                /* ----- Norms ----- */
+
+                // Return the maximum L1 norm of all the rows
+                double norm_1() const;
+
+                // Return the maximum L2 norm of all the rows
+                double norm_2() const;
+
+                // Return the maximum infinity norm of all the rows
+                double norm_inf() const;
+
+                // Return the Frobenius norm
+                double norm_frob() const;
+
+                /* ----- Solve linear system of equations ----- */
+
+                // Solve system of equations Ax=b where x and b are vectors  
+                Tvector<T> solve( const Tvector<T>& b ) const;		
+
+	}; // End of class Tsparse_matrix
+
+	/* ----- Inline definitions for some methods for speed improvement ----- */
+
+    /* ----- Operator overloading ----- */
+    
+    // Assignment
+	template <typename T>
+    inline Tsparse_matrix<T>& Tsparse_matrix<T>::operator=( const Tsparse_matrix<T>& original )
+	{		
+		if ( this == &original )
+        {
+            return *this;
+        }
+        S_MATRIX = original.S_MATRIX;
+        ROWS = original.ROWS;
+        COLS = original.COLS;
+        return *this;
+	}
+
+    // Indexing operator (read only)
+	template <typename T>
+	inline const T& Tsparse_matrix<T>::operator() ( const std::size_t& i, const std::size_t& j ) const
+	{
+		assert( i >= 0 && i < ROWS );
+		assert( j >= 0 && j < COLS );
+		return S_MATRIX[ i ].get( j );
+	} 
+
+    // Indexing operator (read/write)
+	template <typename T>
+	inline T& Tsparse_matrix<T>::operator() ( const std::size_t& i, const std::size_t& j )
+	{
+		assert( i >= 0 && i < ROWS );
+		assert( j >= 0 && j < COLS );
+		return S_MATRIX[ i ][ j ];
+	}
+
+    // Output operator <<
+	template <class T>
+	inline std::ostream& operator<<( std::ostream& os, const Tsparse_matrix<T>& mat )
+	{
+        os << "Sparse matrix size = " << mat.ROWS << " x " << mat.COLS << std::endl;
+        for ( std::size_t row = 0; row < mat.ROWS; ++row )
+        {
+            if ( !mat.S_MATRIX[ row ].isempty() ) // If row isn't empty
+            {
+                os << " row " << row << " :  ";
+                os << mat.S_MATRIX[ row ];
+            }
+        }
+        os << std::endl;
+	}  
+
+} // End of namespace Tlib
+
+#endif

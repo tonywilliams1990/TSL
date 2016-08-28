@@ -1,0 +1,117 @@
+/* Tvector class - Encapsulates the std::vector container
+   adding operator overloading and a few useful functions.
+*/
+
+#include <vector>
+#include <complex>
+#include <algorithm>
+#include <functional>
+#include <numeric>
+#include <cassert>
+#include <stdlib.h> 
+
+#include "Tvector.h"
+
+namespace TNoddy
+{
+
+	// Constructor - empty and unspecified size
+	template <typename T>
+	Tvector<T>::Tvector()
+	{}
+
+	// Constructor - a filled Tvector of specfied size
+	template <typename T>
+  	Tvector<T>::Tvector( const std::size_t& size, const T& elem ) 
+  	{
+		CONTAINER.assign(size, elem);
+	}
+
+	// Return a vector of absolute values of the elements
+	template <typename T>
+	Tvector<double> Tvector<T>::abs() const
+	{
+		Tvector<double> abs_vals;		
+		for (size_t i=0; i < CONTAINER.size(); ++i)
+		{
+			abs_vals.push_back( std::abs( CONTAINER[ i ] ) );
+		}
+		return abs_vals; 
+	}
+
+	// Swap elements i and j
+	template <typename T>
+	void Tvector<T>::swap( const std::size_t& i, const std::size_t& j )
+	{		
+		assert(i >= 0 && i < CONTAINER.size() );
+   		assert(j >= 0 && j < CONTAINER.size() );
+		std::swap<T>( CONTAINER[ i ], CONTAINER[ j ] );
+	}
+
+    // Scale the elements in the vector
+    template <typename T>
+    void Tvector<T>::scale( const T& m )
+    {
+        for (size_t i=0; i < CONTAINER.size(); ++i)
+		{
+			CONTAINER[i] *=  CONTAINER[ i ];
+		}
+    }
+
+	/* ----- Norms ----- */
+
+	// L1 norm: sum of absolute values 
+	template <typename T>
+	double Tvector<T>::norm_1() const
+	{
+		double sum( 0.0 );
+		for (size_t i=0; i < CONTAINER.size(); ++i)
+		{
+			sum += std::abs( CONTAINER[ i ] );
+		}
+		return sum;  
+	}
+
+	// L2 norm: square root of the sum of the squares 
+	template <typename T>
+	double Tvector<T>::norm_2() const
+	{
+		double sum( 0.0 );
+		for (size_t i=0; i < CONTAINER.size(); ++i)
+		{
+			sum += std::pow( std::abs( CONTAINER[ i ] ), 2.0 );
+		}
+		return std::sqrt( sum );
+	}
+
+	// Lp norm: p-th root of the sum of the absolute values raised to the power p
+	template <typename T>
+	double Tvector<T>::norm_p( const double& p ) const
+	{	
+		assert( p >= 1.0 );
+		double sum( 0.0 );
+		for (size_t i=0; i < CONTAINER.size(); ++i)
+		{
+			sum += std::pow( std::abs( CONTAINER[ i ] ), p );
+		}
+		return std::pow( sum , 1.0/p );
+	}
+
+	// Inf norm: largest absolute value element (p -> infinity)
+	template <typename T>
+	double Tvector<T>::norm_inf() const
+	{
+		std::vector<double> abs_vals;		
+		for (size_t i=0; i < CONTAINER.size(); ++i)
+		{
+			abs_vals.push_back( std::abs( CONTAINER[ i ] ) );
+		}
+		return *std::max_element(abs_vals.begin(), abs_vals.end());
+	}
+
+	// Templated versions
+  	template class Tvector<double>;
+	template class Tvector< std::complex<double> >;
+  	
+
+} // End of namespace TNoddy

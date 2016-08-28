@@ -1,0 +1,3 @@
+file /home/tony/Desktop/TSL/SConstruct,line 24:
+	Configure(confdir = .sconf_temp)
+

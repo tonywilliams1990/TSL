@@ -1,0 +1,310 @@
+/* Tsparse_vector class
+*/
+
+#include <complex>
+#include <map>
+#include <cmath>
+#include <algorithm>
+#include <stdlib.h>
+
+#include "Tsparse_vector.h"
+
+namespace Tlib
+{
+        
+    // Constructor for an empty sparse vector of unspecified maximum size
+    template <typename T>
+    Tsparse_vector<T>::Tsparse_vector() : ZERO( 0.0 ), MAX_SIZE( 0 )
+    { }
+
+    // Constructor for a sparse vector of specified maximum size
+    template <typename T>
+    Tsparse_vector<T>::Tsparse_vector( const std::size_t& max_size ) : ZERO( 0.0 ), MAX_SIZE( max_size )
+    { }
+
+    // Copy constructor
+    template <typename T>
+    Tsparse_vector<T>::Tsparse_vector( const Tsparse_vector& source )
+    {
+        *this = source;  
+    }
+
+    // Destructor
+    template <typename T>
+    Tsparse_vector<T>::~Tsparse_vector()
+    {}
+
+    /* ----- Operator overloading ----- */
+
+    // Unary +
+    template <typename T>
+    Tsparse_vector<T> Tsparse_vector<T>::operator+() const
+    {
+        return *this;
+    }   
+
+    // Unary -
+    template <typename T>
+    Tsparse_vector<T> Tsparse_vector<T>::operator-() const
+    {
+        Tsparse_vector<T> temp( *this );
+        temp *= -1.0;
+        return temp;
+    }
+
+    // Binary +
+    template <typename T>
+    Tsparse_vector<T> Tsparse_vector<T>::operator+( const Tsparse_vector<T>& sv_plus )
+    {
+        assert( sv_plus.max_size() == max_size() );
+        Tsparse_vector<T> temp( *this );
+        temp += sv_plus;    
+        return temp;
+    }
+
+    // Binary -
+    template <typename T>
+    Tsparse_vector<T> Tsparse_vector<T>::operator-( const Tsparse_vector<T>& sv_minus )
+    {
+        assert( sv_minus.max_size() == max_size() );
+        Tsparse_vector<T> temp( *this );
+        temp -= sv_minus;    
+        return temp;
+    }
+
+    // Scalar multiplication *
+    template <typename T>    
+    Tsparse_vector<T> Tsparse_vector<T>::operator*( const T& m )
+    {
+        Tsparse_vector<T> temp( *this );
+        temp *= m;  
+        return temp;
+    }
+
+    // Addition assignement +=
+    template <typename T>
+    Tsparse_vector<T> Tsparse_vector<T>::operator+=( const Tsparse_vector<T>& sv_plus )
+    {
+        assert( sv_plus.max_size() == max_size() );
+        citer pos_ro = sv_plus.CONTAINER.begin();
+        iter pos_rw = CONTAINER.begin();
+        do
+        {
+          std::size_t index_rw = pos_rw -> first;
+          std::size_t index_ro = pos_ro -> first;
+          if ( index_rw == index_ro )
+          {
+            // element in both vectors
+            pos_rw -> second += pos_ro -> second;
+            ++pos_rw;
+            ++pos_ro;
+          }
+          if ( index_rw > index_ro )
+          {
+            // element is in X but not 'this'
+            set
+            ( index_ro ) = pos_ro -> second;
+            ++pos_ro;
+          }
+          if ( index_rw < index_ro )
+          {
+            // element is in 'this' but not X
+            ++pos_rw;
+          }
+        }
+        while ( pos_ro != sv_plus.CONTAINER.end() && pos_rw != CONTAINER.end() );
+        if ( pos_ro != sv_plus.CONTAINER.end() )
+        {
+          // need to finish the X data
+          do
+          {
+            set
+            ( pos_ro -> first ) = pos_ro -> second;
+            ++pos_ro;
+          }
+          while ( pos_ro != sv_plus.CONTAINER.end() );
+        }
+        return *this;
+    }
+
+    // Subtraction assignment -= 
+    template <typename T>
+    Tsparse_vector<T> Tsparse_vector<T>::operator-=( const Tsparse_vector<T>& sv_minus )
+    {
+        assert( sv_minus.max_size() == max_size() );
+        citer pos_ro = sv_minus.CONTAINER.begin();
+        iter pos_rw = CONTAINER.begin();
+        do
+        {
+          std::size_t index_rw = pos_rw -> first;
+          std::size_t index_ro = pos_ro -> first;
+          if ( index_rw == index_ro )
+          {
+            // element in both vectors
+            pos_rw -> second -= pos_ro -> second;
+            ++pos_rw;
+            ++pos_ro;
+          }
+          if ( index_rw > index_ro )
+          {
+            // element is in X but not 'this'
+            set
+            ( index_ro ) = -( pos_ro -> second );
+            ++pos_ro;
+          }
+          if ( index_rw < index_ro )
+          {
+            // element is in 'this' but not X
+            ++pos_rw;
+          }
+        }
+        while ( pos_ro != sv_minus.CONTAINER.end() && pos_rw != CONTAINER.end() );
+        if ( pos_ro != sv_minus.CONTAINER.end() )
+        {
+          // need to finish the X data
+          do
+          {
+            set
+            ( pos_ro -> first ) = -( pos_ro -> second );
+            ++pos_ro;
+          }
+          while ( pos_ro != sv_minus.CONTAINER.end() );
+        }
+        return *this;
+    }   
+
+    // Scalar multiplication assignment *=
+    template <typename T>
+    Tsparse_vector<T> Tsparse_vector<T>::operator*=( const T& m )
+    {
+        //typedef typename std::map< std::size_t, T >::iterator iter;
+        for ( iter pos = CONTAINER.begin(); pos != CONTAINER.end(); ++pos )
+        {
+            pos -> second *= m;
+        }
+        return *this;
+    }
+
+    /* ----- Methods ----- */
+
+    // Maximum size of the sparse vector
+    template <typename T>
+    std::size_t Tsparse_vector<T>::max_size() const
+    {
+        return MAX_SIZE;
+    }
+
+    // Resize the sparse vector
+    template <typename T>
+    void Tsparse_vector<T>::resize( const std::size_t& n )  
+    {
+        MAX_SIZE = n;
+    }
+
+    // Remove all the elements from the sparse vector
+    template <typename T>
+    void Tsparse_vector<T>::clear()
+    {
+        CONTAINER.clear();
+    }
+
+    // Swap elements i and j
+    template <typename T>
+    void Tsparse_vector<T>::swap( const std::size_t& i, const std::size_t& j )
+    {
+        assert( i>=0 && i<MAX_SIZE && j>=0 && j<MAX_SIZE );
+        std::swap<T>( CONTAINER[ i ], CONTAINER[ j ] );
+    }
+
+    // Set an element of the vector
+    template <typename T>
+    T& Tsparse_vector<T>::set( const std::size_t& i )
+    {
+        return CONTAINER[ i ];
+    }
+
+    // Return an std::vector of indices for elements in the vector
+    template <typename T>
+    std::vector<std::size_t> Tsparse_vector<T>::index_list() const
+    {
+        std::vector<std::size_t> index_list;
+        for ( citer pos = CONTAINER.begin(); pos != CONTAINER.end(); ++pos )
+        {
+            index_list.push_back( pos -> first );
+        }
+        return index_list;
+    }
+
+    // Return an std::vector of the elements in the vector (same order as index_list)
+    template <typename T>
+    std::vector<T> Tsparse_vector<T>::element_list() const
+    {
+        std::vector<T> element_list;
+        for ( citer pos = CONTAINER.begin(); pos != CONTAINER.end(); ++pos )
+        {
+            element_list.push_back( pos -> second );
+        }
+        return element_list;
+    }
+
+    /* ----- Norms ----- */
+
+    // L1 norm: sum of absolute values
+    template <typename T> 
+	double Tsparse_vector<T>::norm_1() const
+    {
+        double sum( 0.0 );
+        for ( citer pos = CONTAINER.begin(); pos != CONTAINER.end(); ++pos )
+        {
+          sum += std::abs( pos -> second );
+        }
+        return sum;
+    }
+
+	// L2 norm: square root of the sum of the squares
+    template <typename T> 
+	double Tsparse_vector<T>::norm_2() const
+    {
+        double sum( 0.0 );
+        for ( citer pos = CONTAINER.begin(); pos != CONTAINER.end(); ++pos )
+        {
+          sum += std::pow( std::abs( pos -> second ), 2.0 );
+        }
+        return std::sqrt( sum );
+    }
+
+	// Lp norm: p-th root of the sum of the absolute values raised to the power p
+    template <typename T>
+	double Tsparse_vector<T>::norm_p( const double& p ) const
+    {
+        assert( p >= 1.0 );
+		double sum( 0.0 );
+		for ( citer pos = CONTAINER.begin(); pos != CONTAINER.end(); ++pos )
+		{
+			sum += std::pow( std::abs( pos -> second ), p );
+		}
+		return std::pow( sum , 1.0/p );
+    }
+
+	// Inf norm: largest absolute value element (p -> infinity)
+    template <typename T>
+	double Tsparse_vector<T>::norm_inf() const
+    {
+        double max( 0.0 );
+        // Return the maximum (abs) element in the vector
+        for ( citer pos = CONTAINER.begin(); pos != CONTAINER.end(); ++pos )
+        {
+          if ( std::abs( pos -> second ) > max )
+          {
+            max = std::abs( pos -> second );
+          }
+        }
+        return max;
+    }
+
+    // Templated versions
+  	template class Tsparse_vector<double>;
+	template class Tsparse_vector< std::complex<double> >;		
+
+} // End of namespace Tlib
+

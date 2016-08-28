@@ -1,0 +1,102 @@
+#include <cassert>
+#include <cmath>
+
+#include "Tnewton.h"
+#include "Tresidual.h"
+#include "Tode_bvp.h"
+#include "Tvector.h"
+
+
+// ODE enumeration
+enum{ f, fd, fdd };
+
+namespace TNoddy
+{
+	class test_equation : public Tequation<double>
+	{
+		public:
+			// The test equation is 3rd order
+			test_equation() : Tequation<double> ( 3 ) {} 
+
+			// Define the equation
+			void residual_fn( const Tvector<double>& u, Tvector<double>& F  ) const
+			{
+				F[ f ]   = u[ fd ];
+				F[ fd ]  = u[ fdd ];
+				F[ fdd ] = - u[ f ] * u[ fdd ];    
+			}
+	};
+
+    class plate_BC : public Tresidual<double>
+    {
+        public:
+            plate_BC() : Tresidual<double> ( 2, 3 ) {}
+
+        void residual_fn( const Tvector<double> &z, Tvector<double> &B ) const
+        {
+            B[ 0 ] = z[ f ];
+            B[ 1 ] = z[ fd ];
+        }
+    };
+
+    class free_BC : public Tresidual<double>
+    {
+        public:
+            free_BC() : Tresidual<double> ( 1, 3 ) {}
+
+        void residual_fn( const Tvector<double> &z, Tvector<double> &B ) const
+        {
+            B[ 0 ] = z[ fd ] - 1.0;
+        }
+    }; 
+} 
+
+using namespace std;
+using namespace TNoddy;
+
+int main()
+{
+    cout << "----- TESTING Tode_bvp -----" << endl;	
+ 	
+	/* ----- Test Tode_bvp class ----- */
+	double Inf( 10.0 );											        // Infinite boundary 
+	size_t N_nodes( 1000 );
+	TNoddy::Tvector<double> nodes;								        // Declare vector of nodes ( uniformly spaced )
+	nodes.linspace(0,Inf,N_nodes); 
+	
+
+    // Create instances of the equation and BCs
+    test_equation equation;
+    plate_BC left_BC;
+    free_BC right_BC;
+	
+    Tode_bvp<double> ode( &equation, nodes, &left_BC, &right_BC );      // Create boundary value problem
+
+    Tode_bvp<double> ode_copy( ode );                                   // Test copy construction
+	
+    /* ----- Set the initial guess ----- */
+	for (std::size_t j=0; j < N_nodes; ++j )
+	{
+		double eta = nodes[ j ];					// eta value at node j
+		ode.solution()( j , f )  		= eta + exp( -eta );
+        ode.solution()( j , fd ) 		= 1.0 - exp( -eta ); 
+		ode.solution()( j , fdd )  		= exp( -eta );
+	}
+
+    ode.solve();                                                        // Solve the system numerically
+
+    ode.solution().output( "./DATA/Solution_mesh_test.dat" );           // Test solution() method and output to a file
+
+    // Test delta() method
+    cout << "DELTA = " << ode.delta() << endl;
+    ode.delta() = 1.0e-10;
+    cout << "DELTA = " << ode.delta() << endl;
+
+    // Test max_iter() method
+    cout << "MAX_ITER = " << ode.max_iter() << endl;
+    ode.max_iter() = 50;
+    cout << "MAX_ITER = " << ode.max_iter() << endl;
+
+	cout << "FINISHED" << endl;
+
+}

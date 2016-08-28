@@ -1,0 +1,17 @@
+// Test the Tsparse_matrix class
+#include <iostream>
+#include "Tsparse_matrix.h"
+
+using namespace std;
+
+int main()
+{
+    cout << "----- TESTING Tsparse_matrix -----" << endl;
+
+    /* ----- TESTING Tsparse_matrix class ----- */	
+	
+    
+
+    cout << "FINISHED" << endl;
+
+}

@@ -1,0 +1,19 @@
+// my first program in C++
+#include <iostream>
+#include "Tvector.h"
+
+using namespace std;
+
+int main()
+{
+  cout << "----- TESTING Tvector -----" << endl;
+
+  /* ----- TESTING Tvector class ----- */	
+		
+	Tlib::Tvector<double> v1;						// Creat an instance
+	Tlib::Tvector<double> v2(4, 2.0);				// An initialised instance 
+	cout << "First element = " << v2[0] << endl;	// Test indexing
+	cout << "v2.size() = " << v2.size() << endl;	// Test the size method
+	Tlib::Tvector<double> v3( v2 );					// Test copy constructor
+	cout << "v3[3] = " << v3[3] << endl; 
+}

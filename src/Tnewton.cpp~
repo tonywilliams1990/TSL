@@ -1,0 +1,67 @@
+/* Tnewton - A class for using Newton's method for solving systems of nonlinear
+			 equations of the form F(x) = 0 where x is a vector and F is vector
+			 valued function. 
+*/
+
+#include "Tnewton.h"
+
+namespace TNoddy
+{
+	/* ----- Constructors and destructors ----- */
+
+	// Constructor
+	template <typename T>
+	Tnewton<T>::Tnewton( Tresidual<T>* ptr_residual, std::size_t max_iter,
+					  double tolerance, double delta_step ) : 
+	TOL( tolerance ),
+	MAX_ITER( max_iter ),
+	ptr_RESIDUAL( ptr_residual )
+	{
+		ptr_RESIDUAL -> delta() = delta_step ;
+		DELTA = delta_step;
+		ORDER = ptr_RESIDUAL -> get_order();
+	}
+
+	// Destructor
+	template <typename T>
+	Tnewton<T>::~Tnewton(){}
+
+	/* ----- Methods ----- */
+
+	// Newton interate using intial guess x_0
+	template <typename T>
+	void Tnewton<T>::solve( Tvector<T>& x_0 )
+	{
+		assert( x_0.size() == ORDER );					// Check the dimensions agree
+		Tvector<T> F( ORDER, 0.0 );						// Residual function evaluation
+		Tmatrix<T> J( ORDER, ORDER, 0.0 );				// Jacobian matrix
+		Tvector<T> dx( ORDER, 0.0 );					// Increment vector
+		std::size_t iter( 0 );							// Iteration counter
+		double max_residual( 1.0 );						// Maximum residual
+		
+		do 
+		{
+			++iter;
+			ptr_RESIDUAL -> update( x_0 );				// Update the residual object
+			F = ptr_RESIDUAL -> residual();				// Get the residuals
+			max_residual = F.norm_inf();				// Find the maximum residual
+			J = ptr_RESIDUAL -> jacobian();				// Get the Jacobian matrix
+			
+			// J * dx = -F
+			dx = J.solve( -F );							// Solve for the increment vector
+			x_0 += dx;
+
+		}while( iter < MAX_ITER && max_residual > TOL );
+		
+		if( iter == MAX_ITER )
+		{
+			std::cout << "WARNING! MAXIMUM NUMBER OF ITERATIONS REACHED IN THE NEWTON METHOD." 
+			<< std::endl;
+		}
+	}	
+
+  	// Templated versions
+  	template class Tnewton<double>;
+	template class Tnewton< std::complex<double> >;
+
+} // End of namespace TNoddy

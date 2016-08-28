@@ -1,0 +1,151 @@
+/* Teigensystem - Implementation for Teigensystem class
+*/
+
+#include "Teigensystem.h"
+#include "Texceptions.h"
+
+#include <complex>
+#include <Eigen/Eigenvalues>
+
+
+namespace TNoddy
+{
+    // Constructor - empty and unspecified size
+	template <typename T>
+	Teigensystem<T>::Teigensystem()
+	{
+        EIGENVECTORS_COMPUTED = false;
+    }
+  
+    // Destructor
+	template <typename T>
+  	Teigensystem<T>::~Teigensystem()
+  	{}
+
+    /* ----- Methods ----- */
+
+    // Compute the eigenvalues ( and eigenvectors )
+    template <typename T>
+    void Teigensystem<T>::compute( const Tmatrix<T>& A, const Tmatrix<T>& B, bool& compute_eigenvectors )
+    {
+        // Check matrix dimensions agree
+        if ( A.ROWS != B.ROWS || A.COLS != B.COLS )                 
+        {
+            std::string problem = "Teigensystem: Matrix dimensions do not agree.";
+            throw ExceptionRuntime( problem );
+        }
+
+        // Check matrix is square
+        if ( A.ROWS != A.COLS )
+        {
+            std::string problem = "Teigensystem: Matrix must be square.";
+            throw ExceptionRuntime( problem );
+        }
+
+        // Create dynamically sized generalized Eigen solver
+        Eigen::GeneralizedEigenSolver< Eigen::Matrix<T,-1,-1> > ges;
+
+        // Compute the eigenvalues
+        ges.compute(A.MATRIX, B.MATRIX); 
+
+        // Number of eigenvalues
+        N = ges.eigenvalues().size();
+
+        // Put the eigenvalues into the storage vector
+        for ( std::size_t i=0; i<N; ++i )
+        {
+            EIGENVALUES.push_back( ges.eigenvalues()[i] );
+            ALPHAS.push_back( ges.alphas()[i] );
+            BETAS.push_back( ges.betas()[i] );
+        }
+
+        // TODO code for calculating eigenvectors - check if B is singular!
+        if (compute_eigenvectors)
+        {
+            // Cheat by converting to a traditional eigenvalue problem (not good if B is singular/nearly singular!)
+            // Create identity matrix
+            Eigen::Matrix<double,-1,-1> I;
+            I = Eigen::MatrixXd::Identity(A.ROWS, A.ROWS);
+
+            // Find inverse of B
+            Eigen::Matrix<double,-1,-1> Binv;
+            Binv = B.MATRIX.fullPivLu().solve(I);
+
+            // Create C matrix so C*v=lambda*v for traditional eigenvalue problem
+            Eigen::Matrix<double,-1,-1> C;
+            C = Binv * A.MATRIX;
+
+            // Solve the new eigenvalue problem
+            Eigen::EigenSolver< Eigen::Matrix<double,-1,-1> > es;
+            es.compute(C,true);
+
+            // Put the eigenvectors into the storage matrix
+            EIGENVECTORS.resize( A.ROWS, A.COLS );
+            for ( std::size_t i=0; i<A.ROWS; ++i )
+            {
+                for ( std::size_t j=0; j<A.COLS; ++j )
+                {
+                    EIGENVECTORS( i, j ) = es.eigenvectors()( i, j ); 
+                }
+            }
+
+            EIGENVECTORS_COMPUTED = true;
+            
+        }
+
+    }
+
+    // Return the computed eigenvalues
+    template <typename T>
+    Tvector< std::complex<double> > Teigensystem<T>::eigenvalues() const
+    {
+        return EIGENVALUES;
+    } 
+
+    // Return the complex numerators of the eigenvalues
+    template <typename T>
+    Tvector< std::complex<double> > Teigensystem<T>::alphas() const
+    {
+        return ALPHAS;
+    }
+
+    // Return the real denominators of the eigenvalues
+    template <typename T>
+    Tvector<double> Teigensystem<T>::betas() const
+    {
+        return BETAS;
+    } 
+
+    // Return the matrix of eigenvectors ( each column is an eigenvector )
+    template <typename T>
+    Tmatrix< std::complex<double> > Teigensystem<T>::eigenvector_matrix() const
+    {   
+        return EIGENVECTORS;
+    }
+
+    // Return an std::vector of eigenvectors
+    template <typename T>
+    std::vector< Tvector< std::complex<double> > > Teigensystem<T>::eigenvectors() const
+    {
+        std::vector< Tvector< std::complex<double> > > evecs;
+
+        std::size_t rows = EIGENVECTORS.rows();
+        std::size_t cols = EIGENVECTORS.cols();
+
+        for (std::size_t j=0; j<cols; ++j)
+        {
+            Tvector< std::complex<double> > evec;
+            for (std::size_t i=0; i<rows; ++i)
+            {
+                evec.push_back( EIGENVECTORS( i, j ) );
+            }
+            evecs.push_back( evec );
+        }
+        return evecs
+    }   
+
+    // the required templated versions are:
+    template class Teigensystem<double>;
+
+
+} // End of namespace TNoddy

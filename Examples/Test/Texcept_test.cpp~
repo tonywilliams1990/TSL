@@ -1,0 +1,24 @@
+// Test Texceptions class
+#include <iostream>
+#include "Texceptions.h"
+
+using namespace std;
+using namespace TNoddy;
+
+int main()
+{
+    cout << "----- TESTING Texceptions -----" << endl;
+
+    // Geometry error
+    std::string problem;
+    problem = " The error message goes here \n";
+    throw ExceptionGeom( problem, 4, 3 );
+
+    // Iteration error
+    throw ExceptionItn( problem, 50, 33328.3 ); 
+
+    // 
+
+	cout << "FINISHED" << endl;
+
+}

@@ -1,0 +1,49 @@
+// Test the Teigenvalue class by solving the harmonic f''(x) + \lambda f(x) = 0
+#include <iostream>
+
+#include "Teigensystem.h"
+
+using namespace std;
+using namespace TNoddy;
+
+int main()
+{
+    cout << "----- Solving the eigenvalue problem -----" << endl;
+
+    /* ----- TESTING Teigensystem class ----- */
+
+    size_t N = 4;
+    const double delta = 1. / ( N - 1 );
+    const double delta2 = delta * delta;
+
+    Tmatrix<double> A( N, N, 0.0 );
+    // Finite difference representation of f''(x)
+    A.fill_tridiag( 1.0 / delta2, -2.0 / delta2, 1.0 / delta2 );
+    // Overwrite with boundary conditions at f(0) = f(1) = 0
+    A( 0, 0 ) = 1.0;
+    A( 0, 1 ) = 0.0;
+    A( N - 1, N - 1 ) = 1.0;
+    A( N - 1, N - 2 ) = 0.0;   
+
+    // B is the RHS matrix, so it's -I
+    Tmatrix<double> B( N, N, 0.0 );
+    B.fill_diag( -1.0 );
+    B( 0, 0 ) = 0.0;
+    B( N - 1, N - 1 ) = 0.0;
+
+    Teigensystem<double> system;                  // Construct Teigensystem object
+
+    // Compute the eigenvalues
+    bool compute_eigenvectors = false;
+    system.compute( A, B, compute_eigenvectors );
+
+    // Test eigenvalues() method
+    //TNoddy::Tvector< std::complex<double> > evals;
+    //evals = system.eigenvalues(); 
+    cout << "The eigenvalues are: " << system.eigenvalues() << endl;
+
+    
+
+    cout << "FINISHED" << endl;
+
+}

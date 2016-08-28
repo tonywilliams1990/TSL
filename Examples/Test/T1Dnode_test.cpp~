@@ -1,0 +1,35 @@
+// Test ToneD_node_mesh class
+#include <iostream>
+#include "ToneD_node_mesh.h"
+#include "Tvector.h"
+
+using namespace std;
+using namespace TNoddy;
+
+int main()
+{
+    cout << "----- TESTING ToneD_node_mesh -----" << endl;
+
+    size_t N( 11 );                                         // Number of nodes
+    size_t nvars( 2 );                                      // Number of variables at each nodal point
+
+    Tvector<double> uniform;                                // Create uniform spaced vector of values
+    uniform.linspace(0,2,N);
+    //cout << uniform << endl;
+    
+    ToneD_node_mesh<double> mesh( uniform, nvars );         // Create a 1D mesh object   
+
+    for ( std::size_t i = 0; i < N; ++i )
+      {
+        // Set the first variable equal to 2 * x
+        mesh( i, 0 ) = 2 * mesh.coord( i );
+        // set the second variable equal to x^2
+        mesh( i, 1 ) = mesh.coord( i ) * mesh.coord( i );
+      }
+
+    // Output the data to a file
+    mesh.dump_gnu( "./DATA/T1Dnode_test.dat" );
+
+	cout << "FINISHED" << endl;
+
+}

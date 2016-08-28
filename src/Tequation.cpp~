@@ -1,0 +1,29 @@
+/* Tequation - Implementation for Tequation class
+*/
+
+#include <Tequation.h>
+#include <Tresidual_with_coords.h>
+
+namespace TNoddy
+{
+
+  template <typename _Type, typename _Xtype>
+  Tequation<_Type, _Xtype>::Tequation( const unsigned& order ) :
+      Tresidual_with_coords<_Type, _Xtype>( order, 1 )
+  {
+  }
+
+  template <typename _Type, typename _Xtype>
+  Tequation<_Type, _Xtype>::~Tequation()
+  {
+  }
+
+  // the required templated versions are:
+  template class Tequation<double>
+  ;
+  template class Tequation<std::complex<double> >
+  ;
+  template class Tequation<std::complex<double>, std::complex<double> >
+  ;
+
+} // end namespace
