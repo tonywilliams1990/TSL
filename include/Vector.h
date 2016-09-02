@@ -20,11 +20,11 @@ namespace TSL
 		
 		protected:
       std::size_t SIZE;                   // Number of elements in the vector
-			Eigen::Matrix<T, -1, 1> VECTOR;	    // Dynamic column vector
+      Eigen::Matrix<T, -1, 1> VECTOR;	    // Dynamic column vector
 
 		public:
-		  /// Constructor for an empty matrix of unspecified size
-			Vector() : SIZE( 0 ) { }
+      /// Constructor for an empty matrix of unspecified size
+      Vector() : SIZE( 0 ) { }
 
       /// Constructor for a matrix of specified size
       Vector( const std::size_t& size )
