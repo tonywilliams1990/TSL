@@ -18,11 +18,11 @@ namespace TSL
 	class Vector 
 	{
 		
-		protected:
+      protected:
       std::size_t SIZE;                   // Number of elements in the vector
       Eigen::Matrix<T, -1, 1> VECTOR;	    // Dynamic column vector
 
-		public:
+      public:
       /// Constructor for an empty matrix of unspecified size
       Vector() : SIZE( 0 ) { }
 
@@ -42,14 +42,14 @@ namespace TSL
       }
 
       /// Copy constructor
-			Vector( const Vector<T>& source )
-			{
+      Vector( const Vector<T>& source )
+      {
         SIZE = source.SIZE;
-				VECTOR = source.VECTOR;
-			}
+        VECTOR = source.VECTOR;
+      }
 
-			/// Destructor
-	   	~Vector() { }
+      /// Destructor
+      ~Vector() { }
 
       /* ----- Operator overloading ----- */
 
