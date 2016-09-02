@@ -8,6 +8,7 @@
 #include <Eigen/Dense>
 
 #include "Error.h"
+#include "Vector.h"
 
 namespace TSL
 {
@@ -35,7 +36,7 @@ namespace TSL
 				MATRIX = source.MATRIX;
 			}
 
-      // Constructor for a matrix with specfied initial elements
+      /// Constructor for a matrix with specfied initial elements
 			Matrix( const std::size_t& rows, const std::size_t& cols, const T& elem )
       {
         ROWS = rows;
@@ -370,6 +371,58 @@ namespace TSL
         return max;
     	}
 
+      /* ----- Solve linear systems ----- */
+
+      /// Solve system of equations Ax=b where x and b are vectors  
+      Vector<T> solve( const Vector<T>& b, const std::string method = "LU"  ) const
+      {
+        if ( ROWS != b.SIZE ) { throw Error( "Linear system error: dimension 1 " );}
+        Eigen::Matrix<T, -1, 1> X;
+        X.resize(b.SIZE,1);
+        if ( !(method == "LU" || method == "QR" || method == "PartialLU") ) 
+        { throw Error( "Linear system error: solve method is not recognised " ); }
+
+        if ( method == "LU" )
+        {
+          X = MATRIX.fullPivLu().solve( b.VECTOR );
+        }
+        if ( method == "PartialLU" )
+        {
+          X = MATRIX.partialPivLu().solve( b.VECTOR );
+        } 
+        if ( method == "QR" )
+        {
+          X = MATRIX.fullPivHouseholderQr().solve( b.VECTOR );
+        }       
+        Vector<T> x( b.SIZE );
+        x.VECTOR = X;
+        return x;
+      }
+
+      /// Solve system of equations AX=B where X and B are vectors
+      Matrix<T> solve( const Matrix<T>& B, const std::string method = "LU" ) const
+      {
+        if ( ROWS != B.ROWS ) { throw Error( "Linear system error: dimension 1 " );}
+        Matrix<T> X;
+        X.ROWS = COLS;
+        X.COLS = B.COLS;
+        if ( !(method == "LU" || method == "QR" || method == "PartialLU") ) 
+        { throw Error( "Linear system error: solve method is not recognised " ); }
+
+        if ( method == "LU" )
+        {
+          X.MATRIX = MATRIX.fullPivLu().solve( B.MATRIX );
+        }
+        if ( method == "PartialLU" )
+        {
+          X.MATRIX = MATRIX.partialPivLu().solve( B.MATRIX );
+        }
+        if ( method == "QR" )
+        {
+          X.MATRIX = MATRIX.fullPivHouseholderQr().solve( B.MATRIX );
+        }
+        return X;
+      }
 
 	}; // End of class Matrix
 

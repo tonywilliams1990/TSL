@@ -11,14 +11,23 @@
 
 namespace TSL
 {
+  // Forward declare the Matrix class that will be friends with Vector
+  template <class T>
+  class Matrix;
+
+  // Forward declare the SparseMatrix class that will be friends with Vector
+  template <class T>
+  class SparseMatrix;
+
 	// Templated vector class
 	template <class T>
-
 	
 	class Vector 
 	{
 		
       protected:
+      friend class Matrix<T>;			        // Friend class that may access VECTOR directly
+      friend class SparseMatrix<T>;			  // Friend class that may access VECTOR directly
       std::size_t SIZE;                   // Number of elements in the vector
       Eigen::Matrix<T, -1, 1> VECTOR;	    // Dynamic column vector
 
