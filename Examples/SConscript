@@ -7,8 +7,8 @@ print "----- Building TNoddy codes -----"
 
 # Testing codes
 
-env.Program( 'Test/Matrix_test.out' , ['Test/Matrix_test.cpp'] , OPTS = opts, LIBS = libs )  #Matrix
-
+env.Program( 'Test/Matrix_test.out' , ['Test/Matrix_test.cpp'] , OPTS = opts, LIBS = libs)  #Matrix
+env.Program( 'Test/Vector_test.out' , ['Test/Vector_test.cpp'] , OPTS = opts, LIBS = libs)  #Vector
 
 
 # Project codes

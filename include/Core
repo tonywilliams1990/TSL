@@ -12,4 +12,4 @@
 // Core
 #include "Matrix.h"
 #include "Error.h"
-
+#include "Vector.h"

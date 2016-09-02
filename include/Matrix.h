@@ -18,7 +18,7 @@ namespace TSL
 	class Matrix 
 	{
 		
-		private:
+		protected:
 				std::size_t ROWS;					            // Number of rows 
 				std::size_t COLS;					            // Number of columns
 				Eigen::Matrix<T, -1, -1> MATRIX;	    // Dynamic matrix object
@@ -122,7 +122,7 @@ namespace TSL
 		    {
 			    for (size_t i = 0; i < temp.ROWS; ++i)
 			    {
-				    temp( i, j ) *= m_times;
+				    temp.MATRIX( i, j ) *= m_times;
 			    }
 		    }
 		    return temp;
@@ -234,10 +234,10 @@ namespace TSL
          return conj;
       }
 
-      /// Resize the matrix ( data is not preserved )
+      /// Resize the matrix
       void resize( const std::size_t& rows, const std::size_t& cols )
       {
-        MATRIX.resize( rows, cols );
+        MATRIX.conservativeResize( rows, cols );
         ROWS = rows;
         COLS = cols;
       }
@@ -380,8 +380,6 @@ namespace TSL
     os << mat.MATRIX;
     return os;
   }
-  
-
 } // End of namespace TSL
 
 #endif
