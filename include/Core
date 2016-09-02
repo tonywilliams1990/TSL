@@ -13,3 +13,4 @@
 #include "Matrix.h"
 #include "Error.h"
 #include "Vector.h"
+#include "Timer.h"
