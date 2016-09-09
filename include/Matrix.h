@@ -193,6 +193,15 @@ namespace TSL
       /// Return the number of elements in the matrix
       std::size_t numel() const { return ROWS * COLS; }
 
+      /// Set a column of the matrix
+      void set_col( const std::size_t& col, const Vector<T>& x )
+      {
+        for ( std::size_t row = 0; row < ROWS; ++row )
+        {
+            MATRIX( row, col ) = x[ row ];
+        }
+      }
+
       /// Return the transpose of the matrix
       Matrix<T> transpose() const
       {

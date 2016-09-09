@@ -11,7 +11,8 @@ env.Program( 'Test/Matrix_test.out' , ['Test/Matrix_test.cpp'] , OPTS = opts, LI
 env.Program( 'Test/Vector_test.out' , ['Test/Vector_test.cpp'] , OPTS = opts, LIBS = libs)  #Vector
 env.Program( 'Test/LinSys_test.out' , ['Test/LinSys_test.cpp'] , OPTS = opts, LIBS = libs)  #Linear system
 env.Program( 'Test/Sparse_test.out' , ['Test/Sparse_test.cpp'] , OPTS = opts, LIBS = libs)  #SparseMatrix
-
+env.Program( 'Test/Residual_test.out' , ['Test/Residual_test.cpp'] , OPTS = opts, LIBS = libs)  #Residual
+env.Program( 'Test/Newton_test.out' , ['Test/Newton_test.cpp'] , OPTS = opts, LIBS = libs)  #Newton
 
 # Project codes
 

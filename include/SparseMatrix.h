@@ -24,7 +24,6 @@ namespace TSL
 		protected:
       Eigen::SparseMatrix<T> S_MATRIX;      // Eigen sparse matrix container
       
-
 		public:
 		  /// Constructor for an empty matrix of unspecified size
 			SparseMatrix(){ }
