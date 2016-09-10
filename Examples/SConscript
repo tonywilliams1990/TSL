@@ -13,6 +13,7 @@ env.Program( 'Test/LinSys_test.out' , ['Test/LinSys_test.cpp'] , OPTS = opts, LI
 env.Program( 'Test/Sparse_test.out' , ['Test/Sparse_test.cpp'] , OPTS = opts, LIBS = libs)  #SparseMatrix
 env.Program( 'Test/Residual_test.out' , ['Test/Residual_test.cpp'] , OPTS = opts, LIBS = libs)  #Residual
 env.Program( 'Test/Newton_test.out' , ['Test/Newton_test.cpp'] , OPTS = opts, LIBS = libs)  #Newton
+env.Program( 'Test/Node1D_test.out' , ['Test/Node1D_test.cpp'] , OPTS = opts, LIBS = libs)  #OneD_node_mesh
 
 # Project codes
 
