@@ -139,9 +139,9 @@ namespace TSL
   //the templated versions we require are:
   template class OneD_node_mesh<double>
   ;
-  template class OneD_node_mesh<std::complex<double> >
+  template class OneD_node_mesh< std::complex<double> >
   ;
-  template class OneD_node_mesh<std::complex<double>, std::complex<double> >
+  template class OneD_node_mesh< std::complex<double>, std::complex<double> >
   ;
 
 } // End of namespace TSL

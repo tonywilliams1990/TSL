@@ -107,6 +107,12 @@ namespace TSL
       /// Set the matrix to the identity matrix
       void eye() { S_MATRIX.setIdentity(); } 
 
+      /// Clear all the elements from the matrix
+      void clear()
+      {
+        S_MATRIX.setZero();
+      }
+
       /// Set element in the matrix
       void set_elem( const std::size_t i, const std::size_t j, const T& elem )
       {

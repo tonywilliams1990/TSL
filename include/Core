@@ -17,3 +17,6 @@
 #include "Residual.h"
 #include "Newton.h"
 #include "OneD_node_mesh.h"
+#include "ODE_BVP.h"
+#include "Residual_with_coords.h"
+#include "Equation.h"
