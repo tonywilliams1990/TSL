@@ -7,14 +7,14 @@
 namespace TSL
 {
 
-  template <typename _Type, typename _Xtype>
-  Equation<_Type, _Xtype>::Equation( const unsigned& order ) :
-      Residual_with_coords<_Type, _Xtype>( order, 1 )
+  template <class T, class X>
+  Equation<T, X>::Equation( const unsigned& order ) :
+      Residual_with_coords<T, X>( order, 1 )
   {
   }
 
-  template <typename _Type, typename _Xtype>
-  Equation<_Type, _Xtype>::~Equation()
+  template <class T, class X>
+  Equation<T, X>::~Equation()
   {
   }
 

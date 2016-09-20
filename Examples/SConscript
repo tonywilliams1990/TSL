@@ -15,6 +15,7 @@ env.Program( 'Test/Residual_test.out' , ['Test/Residual_test.cpp'] , OPTS = opts
 env.Program( 'Test/Newton_test.out' , ['Test/Newton_test.cpp'] , OPTS = opts, LIBS = libs)  #Newton
 env.Program( 'Test/Node1D_test.out' , ['Test/Node1D_test.cpp'] , OPTS = opts, LIBS = libs)  #OneD_node_mesh
 env.Program( 'Test/ODE_test.out' , ['Test/ODE_test.cpp'] , OPTS = opts, LIBS = libs)  #ODE_BVP
+env.Program( 'Test/Eigen_test.out' , ['Test/Eigen_test.cpp'] , OPTS = opts, LIBS = libs)  #Eigensystem
 
 # Project codes
 

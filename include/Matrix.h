@@ -12,6 +12,11 @@
 
 namespace TSL
 {
+  // Forward declare the Eigensystem class that will be friends with Matrix
+  template <typename T>
+  class Eigensystem;
+
+
 	// Templated matrix class
 	template <class T>
 
@@ -20,9 +25,10 @@ namespace TSL
 	{
 		
 		protected:
-				std::size_t ROWS;					            // Number of rows 
-				std::size_t COLS;					            // Number of columns
-				Eigen::Matrix<T, -1, -1> MATRIX;	    // Dynamic matrix object
+				std::size_t ROWS;					          // Number of rows 
+				std::size_t COLS;					          // Number of columns
+				Eigen::Matrix<T, -1, -1> MATRIX;	  // Dynamic matrix object
+        friend class Eigensystem<T>;        // Friend class that may access MATRIX directly
 
 		public:
 		  /// Constructor for an empty matrix of unspecified size
