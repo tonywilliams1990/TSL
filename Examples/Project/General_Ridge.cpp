@@ -28,6 +28,7 @@ namespace TSL
     {
       double K( 0.0 );                  // Base transpiration parameter (+ve = blowing)   
       double beta = Param::beta;        // Hartree parameter
+
 #ifdef Base_2D
       class equation : public Equation<double>
       {
@@ -68,8 +69,39 @@ namespace TSL
 #endif
 
 #ifdef Base_3D
+      class equation : public Equation<double>
+      {
+        public:
+          // The 3D alternative equation is 6th order
+          equation() : Equation<double> ( 6 ) {}
+          // Define the equation
+          void residual_fn( const Vector<double>& u, Vector<double>& F  ) const
+          {
+            //TODO
+          }
+      }; // End 3D alternative equation class
 
+      class plate_BC : public Residual<double>
+      {
+        public:
+          plate_BC() : Residual<double> ( 4, 6 ) {}
 
+          void residual_fn( const Vector<double> &z, Vector<double> &B ) const
+          {
+            //TODO
+          }
+      }; // End 3D alternative plate_BC class
+
+      class far_BC : public Residual<double>
+      {
+        public:
+          far_BC() : Residual<double> ( 2, 6 ) {}
+
+          void residual_fn( const Vector<double> &z, Vector<double> &B ) const
+          {
+            //TODO  
+          }
+      }; // End 3D alternative far_BC class
 #endif                  
     } // End of namespace Base_Flow
    
@@ -83,6 +115,8 @@ int main()
   cout << "*** ---------- General Ridge Code ---------- ***" << endl;
 
   /* ----- Solve the base flow ODE ----- */
+
+  //TODO we should be using a non-uniform mesh (for base ODE too)
 
   // Vector of nodes
   Vector<double> nodes;
@@ -98,6 +132,7 @@ int main()
 #ifdef Base_2D
   for (std::size_t j=0; j < Param::N; ++j )
 	{
+    //TODO maybe think about a better guess involving n
 		double eta = nodes[ j ];				                      // eta value at node j
 		base.solution()( j, f )  		= eta + exp( -eta );
     base.solution()( j, fd ) 		= 1.0 - exp( -eta ); 
@@ -112,16 +147,17 @@ int main()
   // Solve the ODE system and store in a mesh
   base.solve();
   OneD_node_mesh<double> Base_soln( nodes, 6 );
-//TODO what about when we have a pressure gradient???
 #ifdef Base_2D
   for (std::size_t j=0; j < Param::N; ++j )
 	{
 		Base_soln( j, UB )      =   base.solution()( j, fd );
     Base_soln( j, UBd )     =   base.solution()( j, fdd );
     Base_soln( j, PhiB )    =   base.solution()( j, f );
-    Base_soln( j, ThetaB )  =   base.solution()( j, fdd );
-    Base_soln( j, ThetaBd ) = - base.solution()( j, f ) * base.solution()( j, fdd );
-    Base_soln( j, PsiB )    =   base.solution()( j, fd );
+    Base_soln( j, ThetaB )  =   ( 1.0 - Param::beta ) * base.solution()( j, fdd );
+    Base_soln( j, ThetaBd ) =   ( 1.0 - Param::beta ) * ( - base.solution()( j, f ) *
+                                base.solution()( j, fdd ) - Param::beta * ( 1.0 -   
+                                base.solution()( j, fd ) * base.solution()( j, fd ) ) );
+    Base_soln( j, PsiB )    =   ( 1.0 - Param::beta ) * base.solution()( j, fd );
 	}
 #endif
 
@@ -129,7 +165,7 @@ int main()
   
 #endif
 
-    Base_soln.output( "./DATA/Base_soln.dat" );                         // Output the solution
+  Base_soln.output( "./DATA/Base_soln.dat" );             // Output the solution
 
   cout << "FINISHED" << endl;
 }
