@@ -1,11 +1,11 @@
 #include <cassert>
 #include <cmath>
 
-#include "Tnewton.h"
-#include "Tresidual.h"
-#include "Tode_bvp.h"
-#include "Tvector.h"
-#include "Teigensystem.h"
+#include "Newton.h"
+#include "Residual.h"
+#include "ODE_BVP.h"
+#include "Vector.h"
+#include "Eigensystem.h"
 #include "Timer.h"
 
 
@@ -21,7 +21,7 @@ enum{ u, ud, phi, theta, thetad, psi };
 // Either Base_2D or Base_3D for 2D or 3D base flows
 #define Base_3D
 
-namespace TNoddy
+namespace TSL
 {
     unsigned col( const unsigned& i, const unsigned& k )           
     {        
@@ -34,14 +34,14 @@ namespace TNoddy
         double K( 0.0 );                                    // Transpiration parameter (+ve is blowing)                  
 
 #ifdef Base_2D
-	    class equation : public Tequation<double>
+	    class equation : public Equation<double>
 	    {
 		    public:
 			    // The Blasius equation is 3rd order
-			    equation() : Tequation<double> ( 3 ) {} 
+			    equation() : Equation<double> ( 3 ) {} 
 
 			    // Define the equation
-			    void residual_fn( const Tvector<double>& u, Tvector<double>& F  ) const
+			    void residual_fn( const Vector<double>& u, Vector<double>& F  ) const
 			    {
 				    F[ f ]   = u[ fd ];
 				    F[ fd ]  = u[ fdd ];
@@ -49,24 +49,24 @@ namespace TNoddy
 			    }
 	    };
 
-        class plate_BC : public Tresidual<double>
+        class plate_BC : public Residual<double>
         {
             public:
-                plate_BC() : Tresidual<double> ( 2, 3 ) {}
+                plate_BC() : Residual<double> ( 2, 3 ) {}
 
-            void residual_fn( const Tvector<double> &z, Tvector<double> &B ) const
+            void residual_fn( const Vector<double> &z, Vector<double> &B ) const
             {
                 B[ 0 ] = z[ f ] + K;
                 B[ 1 ] = z[ fd ];
             }
         };
 
-        class far_BC : public Tresidual<double>
+        class far_BC : public Residual<double>
         {
             public:
-                far_BC() : Tresidual<double> ( 1, 3 ) {}
+                far_BC() : Residual<double> ( 1, 3 ) {}
 
-            void residual_fn( const Tvector<double> &z, Tvector<double> &B ) const
+            void residual_fn( const Vector<double> &z, Vector<double> &B ) const
             {
                 B[ 0 ] = z[ fd ] - 1.0;
             }
@@ -74,14 +74,14 @@ namespace TNoddy
 #endif
 
 #ifdef Base_3D
-        class equation : public Tequation<double>
+        class equation : public Equation<double>
 	    {
 		    public:
 			    // The equation is 6th order
-			    equation() : Tequation<double> ( 6 ) {} 
+			    equation() : Equation<double> ( 6 ) {} 
 
 			    // Define the equation
-			    void residual_fn( const Tvector<double>& u, Tvector<double>& F  ) const
+			    void residual_fn( const Vector<double>& u, Vector<double>& F  ) const
 			    {
 				    F[ f ]   = u[ fd ];
 				    F[ fd ]  = u[ fdd ];
@@ -92,12 +92,12 @@ namespace TNoddy
 			    }
 	    };
 
-        class plate_BC : public Tresidual<double>
+        class plate_BC : public Residual<double>
         {
             public:
-                plate_BC() : Tresidual<double> ( 4, 6 ) {}
+                plate_BC() : Residual<double> ( 4, 6 ) {}
 
-            void residual_fn( const Tvector<double> &z, Tvector<double> &B ) const
+            void residual_fn( const Vector<double> &z, Vector<double> &B ) const
             {
                 B[ 0 ] = z[ f ] + K;
                 B[ 1 ] = z[ fd ];
@@ -106,12 +106,12 @@ namespace TNoddy
             }
         };
 
-        class far_BC : public Tresidual<double>
+        class far_BC : public Residual<double>
         {
             public:
-                far_BC() : Tresidual<double> ( 2, 6 ) {}
+                far_BC() : Residual<double> ( 2, 6 ) {}
 
-            void residual_fn( const Tvector<double> &z, Tvector<double> &B ) const
+            void residual_fn( const Vector<double> &z, Vector<double> &B ) const
             {
                 B[ 0 ] = z[ fd ] - 1.0;
                 B[ 1 ] = z[ gd ];
@@ -120,45 +120,45 @@ namespace TNoddy
 #endif  
  
     } // End of namespace Base_Flow
-} // End of namespace TNoddy
+} // End of namespace TSL
 
 using namespace std;
-using namespace TNoddy;
+using namespace TSL;
 
 int main()
 {
     cout << "----- Eigenvalue problem -----" << endl;	
  	
 	// Define the domain
-	double Inf( 20.0 );											                    // Infinite boundary 
-	size_t N_nodes( 300 );                                                          // Number of nodes
-	Tvector<double> nodes;								                            // Declare vector of nodes (uniform)
+	double Inf( 20.0 );											           // Infinite boundary 
+	size_t N_nodes( 300 );                             // Number of nodes
+	Vector<double> nodes;								               // Declare vector of nodes (uniform)
 	nodes.linspace(0,Inf,N_nodes); 
-    const double delta = Inf / ( N_nodes - 1 );                                     // Mesh grid spacing
+  const double delta = Inf / ( N_nodes - 1 );        // Mesh grid spacing
 
-    cout << "*** Solving the base flow ODE using " << N_nodes << " points." << endl;
+  cout << "*** Solving the base flow ODE using " << N_nodes << " points." << endl;
 
 	// Create instances of the equation and BCs
-    Base_Flow::equation equation;
-    Base_Flow::plate_BC left_BC;
-    Base_Flow::far_BC right_BC;
+  Base_Flow::equation equation;
+  Base_Flow::plate_BC left_BC;
+  Base_Flow::far_BC right_BC;
 
-    Tode_bvp<double> bvp( &equation, nodes, &left_BC, &right_BC );                  // Create boundary value problem
+  ODE_BVP<double> bvp( &equation, nodes, &left_BC, &right_BC ); // Create boundary value problem
     
     // Set the initial guess 
 #ifdef Base_2D
 	for (std::size_t j=0; j < N_nodes; ++j )
 	{
-		double eta = nodes[ j ];				                                    // eta value at node j
+		double eta = nodes[ j ];				                      // eta value at node j
 		bvp.solution()( j, f )  		= eta + exp( -eta );
-        bvp.solution()( j, fd ) 		= 1.0 - exp( -eta ); 
-		bvp.solution()( j, fdd )  		= exp( -eta );
+    bvp.solution()( j, fd ) 		= 1.0 - exp( -eta ); 
+		bvp.solution()( j, fdd )  	= exp( -eta );
 	}
 #endif
 #ifdef Base_3D
     for (std::size_t j=0; j < N_nodes; ++j )
 	{
-		double eta = nodes[ j ];					                                // eta value at node j
+		double eta = nodes[ j ];					                   // eta value at node j
 		bvp.solution()( j, f )  		= eta + exp( -eta );
     bvp.solution()( j, fd ) 		= 1.0 - exp( -eta ); 
 		bvp.solution()( j, fdd )  	= exp( -eta );
@@ -179,7 +179,7 @@ int main()
     cout << "*** K = " << Base_Flow::K << endl;
 
     // Create a mesh for storing the base flow solution
-    ToneD_node_mesh<double> Base_soln( nodes, 6 );
+    OneD_node_mesh<double> Base_soln( nodes, 6 );
 
     // Populate the mesh with the base flow solution
 #ifdef Base_2D
@@ -197,13 +197,13 @@ int main()
     for (std::size_t j=0; j < N_nodes; ++j )
 	{
 		Base_soln( j, UB )      =   bvp.solution()( j, fd );
-        Base_soln( j, UBd )     =   bvp.solution()( j, fdd );
-        Base_soln( j, PhiB )    =   bvp.solution()( j, f ) + bvp.solution()( j, g );
-        Base_soln( j, ThetaB )  =   bvp.solution()( j, fdd ) - bvp.solution()( j, gdd );
-        Base_soln( j, ThetaBd ) =   ( bvp.solution()( j, f ) + bvp.solution()( j, g ) ) * ( bvp.solution()( j, gdd ) -
+    Base_soln( j, UBd )     =   bvp.solution()( j, fdd );
+    Base_soln( j, PhiB )    =   bvp.solution()( j, f ) + bvp.solution()( j, g );
+    Base_soln( j, ThetaB )  =   bvp.solution()( j, fdd ) - bvp.solution()( j, gdd );
+    Base_soln( j, ThetaBd ) =   ( bvp.solution()( j, f ) + bvp.solution()( j, g ) ) * ( bvp.solution()( j, gdd ) -
                                     bvp.solution()( j, fdd ) ) + 2.0 * bvp.solution()( j, gd ) * bvp.solution()( j, fd )
                                     - bvp.solution()( j, gd ) * bvp.solution()( j, gd ) ;
-        Base_soln( j, PsiB )    =   bvp.solution()( j, fd ) - bvp.solution()( j, gd );
+    Base_soln( j, PsiB )    =   bvp.solution()( j, fd ) - bvp.solution()( j, gd );
 	}
 #endif
 
@@ -212,8 +212,8 @@ int main()
     cout << "*** Assembling the matrices for the eigenvalue problem." << endl;
 
     // Create the generalised eigenvalue problem A v = lambda B v
-    Tmatrix<double> A( 6*N_nodes, 6*N_nodes, 0.0 );                     // 6N*6N matrices as it is a 6th order system    
-    Tmatrix<double> B( 6*N_nodes, 6*N_nodes, 0.0 );
+    Matrix<double> A( 6*N_nodes, 6*N_nodes, 0.0 );                     // 6N*6N matrices as it is a 6th order system    
+    Matrix<double> B( 6*N_nodes, 6*N_nodes, 0.0 );
 
     unsigned row( 0 );                                                  // Row counter
 
@@ -308,13 +308,13 @@ int main()
     cout << "*** Solving the generalised eigenvalue problem A v=lambda B v." << endl;
 
     // Compute the eigenvalues
-    Teigensystem<double> system;                        // Construct Teigensystem object
+    Eigensystem<double> system;                        // Construct Teigensystem object
     bool compute_eigenvectors = false;
-    TNoddy::Timer timer;								// Create a Timer object
-	timer.start();										// Start the timer
+    TSL::Timer timer;								// Create a Timer object
+	  timer.start();								  // Start the timer
     system.compute( A, B, compute_eigenvectors );
     
-    TNoddy::Tvector< std::complex<double> > evals = system.eigenvalues(); 
+    TSL::Vector< std::complex<double> > evals = system.eigenvalues(); 
     
     for (size_t i=0; i < evals.size(); ++i)
     {
@@ -325,7 +325,7 @@ int main()
     }
 
     timer.print();                                      // Output time to screen 
-	timer.stop();                                       // Stop the timer
+	  timer.stop();                                       // Stop the timer
 
     cout << "FINISHED" << endl;
 }

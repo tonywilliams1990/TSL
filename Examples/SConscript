@@ -3,7 +3,7 @@ import glob
 
 Import( 'env opts incdir libdir topdir libs ' )
 
-print "----- Building TNoddy codes -----"
+print "----- Building TSL codes -----"
 
 # Testing codes
 
@@ -20,4 +20,5 @@ env.Program( 'Test/Eigen_test.out' , ['Test/Eigen_test.cpp'] , OPTS = opts, LIBS
 # Project codes
 
 env.Program( 'Project/Base_Flow_Transpiration.out' , ['Project/Base_Flow_Transpiration.cpp'] , OPTS = opts, LIBS = libs )
-#env.Program( 'Project/Eigenvalue_Problem.out' , ['Project/Eigenvalue_Problem.cpp'] , OPTS = opts, LIBS = libs )
+env.Program( 'Project/Eigenvalue_Problem.out' , ['Project/Eigenvalue_Problem.cpp'] , OPTS = opts, LIBS = libs )
+env.Program( 'Project/General_Ridge.out' , ['Project/General_Ridge.cpp'] , OPTS = opts, LIBS = libs )
