@@ -22,3 +22,4 @@ env.Program( 'Test/Eigen_test.out' , ['Test/Eigen_test.cpp'] , OPTS = opts, LIBS
 env.Program( 'Project/Base_Flow_Transpiration.out' , ['Project/Base_Flow_Transpiration.cpp'] , OPTS = opts, LIBS = libs )
 env.Program( 'Project/Eigenvalue_Problem.out' , ['Project/Eigenvalue_Problem.cpp'] , OPTS = opts, LIBS = libs )
 env.Program( 'Project/General_Ridge.out' , ['Project/General_Ridge.cpp'] , OPTS = opts, LIBS = libs )
+env.Program( 'Project/General_Base_Flow.out' , ['Project/General_Base_Flow.cpp'] , OPTS = opts, LIBS = libs )

@@ -124,7 +124,7 @@ using namespace TSL;
 
 int main()
 { 
-  cout << "*** ---------- General Ridge Code ---------- ***" << endl;
+  cout << "*** ---------- General Base Flow ---------- ***" << endl;
   //TODO output information about the mesh and number of ODE points etc
   /* ----- Solve the base flow ODE ----- */
 
@@ -215,7 +215,7 @@ int main()
                               - ( 2.0 - Param::beta ) * base.solution()( j, gd );
 	}
 #endif
-  Base_soln.output( "./DATA/Base_soln.dat" );         // Output the solution to a file
+  Base_soln.output( "./DATA/Base_solution.dat" );   // Output the solution to a file
 
   // Output the wall shear to the screen
 #ifdef Base_2D
@@ -228,6 +228,17 @@ int main()
   cout << "Hartree parameter beta = " << Param::beta << endl;
   cout << "U'(eta=0) =" << base.solution()( 0, fdd ) << endl;
 
+  // Solve the system for different values of beta
+
+  cout << "***-----------------------------------------***" << endl;
+  cout << "K_B = " << Base_Flow::K << endl;
+  for ( std::size_t i=0; i<11; ++i )
+  {
+    Base_Flow::beta = 0.1 * i;
+    base.solve();
+    cout << "beta = " << Base_Flow::beta << ", U'(eta=0) =" << base.solution()( 0, fdd ); 
+    cout << endl;
+  }
 
   cout << "FINISHED" << endl;
 }
