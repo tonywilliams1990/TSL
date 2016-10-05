@@ -22,3 +22,4 @@
 #include "Equation.h"
 #include "Dual.h"
 #include "TSLmath.h"
+#include "AutoDiff.h"

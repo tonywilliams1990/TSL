@@ -30,6 +30,7 @@ namespace TSL
         Dual( const T& real, const Vector<T>& eps ) : REAL( real ), 
                                                                 EPSILONS( eps ) { }
 
+
         /// Destructor
         ~Dual() { }
 

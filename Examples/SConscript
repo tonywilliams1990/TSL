@@ -17,6 +17,7 @@ env.Program( 'Test/Node1D_test.out' , ['Test/Node1D_test.cpp'] , OPTS = opts, LI
 env.Program( 'Test/ODE_test.out' , ['Test/ODE_test.cpp'] , OPTS = opts, LIBS = libs)  #ODE_BVP
 env.Program( 'Test/Eigen_test.out' , ['Test/Eigen_test.cpp'] , OPTS = opts, LIBS = libs)  #Eigensystem
 env.Program( 'Test/Dual_test.out' , ['Test/Dual_test.cpp'] , OPTS = opts, LIBS = libs)  #Dual numbers
+env.Program( 'Test/AutoDiff_test.out' , ['Test/AutoDiff_test.cpp'] , OPTS = opts, LIBS = libs)  #AutoDiff
 
 # Project codes
 

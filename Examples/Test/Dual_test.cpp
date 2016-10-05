@@ -1,4 +1,4 @@
-// Test the Residual class
+// Test the Dual class
 #include "Core"
 
 using namespace std;
