@@ -20,3 +20,5 @@
 #include "ODE_BVP.h"
 #include "Residual_with_coords.h"
 #include "Equation.h"
+#include "Dual.h"
+#include "TSLmath.h"

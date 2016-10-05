@@ -5,6 +5,7 @@
 #define VECTOR_H
 
 #include <iostream>
+#include <vector>
 #include <Eigen/Dense>
 
 #include "Error.h"
@@ -223,6 +224,9 @@ namespace TSL
       /// Create a linearly spaced vector (of doubles) with n elements
       void linspace( const double& a, const double& b, const std::size_t& n );
 
+      /// Create a nonuniform vector using a power law with exponent p (p=1 ->linear)
+      void power( const double& a, const double& b, const std::size_t& n, const double& p);
+
       /// Product of the elements in the vector (from index start to end)
       T product( const std::size_t& start, const std::size_t& end )
       {
@@ -337,7 +341,8 @@ namespace TSL
 
   /// Create a linearly spaced vector (of doubles) with n elements
   template <>
-	inline void Vector<double>::linspace( const double& a, const double& b, const std::size_t& n )
+	inline void Vector<double>::linspace( const double& a, const double& b,
+                                        const std::size_t& n )
 	{
 		VECTOR.resize( n, 1 );
     SIZE = n;
@@ -347,6 +352,19 @@ namespace TSL
 			VECTOR( i, 0 ) = a + h * i;
 		}
 	}
+
+  /// Create a nonuniform vector using a power law with exponent p (p=1 ->linear)
+  template <>
+  inline void Vector<double>::power( const double& a, const double& b,
+                                     const std::size_t& n, const double& p)
+  {
+    VECTOR.resize( n, 1 );
+    SIZE = n;
+    for ( std::size_t i = 0; i < n; ++i )
+    {
+      VECTOR( i , 0 ) = a + ( b - a ) * std::pow( ( double )i / ( n - 1 ), p );
+    }
+  }
 
 } // End of namespace TSL
 

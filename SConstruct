@@ -11,7 +11,7 @@ src = glob.glob('src/*.cpp')
 topdir = os.getcwd()
 incdir_str = topdir + '/include '
 libdir_str = topdir + '/lib '
-opts = ' -O2 -std=c++14 '    # opts = ' -02 -std=c++14 '
+opts = ' -O2 '    # opts = ' -02 -std=c++14 '
 
 # Split the strings into list elements for lib/inc directoris
 incdir = incdir_str.split()

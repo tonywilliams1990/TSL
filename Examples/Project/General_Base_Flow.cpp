@@ -8,17 +8,14 @@ enum{ f, fd, fdd, g, gd, gdd };                         // Base ODE enumeration
 enum{ UB, UBd, PhiB, ThetaB, ThetaBd, PsiB };           // Base flow enumeration
 
 // Either Base_2D or Base_3D for 2D or 3D base flows
-#define Base_2D
+#define Base_3D
 
 namespace TSL
 {
     namespace Param
     {
-      double hzeta_right( 20.0 );       // Size of the domain in the zeta_hat direction
       double eta_top( 30.0 );           // Size of the domain in the eta direction
-      const std::size_t N( 600 );       // Number of intervals in the zeta_hat direction
-      const std::size_t M( 600 );       // Number of intervals in the eta direction
-      const std::size_t Nvar( 4 );      // Number of variables
+      const std::size_t M( 401 );       // Number of intervals in the eta direction
       double n( 0.0 );                  // Pressure gradient parameter
       double beta = (2.0*n)/(n+1.0);    // Hartree parameter
       double KB( 0.0 );                 // Base flow transpiration
@@ -84,8 +81,8 @@ namespace TSL
             F[ g ]    =  u[ gd ];
             F[ gd ]   =  u[ gdd ];
             F[ gdd ]  = -( u[ f ] + ( 2.0 - beta ) * u[ g ] ) * u[ gdd ]
-                        - beta * ( 1.0 - u[ gd ] * u[ gd ] ) 
-                        - 2.0 * ( 1.0 - beta ) * ( u[ fd ] - u[ gd ] ) * u[ gd ]; 
+                        -( 2.0 * ( 1.0 - beta ) * u[ fd ] 
+                        - ( 2.0 - beta) * u[ gd ] ) * u[ gd ]; 
           }
       }; // End 3D alternative equation class
 
@@ -133,6 +130,7 @@ int main()
   // Vector of nodes
   Vector<double> nodes;
   nodes.linspace( 0.0, Param::eta_top, Param::M );
+  //nodes.power( 0.0, Param::eta_top, Param::M, 2.0 );
 
   // Setup the base flow ODE problem
   Base_Flow::equation equation;
@@ -142,25 +140,25 @@ int main()
 
   // Set the initial guess
 #ifdef Base_2D
-  for (std::size_t j=0; j < Param::N; ++j )
+  for (std::size_t j=0; j < Param::M; ++j )
 	{
     //TODO maybe think about a better guess involving n
 		double eta = nodes[ j ];				                      // eta value at node j
-		base.solution()( j, f )  	= eta + exp( -eta );
+		base.solution()( j, f )  	= eta + exp( -eta ) - 1.0;
     base.solution()( j, fd ) 	= 1.0 - exp( -eta ); 
 		base.solution()( j, fdd ) = exp( -eta );
 	}
 #endif
 #ifdef Base_3D
-  for (std::size_t j=0; j < Param::N; ++j )
+  for (std::size_t j=0; j < Param::M; ++j )
 	{
 		double eta = nodes[ j ];					                   // eta value at node j
-		base.solution()( j, f )  	= eta + exp( -eta );
+		base.solution()( j, f )  	= eta + exp( -eta ) - 1.0;
     base.solution()( j, fd ) 	= 1.0 - exp( -eta ); 
-		base.solution()( j, fdd )  = exp( -eta );
+		base.solution()( j, fdd ) = exp( -eta );
     base.solution()( j, g )  	= 0.35 * (1.0 - exp( -eta ));
-    base.solution()( j, gd ) 	= 1 - exp( -eta ) - exp( -1 / (eta * eta) ); 
-		base.solution()( j, gdd )  = exp( -eta ) - 0.5 * tanh( eta ) + 0.5 * tanh( eta - 2.0 );
+    base.solution()( j, gd ) 	= 1.0 - exp( -eta ) - exp( -1.0 / (eta * eta) ); 
+		base.solution()( j, gdd ) = exp( -eta ) - 0.5 * tanh( eta ) + 0.5 * tanh( eta - 2.0 );
 	}
 #endif
 
@@ -177,7 +175,7 @@ int main()
   // Store the solution in a mesh
   OneD_node_mesh<double> Base_soln( nodes, 6 );
 #ifdef Base_2D
-  for (std::size_t j=0; j < Param::N; ++j )
+  for (std::size_t j=0; j < Param::M; ++j )
 	{
 		Base_soln( j, UB )      =   base.solution()( j, fd );
     Base_soln( j, UBd )     =   base.solution()( j, fdd );
@@ -190,7 +188,7 @@ int main()
 	}
 #endif
 #ifdef Base_3D
-  for (std::size_t j=0; j < Param::N; ++j )
+  for (std::size_t j=0; j < Param::M; ++j )
 	{
 		Base_soln( j, UB )      =   base.solution()( j, fd );
     Base_soln( j, UBd )     =   base.solution()( j, fdd );
@@ -229,16 +227,25 @@ int main()
   cout << "U'(eta=0) =" << base.solution()( 0, fdd ) << endl;
 
   // Solve the system for different values of beta
+  Vector<double> beta_vals;
+  beta_vals.linspace( 0.0 , 1.0, 201);
+  OneD_node_mesh<double> Shear_values( beta_vals, 1 );  
 
   cout << "***-----------------------------------------***" << endl;
   cout << "K_B = " << Base_Flow::K << endl;
-  for ( std::size_t i=0; i<11; ++i )
+  for ( std::size_t i=0; i<beta_vals.size(); ++i )
   {
-    Base_Flow::beta = 0.1 * i;
+    Base_Flow::beta = beta_vals[ i ];
     base.solve();
-    cout << "beta = " << Base_Flow::beta << ", U'(eta=0) =" << base.solution()( 0, fdd ); 
+    cout << "beta = ";
+    cout << fixed << setprecision(6) << Base_Flow::beta;
+    cout << ",\t U'(eta=0) =" << base.solution()( 0, fdd );
+    //cout << ",\t G(0.5) =" << base.solution()( 200, g );
+    Shear_values( i, 0 ) = base.solution()( 0, fdd );
     cout << endl;
   }
+
+  Shear_values.output( "./DATA/Shear_values.dat" );
 
   cout << "FINISHED" << endl;
 }

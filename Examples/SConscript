@@ -16,6 +16,7 @@ env.Program( 'Test/Newton_test.out' , ['Test/Newton_test.cpp'] , OPTS = opts, LI
 env.Program( 'Test/Node1D_test.out' , ['Test/Node1D_test.cpp'] , OPTS = opts, LIBS = libs)  #OneD_node_mesh
 env.Program( 'Test/ODE_test.out' , ['Test/ODE_test.cpp'] , OPTS = opts, LIBS = libs)  #ODE_BVP
 env.Program( 'Test/Eigen_test.out' , ['Test/Eigen_test.cpp'] , OPTS = opts, LIBS = libs)  #Eigensystem
+env.Program( 'Test/Dual_test.out' , ['Test/Dual_test.cpp'] , OPTS = opts, LIBS = libs)  #Dual numbers
 
 # Project codes
 

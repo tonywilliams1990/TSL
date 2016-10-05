@@ -14,8 +14,8 @@ namespace TSL
       // Define the equation
 			void residual_fn( const Vector<double>& x_k, Vector<double>& F ) const
 			{
-				F[ 0 ] = pow( x_k[ 0 ], 3.0 ) + x_k[ 1 ] - 1;
-				F[ 1 ] = pow( x_k[ 1 ], 3.0 ) - x_k[ 0 ] + 1; 
+				F[ 0 ] = std::pow( x_k[ 0 ], 3.0 ) + x_k[ 1 ] - 1;
+				F[ 1 ] = std::pow( x_k[ 1 ], 3.0 ) - x_k[ 0 ] + 1; 
 				/*
 					x^3 + y - 1 = 0,
 					y^3 - x + 1 = 0,
