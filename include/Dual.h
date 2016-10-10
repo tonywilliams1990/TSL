@@ -50,7 +50,7 @@ namespace TSL
         }
 
         /// Indexing operator ( read only )
-			  const T& operator[] ( const std::size_t& i ) const
+        const T& operator[] ( const std::size_t& i ) const
 			  {
 					  // Range check 
 					  if ( i<0 || EPSILONS.size()<i )	{ throw Error( "Dual range error" );}
