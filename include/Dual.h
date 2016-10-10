@@ -51,46 +51,46 @@ namespace TSL
 
         /// Indexing operator ( read only )
         const T& operator[] ( const std::size_t& i ) const
-			  {
-					  // Range check 
-					  if ( i<0 || EPSILONS.size()<i )	{ throw Error( "Dual range error" );}
-					  if ( i==0 ) { return REAL; }
-            else { return EPSILONS[ i - 1 ]; }
-			  }
+        {
+          // Range check 
+          if ( i<0 || EPSILONS.size()<i )	{ throw Error( "Dual range error" );}
+          if ( i==0 ) { return REAL; }
+          else { return EPSILONS[ i - 1 ]; }
+        }
 
         /// Indexing operator ( read/write )
-			  T& operator[] ( const std::size_t& i )
-			  {
-					  // Range check 
-					  if ( i<0 || EPSILONS.size()<i )	{ throw Error( "Dual range error" );}
-					  if ( i==0 ) { return REAL; }
-            else { return EPSILONS[ i - 1 ]; }
-			  }
+        T& operator[] ( const std::size_t& i )
+        {
+          // Range check 
+          if ( i<0 || EPSILONS.size()<i )	{ throw Error( "Dual range error" );}
+          if ( i==0 ) { return REAL; }
+          else { return EPSILONS[ i - 1 ]; }
+        }
 
         /// Unary +
         Dual<T> operator+() const
-			  {
-				  return *this;
-			  }  
+        {
+          return *this;
+        }  
       
         /// Unary -
         Dual<T> operator-() const
         {
           Dual<T> temp( *this );
           temp.REAL = -REAL;
-		      temp.EPSILONS = -EPSILONS;
-		      return temp;
+          temp.EPSILONS = -EPSILONS;
+          return temp;
         }
 
         /// Binary +
         Dual<T> operator+( const Dual<T>& d_plus ) const
-			  {
-				  if ( d_plus.EPSILONS.size() != EPSILONS.size() )
+        {
+          if ( d_plus.EPSILONS.size() != EPSILONS.size() )
           { throw Error( "Dual epsilon + size error" );}
-				  Dual<T> temp( *this );
-		      temp.EPSILONS += d_plus.EPSILONS;
+          Dual<T> temp( *this );
+          temp.EPSILONS += d_plus.EPSILONS;
           temp.REAL += d_plus.REAL;
-		      return temp;
+          return temp;
 			  }
 
         /// Binary -
@@ -122,16 +122,16 @@ namespace TSL
 
         /// Scalar addition (both sides)
         Dual<T> operator+( const T& plus ) const
-			  {
-				  Dual<T> temp( *this );
+        {
+          Dual<T> temp( *this );
           temp.REAL += plus;
-		      return temp;
+          return temp;
 			  }
         // Friend function so the + operator can be on either side
         friend Dual<T> operator+( const T& plus, const Dual<T>& dual )
-			  {
-				  return dual + plus;
-			  }	
+        {
+          return dual + plus;
+        }	
 
         /// Scalar subtraction
         Dual<T> operator-( const T& minus ) const
