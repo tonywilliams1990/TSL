@@ -23,3 +23,4 @@
 #include "Dual.h"
 #include "TSLmath.h"
 #include "AutoDiff.h"
+#include "Arclength.h"

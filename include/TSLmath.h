@@ -170,6 +170,8 @@ namespace TSL
   template<class T>
   T abs( const T& x ) { return std::abs( x ); }
 
+   
+
 
 } // End of namespace TSL
 

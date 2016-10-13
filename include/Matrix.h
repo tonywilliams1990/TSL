@@ -386,6 +386,20 @@ namespace TSL
         return max;
     	}
 
+      /* ----- Determinant ----- */
+
+      /// Return the determinant of a matrix
+      T determinant() const
+      {
+        T det;
+        Eigen::FullPivLU< Eigen::Matrix<T, -1, -1> > lu( MATRIX );
+        det = lu.determinant();
+        return det;
+      }
+
+      
+      
+
       /* ----- Solve linear systems ----- */
 
       /// Solve system of equations Ax=b where x and b are vectors  

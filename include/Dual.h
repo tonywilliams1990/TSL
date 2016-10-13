@@ -38,7 +38,7 @@ namespace TSL
 
         /// Output operator <<
         template <class Type>
-			  friend std::ostream& operator<<( std::ostream& os, const Dual<Type>& dual );
+        friend std::ostream& operator<<( std::ostream& os, const Dual<Type>& dual );
 
         /// Assignment
         Dual<T>& operator=( const Dual<T>& original )

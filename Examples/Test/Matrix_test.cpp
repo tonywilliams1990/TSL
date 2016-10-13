@@ -63,6 +63,10 @@ int main()
   cout << "C = " << endl << C << endl;
 
   C.fill_tridiag( 0.5, 0.2, 0.3 );                    // Test fill_tridiag method
+
+  C(0,0) = 4.0; C(0,1) = 1.0; C(0,2) = 2.0;
+  C(1,0) = 2.0; C(1,1) = -1.; C(1,2) = 3.0;
+  C(2,0) = 1.0; C(2,1) = 2.0; C(2,2) = 7.0;
   cout << "C = " << endl << C << endl;
 
   cout << "C.norm_1() = " << C.norm_1() << endl;      // Test norm_1 method
@@ -70,6 +74,8 @@ int main()
   cout << "C.norm_frob() = " << C.norm_frob() << endl;// Test norm_frob method
   cout << "C.norm_max() = " << C.norm_max() << endl;  // Test norm_max method
   cout << "C.norm_p(3.0) = " << C.norm_p(3.0) << endl;// Test norm_p method
+
+  cout << "C.determinant() = " << C.determinant() << endl; // Test determinant method
   
 	cout << "FINISHED" << endl;
 
