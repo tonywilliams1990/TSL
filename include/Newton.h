@@ -147,7 +147,6 @@ namespace TSL
             break;
           }
         }while( true );
-        
         // If this isn't a successful step
         if ( !step_succeeded )
         {

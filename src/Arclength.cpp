@@ -68,8 +68,7 @@ namespace TSL
 
 
   template <class T>
-  void Arclength<T>::solve( Vector<T>& x ) 
-  {}
+  void Arclength<T>::solve( Vector<T>& x ) {}
 
   
   

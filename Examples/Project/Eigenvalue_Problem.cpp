@@ -170,11 +170,11 @@ int main()
 
     // Solve with no transpiration for a good initial guess
     Base_Flow::K = 0.0;
-    bvp.solve();
+    bvp.solve_bvp();
 
     // Set the the transpiration value and solve again
     Base_Flow::K = 0.5;
-    bvp.solve();
+    bvp.solve_bvp();
 
     cout << "*** K = " << Base_Flow::K << endl;
 

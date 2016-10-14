@@ -18,6 +18,7 @@ env.Program( 'Test/ODE_test.out' , ['Test/ODE_test.cpp'] , OPTS = opts, LIBS = l
 env.Program( 'Test/Eigen_test.out' , ['Test/Eigen_test.cpp'] , OPTS = opts, LIBS = libs)  #Eigensystem
 env.Program( 'Test/Dual_test.out' , ['Test/Dual_test.cpp'] , OPTS = opts, LIBS = libs)  #Dual numbers
 env.Program( 'Test/AutoDiff_test.out' , ['Test/AutoDiff_test.cpp'] , OPTS = opts, LIBS = libs)  #AutoDiff
+env.Program( 'Test/Arc_BVP_test.out' , ['Test/Arc_BVP_test.cpp'] , OPTS = opts, LIBS = libs)  #ODE_BVP (arc-length)
 
 # Project codes
 

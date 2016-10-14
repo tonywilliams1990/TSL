@@ -150,7 +150,7 @@ int main()
 	  }
 
     // Solve once for a good initial guess
-    bvp_2D.solve();                                                                 
+    bvp_2D.solve_bvp();                                                                 
 
     cout << "*** For the 2D Blasius equation " << endl;
 
@@ -158,7 +158,7 @@ int main()
     for (std::size_t i=0; i < K_values_2D.size(); ++i )
     {
       Base_Flow::K = K_values_2D[ i ];                    // Update the value of K
-      bvp_2D.solve();                                     // Solve the system
+      bvp_2D.solve_bvp();                                     // Solve the system
       K_mesh_2D( i, 0 ) = bvp_2D.solution()( 0, fdd );    // Put the solution into the mesh
       cout << "K = " << Base_Flow::K << ", U'(eta=0) =" << bvp_2D.solution()( 0, fdd ) << endl;
     }
@@ -197,7 +197,7 @@ int main()
 
     // Solve once for a good initial guess
     Base_Flow::K = 0.0;
-    bvp_3D.solve();
+    bvp_3D.solve_bvp();
 
     cout << "*** For the 3D Alternative equation " << endl;
 
@@ -205,7 +205,7 @@ int main()
     for (std::size_t i=0; i < K_values_3D.size(); ++i )
     {
         Base_Flow::K = K_values_3D[ i ];                 // Update the value of K
-        bvp_3D.solve();                                  // Solve the system
+        bvp_3D.solve_bvp();                                  // Solve the system
         K_mesh_3D( i, 0 ) = bvp_3D.solution()( 0, fdd ); // Put the solution into the mesh
         cout << "K = " << Base_Flow::K << ", U'(eta=0) =" << bvp_3D.solution()( 0, fdd ) << endl;
     }

@@ -91,7 +91,7 @@ namespace TSL
       {
         if ( ( node >= NODES.size() ) || ( node < 0 ) )
         {
-          throw Error( "Mesh error: get_nodes_vars range error " );
+          throw Error( "Mesh error: get_nodes_vars range error." );
         }
         Vector<T> nodes_vars;
         for ( std::size_t var = 0; var < NV; ++var )
@@ -115,6 +115,17 @@ namespace TSL
 
       /// Output data to a file
       void output( std::string filename, int precision = 10 ) const;
+
+      /// Return a vector of the variables stored in the mesh
+      const Vector<T>& vars_as_vector() const { return VARS; }
+
+      /// Set the variables of this mesh from a vector
+      void set_vars_from_vector( const Vector<T>& vec )
+      {
+        if ( vec.size() != NV * NODES.size() ) 
+        { throw Error( "Mesh error: set_vars_from_vector sizes do not agree." ); }
+        VARS = vec;
+      }
 
 	}; // End of class OneD_node_mesh
 

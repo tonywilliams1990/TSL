@@ -80,7 +80,7 @@ int main()
 		ode.solution()( j , fdd )  	= exp( -eta );
 	}
 
-  ode.solve();                        // Solve the system numerically
+  ode.solve_bvp();                        // Solve the system numerically
 
   ode.solution().output( "./DATA/Solution_mesh_test.dat" ); 
 

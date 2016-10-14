@@ -326,12 +326,12 @@ int main()
   // Solve the system with KB = 0 and beta = 0 to provide a good initial guess
   Base_Flow::K = 0.0;
   Base_Flow::beta = 0.0;
-  base.solve();
+  base.solve_bvp();
 
   // Solve the ODE system for the required parameters
   Base_Flow::K = Param::KB;
   Base_Flow::beta = Param::beta;
-  base.solve();
+  base.solve_bvp();
 
   // Store the solution in a mesh
   OneD_node_mesh<double> Base_soln( eta_nodes, 6 );
