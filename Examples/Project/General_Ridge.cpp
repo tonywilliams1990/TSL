@@ -21,11 +21,28 @@ namespace TSL
       const std::size_t N( 400 );       // Number of intervals in the zeta_hat direction
       const std::size_t M( 400 );       // Number of intervals in the eta direction
       const std::size_t Nvar( 4 );      // Number of variables
-      double n( 0.0 );                  // Pressure gradient parameter
-      double beta = (2.0*n)/(n+1.0);    // Hartree parameter
-      double KB( 0.0 );                 // Base flow transpiration
+      double beta( 0.0 );               // Hartree parameter
+      //TODO only works for +ve beta at the moment
+      double KB( 0.0 );                 // Base flow transpiration ( +ve = blowing )
+      double zeta0( 1.0 );              // Ridge/transpiration width
+      double A( 0.0 );                  // Mass flux parameter
+      double K( 0.0 );                  // Transpiration parameter ( +ve = blowing )
+      double gamma( 20.0 );             // Steepness factor
 
     } // End of namespace Param
+
+    namespace Example
+    {
+      std::size_t col( const std::size_t& i, const std::size_t& j, const std::size_t& k )
+      {
+        // Return the column number for the kth variable at node (i,j)
+        return Param::Nvar * ( i * ( Param::M + 1 ) + j ) + k;
+      }
+
+      
+
+    } // End of namespace Example
+
 
     namespace Mesh
     {
@@ -121,14 +138,12 @@ namespace TSL
     } // End of namespace Mesh
 
     namespace Base_Flow
-    {
-      double K = Param::KB;             // Base transpiration parameter (+ve = blowing)   
-      double beta = Param::beta;        // Hartree parameter
-
+    {  
 #ifdef BASE_2D
       class equation : public Equation<double>
       {
         public:
+          double beta;                            // Hartree parameter
           // Falkner-Skan equation is 3rd order
           equation() : Equation<double> ( 3 ) {}
           // Define the equation
@@ -143,11 +158,13 @@ namespace TSL
       class plate_BC : public Residual<double>
       {
         public:
+          double KB;                              // Transpiration parameter
+
           plate_BC() : Residual<double> ( 2, 3 ) {}
 
           void residual_fn( const Vector<double> &z, Vector<double> &B ) const
           {
-            B[ 0 ] = z[ f ] + K;
+            B[ 0 ] = z[ f ] + KB;
             B[ 1 ] = z[ fd ];
           }
       }; // End Falkner-Skan plate_BC class
@@ -167,6 +184,7 @@ namespace TSL
       class equation : public Equation<double>
       {
         public:
+          double beta;                     // Hartree parameter      
           // The 3D alternative equation is 6th order
           equation() : Equation<double> ( 6 ) {}
           // Define the equation
@@ -179,19 +197,21 @@ namespace TSL
             F[ g ]    =  u[ gd ];
             F[ gd ]   =  u[ gdd ];
             F[ gdd ]  = -( u[ f ] + ( 2.0 - beta ) * u[ g ] ) * u[ gdd ]
-                        - beta * ( 1.0 - u[ gd ] * u[ gd ] ) 
-                        - 2.0 * ( 1.0 - beta ) * ( u[ fd ] - u[ gd ] ) * u[ gd ]; 
+                        -( 2.0 * ( 1.0 - beta ) * u[ fd ] 
+                        - ( 2.0 - beta) * u[ gd ] ) * u[ gd ];
           }
       }; // End 3D alternative equation class
 
       class plate_BC : public Residual<double>
       {
         public:
+          double KB;                        // Transpiration parameter
+
           plate_BC() : Residual<double> ( 4, 6 ) {}
 
           void residual_fn( const Vector<double> &z, Vector<double> &B ) const
           {
-            B[ 0 ] = z[ f ] + K;
+            B[ 0 ] = z[ f ] + KB;
             B[ 1 ] = z[ fd ];
             B[ 2 ] = z[ g ];
             B[ 3 ] = z[ gd ];
@@ -295,11 +315,16 @@ int main()
 
   /* ----- Solve the base flow ODE ----- */
 
+  cout << "*** Solving the base flow ODE ***" << endl;
+
   // Setup the base flow ODE problem
   Base_Flow::equation equation;
   Base_Flow::plate_BC plate_BC;
   Base_Flow::far_BC far_BC;
+  equation.beta = 0.0;
+  plate_BC.KB = 0.0;
   ODE_BVP<double> base( &equation, eta_nodes, &plate_BC, &far_BC );
+
   // Set the initial guess
 #ifdef BASE_2D
   for (std::size_t j=0; j < Param::M; ++j )
@@ -323,14 +348,25 @@ int main()
 	}
 #endif
 
-  // Solve the system with KB = 0 and beta = 0 to provide a good initial guess
-  Base_Flow::K = 0.0;
-  Base_Flow::beta = 0.0;
-  base.solve_bvp();
-
-  // Solve the ODE system for the required parameters
-  Base_Flow::K = Param::KB;
-  Base_Flow::beta = Param::beta;
+  // Solve the system with KB = 0 then arc-length continue until KB = Param::KB
+  double arc_step( 0.01 );
+  double max_arc_step( 0.1 );
+  base.init_arc( &plate_BC.KB, arc_step, max_arc_step ); 
+  do
+  {
+    arc_step = base.arclength_solve( arc_step );
+  }while( plate_BC.KB < Param::KB );
+  plate_BC.KB = Param::KB;
+  base.solve_bvp();                               // Solve once more with KB = Param::KB
+  
+  // Solve the system with beta = 0 then arc-length continue until beta = Param::beta
+  arc_step = 0.01;
+  base.init_arc( &equation.beta, arc_step, max_arc_step );
+  do
+  {
+    arc_step = base.arclength_solve( arc_step ); 
+  }while( equation.beta < Param::beta );
+  equation.beta = Param::beta;
   base.solve_bvp();
 
   // Store the solution in a mesh
@@ -379,10 +415,41 @@ int main()
 #ifdef BASE_3D
   cout << "Base flow: 3D alternative with transpiration" << endl;
 #endif
-  cout << "Base transpiration KB = " << Param::KB << endl;
-  cout << "Hartree parameter beta = " << Param::beta << endl;
+  cout << "Base transpiration KB = " << plate_BC.KB << endl;
+  cout << "Hartree parameter beta = " << equation.beta << endl;
   cout << "U'(eta=0) =" << base.solution()( 0, fdd ) << endl;
 
+  cout << "We have solve the ODE problem, it is output to ./DATA/Base_soln.dat" << endl;
+
+  /* ----- Solve for the perturbation quantities ----- */
+
+  cout << "*** Solving the perturbation equations ***" << endl;
+
+  //TODO need to create TwoD_Node_Mesh class
+  // Set the current guess states  
+  TwoD_node_mesh<double> Q( X_nodes, Y_nodes, 4 );
+  // We use the mesh below to write the data on the original zeta-eta domain
+  TwoD_node_mesh<double> Q_output( hzeta_nodes, eta_nodes, 8 );
+
+  // Vector for the RHS of the matrix problem
+  Vector<double> B( 4 * N_eta * N_hzeta + 1, 0.0 );
+
+  /* Iterate to a solution */
+  double max_residual( 0.1 );                           // Maximum residual
+  std::size_t max_iterations( 20 );                     // Maximum number of iterations
+  std::size_t iteration( 0 );                           // Initialise iteration counter
+
+  do
+  {
+
+    ++iteration;
+  }while( ( max_residual > 1.e-8 ) && ( iteration < max_iterations ) ); // End iteration
+  
+  if ( iteration >= max_iterations )
+  {
+    cout << "STOPPED AFTER TOO MANY ITERATIONS" << endl;
+  }
+  
 
   cout << "FINISHED" << endl;
 }

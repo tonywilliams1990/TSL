@@ -18,16 +18,16 @@ namespace TSL
 {
   
 
-	/// A templated Newton iteration class
+	/// A templated class
 	template <class T, class X = double>
 	
 	class OneD_node_mesh
 	{
 
     protected:
-      std::size_t NV;                           // Number of variables
-      Vector<X> NODES;                          // Vector for storing nodal points
-      Vector<T> VARS;                           // Vector for storing variables at each node
+      std::size_t NV;                         // Number of variables
+      Vector<X> NODES;                        // Vector for storing nodal points
+      Vector<T> VARS;                         // Vector for storing variables at each node
 
     public:
 

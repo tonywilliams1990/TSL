@@ -95,7 +95,7 @@ namespace TSL
   }
 
   // Output the mesh to a file 
-  template < typename T, typename X >
+  template < class T, class X >
   void OneD_node_mesh<T, X>::output( std::string filename, int precision ) const
   {
     std::ofstream dump;

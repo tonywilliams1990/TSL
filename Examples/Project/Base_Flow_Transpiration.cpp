@@ -9,103 +9,101 @@ enum{ f, fd, fdd, g, gd, gdd };
 
 namespace TSL
 {
-    namespace Base_Flow
+  namespace Base_Flow
+  {
+    double KB( 0.5 );                      // Transpiration parameter (+ve is blowing)
+                       
+    class Falkner : public Equation<double>
     {
-        double K( 0.0 );                                    // Transpiration parameter (+ve is blowing)
-        double n( 0.0 );                                    // Pressure gradient parameter
-        // 2D parameters
-        double K_start_2D( -1.0 );
-        double K_end_2D( 0.876 );
-        std::size_t K_steps_2D( 30 );                      
-        // 3D parameters
-        double K_start_3D( -1.0 );
-        double K_end_3D( 1.18 );
-        std::size_t K_steps_3D( 30 );                    
+      public:
+        double beta;
 
-	    class Blasius : public Equation<double>
-	    {
-		    public:
-			    // The Blasius equation is 3rd order
-			    Blasius() : Equation<double> ( 3 ) {} 
+        // The Falkner-Skan equation is 3rd order
+        Falkner() : Equation<double> ( 3 ) {} 
 
-			    // Define the equation
-			    void residual_fn( const Vector<double>& u, Vector<double>& F  ) const
-			    {
-				    F[ f ]   = u[ fd ];
-				    F[ fd ]  = u[ fdd ];
-				    F[ fdd ] = -(n + 1.0) * u[ f ] * u[ fdd ] + 2 * n * ( u[ fd ] * u[ fd ] - 1.0 );    
-			    }
-	    };
-
-        class plate_BC : public Residual<double>
+        // Define the equation
+        void residual_fn( const Vector<double>& u, Vector<double>& F  ) const
         {
-            public:
-                plate_BC() : Residual<double> ( 2, 3 ) {}
+          F[ f ]   = u[ fd ];
+          F[ fd ]  = u[ fdd ];
+          F[ fdd ] = - u[ f ] * u[ fdd ] - beta * ( 1.0 - u[ fd ] * u[ fd ] );    
+        }
+    };
 
-            void residual_fn( const Vector<double> &z, Vector<double> &B ) const
-            {
-                B[ 0 ] = z[ f ] + K / ( n + 1.0 );
-                B[ 1 ] = z[ fd ];
-            }
-        };
+    class plate_BC : public Residual<double>
+    {
+      public:
+        plate_BC() : Residual<double> ( 2, 3 ) {}
 
-        class far_BC : public Residual<double>
+        void residual_fn( const Vector<double> &z, Vector<double> &B ) const
         {
-            public:
-                far_BC() : Residual<double> ( 1, 3 ) {}
+          B[ 0 ] = z[ f ] + KB;
+          B[ 1 ] = z[ fd ];
+        }
+    };
 
-            void residual_fn( const Vector<double> &z, Vector<double> &B ) const
-            {
-                B[ 0 ] = z[ fd ] - 1.0;
-            }
-        };
+    class far_BC : public Residual<double>
+    {
+      public:
+        far_BC() : Residual<double> ( 1, 3 ) {}
 
-        class Alternative : public Equation<double>
-	    {
+        void residual_fn( const Vector<double> &z, Vector<double> &B ) const
+        {
+          B[ 0 ] = z[ fd ] - 1.0;
+        }
+    };
+
+    class Alternative : public Equation<double>
+    {
 		    public:
+          double beta;
+
 			    // The equation is 6th order
 			    Alternative() : Equation<double> ( 6 ) {} 
 
 			    // Define the equation
 			    void residual_fn( const Vector<double>& u, Vector<double>& F  ) const
 			    {
-				    F[ f ]   = u[ fd ];
-				    F[ fd ]  = u[ fdd ];
-				    F[ fdd ] = - ( (n + 1.0) * u[ f ] + (1.0 - n) * u[ g ] ) * u[ fdd ] + 2.0 * n * ( u[ fd ] * u[ fd ] - 1.0 );
-                    F[ g ]   = u[ gd ];
-                    F[ gd ]  = u[ gdd ];
-                    F[ gdd ] = - ( (n + 1.0) * u[ f ] + (1.0 - n) * u[ g ] ) * u[ gdd ] - 2.0 * n * ( 1.0 - u[ gd ] * u[ fd ] )
-                               - 2.0 * u[ gd ] * u[ fd ] - (n - 1.0) * u[ gd ] * u[ gd ];     
+				    F[ f ]    =  u[ fd ];
+            F[ fd ]   =  u[ fdd ];
+            F[ fdd ]  = -( u[ f ] + ( 2.0 - beta ) * u[ g ] ) * u[ fdd ] 
+                        - beta * ( 1.0 - u[ fd ] * u[ fd ] );
+            F[ g ]    =  u[ gd ];
+            F[ gd ]   =  u[ gdd ];
+            F[ gdd ]  = -( u[ f ] + ( 2.0 - beta ) * u[ g ] ) * u[ gdd ]
+                        -( 2.0 * ( 1.0 - beta ) * u[ fd ] 
+                        - ( 2.0 - beta) * u[ gd ] ) * u[ gd ];    
 			    }
-	    };
+    };
 
-        class alt_plate_BC : public Residual<double>
+    class alt_plate_BC : public Residual<double>
+    {
+      public:
+        double K_alt;                // Set K=0 then iterate to K=KB
+
+        alt_plate_BC() : Residual<double> ( 4, 6 ) {}
+
+        void residual_fn( const Vector<double> &z, Vector<double> &B ) const
         {
-            public:
-                alt_plate_BC() : Residual<double> ( 4, 6 ) {}
+          B[ 0 ] = z[ f ] + K_alt;
+          B[ 1 ] = z[ fd ];
+          B[ 2 ] = z[ g ];
+          B[ 3 ] = z[ gd ];
+        }
+    };
 
-            void residual_fn( const Vector<double> &z, Vector<double> &B ) const
-            {
-                B[ 0 ] = z[ f ] + K;
-                B[ 1 ] = z[ fd ];
-                B[ 2 ] = z[ g ];
-                B[ 3 ] = z[ gd ];
-            }
-        };
+    class alt_far_BC : public Residual<double>
+    {
+      public:
+        alt_far_BC() : Residual<double> ( 2, 6 ) {}
 
-        class alt_far_BC : public Residual<double>
+        void residual_fn( const Vector<double> &z, Vector<double> &B ) const
         {
-            public:
-                alt_far_BC() : Residual<double> ( 2, 6 ) {}
-
-            void residual_fn( const Vector<double> &z, Vector<double> &B ) const
-            {
-                B[ 0 ] = z[ fd ] - 1.0;
-                B[ 1 ] = z[ gd ];
-            }
-        };
- 
-    } // End of namespace Base_Flow
+          B[ 0 ] = z[ fd ] - 1.0;
+          B[ 1 ] = z[ gd ];
+        }
+    };
+  } // End of namespace Base_Flow
 } // End of namespace TSL
 
 using namespace std;
@@ -113,104 +111,148 @@ using namespace TSL;
 
 int main()
 {
-    cout << "----- Base flow similarity solutions for a flat plate boundary layer with transpiration -----" << endl;	
+  cout << "----- Base flow transpiration arc-length continuation -----" << endl;	
  	
-	// Define the domain
-	double Inf( 10.0 );											        // Infinite boundary 
-	size_t N_nodes( 1000 );                         // Number of nodes
-	TSL::Vector<double> nodes;								      // Declare vector of nodes (uniform)
-	nodes.linspace(0,Inf,N_nodes); 
+  double Inf( 20.0 );									  // Infinite boundary   
+  size_t N_nodes( 1000 );
+	TSL::Vector<double> nodes;						// Declare vector of nodes
+	//nodes.linspace( 0.0, Inf, N_nodes ); 
+  nodes.power( 0.0, Inf, N_nodes, 2.0 );
 
-    cout << "*** Pressure gradient parameter n = " << Base_Flow::n << endl;
-	
-    /* ----- Solve the 2D system ----- */
+  /* ----- 2D problem ----- */
+  
+  // Create instances of the equation and BCs
+  Base_Flow::Falkner  equation;
+  Base_Flow::plate_BC left_BC;
+  Base_Flow::far_BC   right_BC;
+  equation.beta = 1.01; 
+ 
+  // Create boundary value problem
+  ODE_BVP<double> ode_2D( &equation, nodes, &left_BC, &right_BC );
 
-    // Vector of K_values
-    Vector<double> K_values_2D;
-    K_values_2D.linspace( Base_Flow::K_start_2D, Base_Flow::K_end_2D, Base_Flow::K_steps_2D + 1 );
+  // Set the initial guess
+	for (std::size_t j=0; j < N_nodes; ++j )
+	{
+		double eta = nodes[ j ];					// eta value at node j
+		ode_2D.solution()( j , f )  		= eta + exp( -eta );
+    ode_2D.solution()( j , fd ) 		= 1.0 - exp( -eta ); 
+		ode_2D.solution()( j , fdd )  	= exp( -eta );
+	}
+  // Initialise the arc-length continuation 
+  double arc_step( -0.01 );
+  double max_step( 0.025 );
+  ode_2D.init_arc( &equation.beta, arc_step, max_step ); 
 
-    // Mesh for storing the values of U'(eta=0) for different values of K
-    OneD_node_mesh<double> K_mesh_2D( K_values_2D, 1 );
+  // Output initial solution
+  double stress( ode_2D.solution()( 0, fdd ) );
+  cout << "beta = " << equation.beta << ", U'(0) = "<< stress << endl;
+  
+  // Vectors for storing beta and U'(0) values
+  Vector<double> betas, shear;
+  betas.push_back( equation.beta );
+  shear.push_back( stress );
 
-    // Create instances of the 2D equation and BCs
-    Base_Flow::Blasius equation_2D;
-    Base_Flow::plate_BC left_BC_2D;
-    Base_Flow::far_BC right_BC_2D;
+  // Iterate 
+  do
+  {
+    arc_step = ode_2D.arclength_solve( arc_step );
+    stress = ode_2D.solution()( 0, fdd );
+    cout << "beta = " << equation.beta << ", U'(0) = "<< stress << endl;
+    betas.push_back( equation.beta );
+    shear.push_back( stress );
+  }while( std::abs( equation.beta ) > 0.005 || stress > 0.0 );
 
-    // Create boundary value problem
-    ODE_BVP<double> bvp_2D( &equation_2D, nodes, &left_BC_2D, &right_BC_2D );      
+  // Create mesh for output
+  OneD_node_mesh<double> Solution_2D( betas, 1 );
+  Solution_2D.set_vars_from_vector( shear );
+  Solution_2D.output( "./DATA/Solution_2D.dat" );
+  
+  /* ----- 3D problem ----- */
+  
+  // Create instances of the equation and BCs
+  Base_Flow::Alternative  alt_eqn;
+  Base_Flow::alt_plate_BC alt_left_BC;
+  Base_Flow::alt_far_BC   alt_right_BC;
+  alt_eqn.beta = 0.1;
+  alt_left_BC.K_alt = 0.0;
 
-    // Set the initial guess 
-	  for (std::size_t j=0; j < N_nodes; ++j )
-	  {
-		  double eta = nodes[ j ];					                      // eta value at node j
-		  bvp_2D.solution()( j , f )  		= eta + exp( -eta );
-      bvp_2D.solution()( j , fd ) 		= 1.0 - exp( -eta ); 
-		  bvp_2D.solution()( j , fdd )    = exp( -eta );
-	  }
+  // Create the BVP
+  ODE_BVP<double> ode_3D( &alt_eqn, nodes, &alt_left_BC, &alt_right_BC );
 
-    // Solve once for a good initial guess
-    bvp_2D.solve_bvp();                                                                 
+  // Set the initial guess
+  for (std::size_t j=0; j < N_nodes; ++j )
+	{
+		double eta = nodes[ j ];					                   // eta value at node j
+		ode_3D.solution()( j, f )  	= eta + exp( -eta ) - 1.0;
+    ode_3D.solution()( j, fd ) 	= 1.0 - exp( -eta ); 
+		ode_3D.solution()( j, fdd ) = exp( -eta );
+    ode_3D.solution()( j, g )  	= 0.35 * (1.0 - exp( -eta ));
+    ode_3D.solution()( j, gd ) 	= 1.0 - exp( -eta ) - exp( -1.0 / (eta * eta) ); 
+		ode_3D.solution()( j, gdd ) = exp( -eta ) - 0.5 * tanh( eta ) + 0.5 * tanh( eta -2.0 );
+	}
 
-    cout << "*** For the 2D Blasius equation " << endl;
+  // Solve the system for K=0 then arc-length continue until K=KB
+  ode_3D.init_arc( &alt_left_BC.K_alt, 0.01, 0.1 );
+  cout << "K_alt = " << alt_left_BC.K_alt << ", U'(0) = ";
+  cout << ode_3D.solution()( 0, fdd ) << endl;
+  arc_step = 0.01;
+  do
+  {
+    arc_step = ode_3D.arclength_solve( arc_step );
+    cout << "K_alt = " << alt_left_BC.K_alt << ", U'(0) = ";
+    cout << ode_3D.solution()( 0, fdd ) << endl;
 
-    // Solve the system for different values of K
-    for (std::size_t i=0; i < K_values_2D.size(); ++i )
-    {
-      Base_Flow::K = K_values_2D[ i ];                    // Update the value of K
-      bvp_2D.solve_bvp();                                     // Solve the system
-      K_mesh_2D( i, 0 ) = bvp_2D.solution()( 0, fdd );    // Put the solution into the mesh
-      cout << "K = " << Base_Flow::K << ", U'(eta=0) =" << bvp_2D.solution()( 0, fdd ) << endl;
-    }
+  }while( alt_left_BC.K_alt < Base_Flow::KB ); 
 
-    K_mesh_2D.output( "./DATA/Transpiration_shear_values_2D.dat" );  // Output the solution
-    
+  alt_left_BC.K_alt = Base_Flow::KB;
+  ode_3D.solve_bvp();                             // Solve once more with K=KB
+  cout << "K_alt = " << alt_left_BC.K_alt << ", U'(0) = ";
+  cout << ode_3D.solution()( 0, fdd ) << endl;
 
-    /* ----- Solve the 3D system ----- */
+  cout << "KB = " << Base_Flow::KB << endl;
+  cout << "K_alt = " << alt_left_BC.K_alt << endl;
 
-    // Vector of K_values
-    Vector<double> K_values_3D;
-    K_values_3D.linspace( Base_Flow::K_start_3D, Base_Flow::K_end_3D, Base_Flow::K_steps_3D + 1 );
+  arc_step = -0.01;
+  ode_3D.init_arc( &alt_eqn.beta, arc_step, max_step );
 
-    // Mesh for storing the values of U'(eta=0) for different values of K
-    OneD_node_mesh<double> K_mesh_3D( K_values_3D, 1 );
+  // Output initial solution
+  cout << " ----- Alternative equation ----- " << endl;
+  double stress_3D( ode_3D.solution()( 0, fdd ) );
+  cout << "beta = " << alt_eqn.beta << ", U'(0) = "<< stress_3D << endl;
 
-    // Create instances of the 3D equation and BCs
-    Base_Flow::Alternative equation_3D;
-    Base_Flow::alt_plate_BC left_BC_3D;
-    Base_Flow::alt_far_BC right_BC_3D;
+  arc_step = 0.01;
 
-    // Create boundary value problem
-    ODE_BVP<double> bvp_3D( &equation_3D, nodes, &left_BC_3D, &right_BC_3D );      
-   
-    // Set the initial guess 
-	  for (std::size_t j=0; j < N_nodes; ++j )
-	  {
-		  double eta = nodes[ j ];					// eta value at node j
-		  bvp_3D.solution()( j , f )  	= eta + exp( -eta );
-      bvp_3D.solution()( j , fd ) 	= 1.0 - exp( -eta ); 
-		  bvp_3D.solution()( j , fdd )  = exp( -eta );
-      bvp_3D.solution()( j , g )  	= 0.35 * (1.0 - exp( -eta ));
-      bvp_3D.solution()( j , gd ) 	= 1 - exp( -eta ) - exp( -1 / (eta * eta) ); 
-		  bvp_3D.solution()( j , gdd )  = exp( -eta ) - 0.5 * tanh( eta ) + 0.5 * tanh( eta - 2.0 );
-	  }
+  // Arc-length solve to beta > 1.0
+  do
+  {
+    arc_step = ode_3D.arclength_solve( arc_step );
+    stress_3D = ode_3D.solution()( 0, fdd );
+    cout << "beta = " << alt_eqn.beta << ", U'(0) = "<< stress_3D << endl;
 
-    // Solve once for a good initial guess
-    Base_Flow::K = 0.0;
-    bvp_3D.solve_bvp();
+  }while( alt_eqn.beta < 1.0 );
 
-    cout << "*** For the 3D Alternative equation " << endl;
+  cout << " ----- beta = approx 1 ----- " << endl;
 
-    // Solve the system for different values of K
-    for (std::size_t i=0; i < K_values_3D.size(); ++i )
-    {
-        Base_Flow::K = K_values_3D[ i ];                 // Update the value of K
-        bvp_3D.solve_bvp();                                  // Solve the system
-        K_mesh_3D( i, 0 ) = bvp_3D.solution()( 0, fdd ); // Put the solution into the mesh
-        cout << "K = " << Base_Flow::K << ", U'(eta=0) =" << bvp_3D.solution()( 0, fdd ) << endl;
-    }
+  // Vectors for storing beta and U'(0) values
+  Vector<double> betas_3D, shear_3D;
+  betas_3D.push_back( alt_eqn.beta );
+  shear_3D.push_back( stress_3D );
+  
+  arc_step = -0.01;
+  // Iterate 
+  do
+  {
+    arc_step = ode_3D.arclength_solve( arc_step );
+    stress_3D = ode_3D.solution()( 0, fdd );
+    cout << "beta = " << alt_eqn.beta << ", U'(0) = "<< stress_3D << endl;
+    betas_3D.push_back( alt_eqn.beta );
+    shear_3D.push_back( stress_3D );
+  }while( std::abs( alt_eqn.beta ) > 0.005 || stress_3D > 1e-6 );
 
-    K_mesh_3D.output( "./DATA/Transpiration_shear_values_3D.dat" ); // Output the solution
+  // Create mesh for output
+  OneD_node_mesh<double> Solution_3D( betas_3D, 1 );
+  Solution_3D.set_vars_from_vector( shear_3D );
+  Solution_3D.output( "./DATA/Solution_3D.dat" );
 
-    cout << "FINISHED" << endl;
+  cout << "FINISHED" << endl;
 }
