@@ -7,6 +7,8 @@
 enum{ f, fd, fdd, g, gd, gdd };                         // Base ODE enumeration
 enum{ UB, UBd, PhiB, ThetaB, ThetaBd, PsiB };           // Base flow enumeration
 
+enum{ Phi, Psi, U, Theta };                             // PDE enumeration
+
 // Either BASE_2D or BASE_3D for 2D or 3D base flows
 #define BASE_2D
 // Either UNIFORM or NONUNIFORM for uniform of non-uniform mesh
@@ -18,16 +20,16 @@ namespace TSL
     {
       double hzeta_right( 20.0 );       // Size of the domain in the zeta_hat direction
       double eta_top( 30.0 );           // Size of the domain in the eta direction
-      const std::size_t N( 400 );       // Number of intervals in the zeta_hat direction
-      const std::size_t M( 400 );       // Number of intervals in the eta direction
+      const std::size_t N( 200 );       // Number of intervals in the zeta_hat direction
+      const std::size_t M( 200 );       // Number of intervals in the eta direction
       const std::size_t Nvar( 4 );      // Number of variables
       double beta( 0.0 );               // Hartree parameter
-      //TODO only works for +ve beta at the moment
       double KB( 0.0 );                 // Base flow transpiration ( +ve = blowing )
       double zeta0( 1.0 );              // Ridge/transpiration width
       double A( 0.0 );                  // Mass flux parameter
       double K( 0.0 );                  // Transpiration parameter ( +ve = blowing )
       double gamma( 20.0 );             // Steepness factor
+      //TODO far-field ODE for A constraint
 
     } // End of namespace Param
 
@@ -39,7 +41,35 @@ namespace TSL
         return Param::Nvar * ( i * ( Param::M + 1 ) + j ) + k;
       }
 
-      
+      double Phi_w( const double& hzeta )
+      {
+        //TODO return transpiration function
+        return 0.0;
+      }
+
+      double Phi_w_hzeta( const double& hzeta )
+      {
+        //TODO return derivative of transpiration wrt hzeta
+        return 0.0;
+      } 
+
+      double H( const double& hzeta )
+      {
+        //TODO return ridge profile as function of hzeta
+        return 0.0;
+      }
+
+      double Hd( const double& hzeta )
+      {
+        //TODO return derivative of ridge profile wrt hzeta
+        return 0.0;
+      }
+
+      double Hdd( const double& hzeta )
+      {
+        //TODO return 2nd derivative of ridge profile wrt hzeta
+        return 0.0;
+      }
 
     } // End of namespace Example
 
@@ -321,7 +351,7 @@ int main()
   Base_Flow::equation equation;
   Base_Flow::plate_BC plate_BC;
   Base_Flow::far_BC far_BC;
-  equation.beta = 0.0;
+  equation.beta = 0.1;
   plate_BC.KB = 0.0;
   ODE_BVP<double> base( &equation, eta_nodes, &plate_BC, &far_BC );
 
@@ -359,8 +389,10 @@ int main()
   plate_BC.KB = Param::KB;
   base.solve_bvp();                               // Solve once more with KB = Param::KB
   
-  // Solve the system with beta = 0 then arc-length continue until beta = Param::beta
-  arc_step = 0.01;
+  // Solve the system with beta = 0.1 then arc-length continue until beta = Param::beta
+  arc_step = -0.01;
+  if ( Param::beta > 0.1 ) { arc_step = 0.01; }
+
   base.init_arc( &equation.beta, arc_step, max_arc_step );
   do
   {
@@ -419,7 +451,7 @@ int main()
   cout << "Hartree parameter beta = " << equation.beta << endl;
   cout << "U'(eta=0) =" << base.solution()( 0, fdd ) << endl;
 
-  cout << "We have solve the ODE problem, it is output to ./DATA/Base_soln.dat" << endl;
+  cout << "We have solved the ODE problem, it is output to ./DATA/Base_soln.dat" << endl;
 
   /* ----- Solve for the perturbation quantities ----- */
 
@@ -436,11 +468,235 @@ int main()
 
   /* Iterate to a solution */
   double max_residual( 0.1 );                           // Maximum residual
-  std::size_t max_iterations( 20 );                     // Maximum number of iterations
+  std::size_t max_iterations( 2 );                     // Maximum number of iterations
   std::size_t iteration( 0 );                           // Initialise iteration counter
 
   do
   {
+    // N_eta x N_hzeta mesh with 4 unknowns at each node + 1 for mass flux parameter A
+    SparseMatrix<double> A( 4 * N_eta * N_hzeta + 1, 4 * N_eta * N_hzeta + 1 ); 
+    cout << "Assembling sparse matrix problem" << endl; 
+
+    using namespace Example;
+    std::size_t row( 0 );                               // Initialise row counter
+
+    /* hzeta = 0 boundary ( left boundary )*/
+    std::size_t i( 0 );
+
+    for ( std::size_t j = 0; j < Param::M + 1; ++j )
+    {
+      double hzeta( hzeta_nodes[ 0 ] );
+      double Xd( Mesh::Xd( hzeta ) );
+      double eta( eta_nodes[ j ] );
+      double Yd( Mesh::Yd( eta ) );
+      double Hd( Example::Hd( hzeta ) );
+      Vector<double> Base( Base_soln.get_interpolated_vars( eta ) );
+      // PhiB' = (2-beta)*UB - PsiB
+      double PhiBd( ( 2.0 - Param::beta )*Base[ UB ] - Base[ PsiB ] );
+      double UBd( Base[ UBd ] );
+
+      // Phi_zeta - H'( PhiB' + Phi_eta ) = 0
+      if( j == 0 ) // eta = 0 ( bottom left corner )
+      {
+        A( row, col( i, j, Phi ) )      = -3.*Xd/(2*dX) + 3.*Hd*Yd/(2*dY); 
+        A( row, col( i + 1, j, Phi ) )  =  4.*Xd/(2*dX);
+        A( row, col( i + 2, j, Phi ) )  = -1.*Xd/(2*dX);
+        A( row, col( i, j + 1, Phi ) )  = -4.*Hd*Yd/(2*dY);
+        A( row, col( i, j + 2, Phi ) )  =  1.*Hd*Yd/(2*dY);
+        B[ col( i, j, Phi ) ]           = -( Xd*( -3*Q(i,j,Phi) + 4*Q(i+1,j,Phi) 
+                                             -Q(i+2,j,Phi) )/(2*dX) ) 
+                                          + Hd*Yd*( -3*Q(i,j,Phi) + 4*Q(i,j+1,Phi)
+                                             -Q(i,j+2,Phi) )/(2*dY)
+                                          + Hd*PhiBd;
+        ++row;
+      }
+      else if( j == Param::M ) // eta = eta_inf ( top left corner )
+      {
+        A( row, col( i, j, Phi ) )      = -3.*Xd/(2*dX) - 3.*Hd*Yd/(2*dY); 
+        A( row, col( i + 1, j, Phi ) )  =  4.*Xd/(2*dX);
+        A( row, col( i + 2, j, Phi ) )  = -1.*Xd/(2*dX);
+        A( row, col( i, j - 1, Phi ) )  =  4.*Hd*Yd/(2*dY);
+        A( row, col( i, j - 2, Phi ) )  = -1.*Hd*Yd/(2*dY);
+        B[ col( i, j, Phi ) ]           = -( Xd*( -3*Q(i,j,Phi) + 4*Q(i+1,j,Phi) 
+                                             -Q(i+2,j,Phi) )/(2*dX) )
+                                          + Hd*Yd*( 3*Q(i,j,Phi) - 4*Q(i,j-1,Phi)
+                                             +Q(i,j-2,Phi) )/(2*dY)
+                                          + Hd*PhiBd;
+        ++row;
+      }
+      else // Rest of the non-corner nodes
+      {
+        A( row, col( i, j, Phi ) )      = -3.*Xd/(2*dX);
+        A( row, col( i + 1, j, Phi ) )  =  4.*Xd/(2*dX);
+        A( row, col( i + 2, j, Phi ) )  = -1.*Xd/(2*dX);
+        A( row, col( i, j + 1, Phi ) )  = -Hd*Yd/(2*dY);
+        A( row, col( i, j - 1, Phi ) )  =  Hd*Yd/(2*dY);
+        B[ col( i, j, Phi ) ]           = -( Xd*( -3*Q(i,j,Phi) + 4*Q(i+1,j,Phi) 
+                                             -Q(i+2,j,Phi) )/(2*dX) )
+                                          + Hd*Yd*( Q(i,j+1,Phi) - Q(i,j-1,Phi) )/(2*dY)
+                                          + Hd*PhiBd;
+        ++row;
+      }
+
+      // Psi = 0
+      A( row, col( i, j, Psi ) )        =  1.;
+      B[ col( i, j, Psi ) ]             = -Q(i,j,Psi);
+      ++row;
+
+      // U_zeta - H'( UB' + U_eta ) = 0
+      if( j == 0 ) // eta = 0 ( bottom left corner )
+      {
+        A( row, col( i, j, U ) )        = -3.*Xd/(2*dX) + 3.*Hd*Yd/(2*dY); 
+        A( row, col( i + 1, j, U ) )    =  4.*Xd/(2*dX);
+        A( row, col( i + 2, j, U ) )    = -1.*Xd/(2*dX);
+        A( row, col( i, j + 1, U ) )    = -4.*Hd*Yd/(2*dY);
+        A( row, col( i, j + 2, U ) )    =  1.*Hd*Yd/(2*dY);
+        B[ col( i, j, U ) ]             = -( Xd*( -3*Q(i,j,U) + 4*Q(i+1,j,U) 
+                                             -Q(i+2,j,U) )/(2*dX) ) 
+                                          + Hd*Yd*( -3*Q(i,j,U) + 4*Q(i,j+1,U)
+                                             -Q(i,j+2,U) )/(2*dY)
+                                          + Hd*UBd;
+        ++row;
+      }
+      else if( j == Param::M ) // eta = eta_inf ( top left corner )
+      {
+        A( row, col( i, j, U ) )        = -3.*Xd/(2*dX) - 3.*Hd*Yd/(2*dY); 
+        A( row, col( i + 1, j, U ) )    =  4.*Xd/(2*dX);
+        A( row, col( i + 2, j, U ) )    = -1.*Xd/(2*dX);
+        A( row, col( i, j - 1, U ) )    =  4.*Hd*Yd/(2*dY);
+        A( row, col( i, j - 2, U ) )    = -1.*Hd*Yd/(2*dY);
+        B[ col( i, j, U ) ]             = -( Xd*( -3*Q(i,j,U) + 4*Q(i+1,j,U) 
+                                             -Q(i+2,j,U) )/(2*dX) )
+                                          + Hd*Yd*( 3*Q(i,j,U) - 4*Q(i,j-1,U)
+                                             +Q(i,j-2,U) )/(2*dY)
+                                          + Hd*UBd;
+        ++row;
+      }
+      else // Rest of the non-corner nodes
+      {
+        A( row, col( i, j, U ) )        = -3.*Xd/(2*dX);
+        A( row, col( i + 1, j, U ) )    =  4.*Xd/(2*dX);
+        A( row, col( i + 2, j, U ) )    = -1.*Xd/(2*dX);
+        A( row, col( i, j + 1, U ) )    = -Hd*Yd/(2*dY);
+        A( row, col( i, j - 1, U ) )    =  Hd*Yd/(2*dY);
+        B[ col( i, j, U ) ]             = -( Xd*( -3*Q(i,j,U) + 4*Q(i+1,j,U) 
+                                             -Q(i+2,j,U) )/(2*dX) )
+                                          + Hd*Yd*( Q(i,j+1,U) - Q(i,j-1,U) )/(2*dY)
+                                          + Hd*UBd;
+        ++row;
+      }
+
+      // Theta = 0      
+      A( row, col( i, j, Theta ) )      =  1.;
+      B[ col( i, j, Theta ) ]           = -Q(i,j,Theta);
+      ++row;
+
+
+    } // End of loop for LHS eta nodes
+
+    /* Interior points between the hzeta boundaries */
+    for ( std::size_t i = 1; i < Param::N; ++i )
+    {
+      // hzeta location
+      double hzeta( hzeta_nodes[ 0 ] );
+      double Xd( Mesh::Xd( hzeta ) );
+      double Xdd( Mesh::Xdd( hzeta ) );
+      // Wall transpiration
+      double Phi_w( Example::Phi_w( hzeta ) );
+      double Phi_w_hzeta( Example::Phi_w_hzeta( hzeta ) );
+      // Ridge profile
+      double H( Example::H( hzeta ) );
+      double Hd( Example::Hd( hzeta ) );
+      double Hdd( Example::Hdd( hzeta ) );
+      // Ridge/transpiration width
+      double zeta0( Param::zeta0 );
+
+      /* eta = 0 boundary ( bottom boundary ) */
+      std::size_t j( 0 );
+      double eta( eta_nodes[ j ] );
+      double Yd( Mesh::Yd( eta ) );
+      // Base solution
+      Vector<double> Base( Base_soln.get_interpolated_vars( eta ) );//TODO do we need this?
+            
+      // Phi = Phi_w
+      A( row, col( i, j, Phi ) )        =  1.;
+      B[ col( i, j, Phi ) ]             = -Q(i,j,Phi) + Phi_w;
+      ++row;
+      // Psi = 0
+      A( row, col( i, j, Psi ) )        =  1.;
+      B[ col( i, j, Psi ) ]             = -Q(i,j,Psi);
+      ++row;
+      // U = 0
+      A( row, col( i, j, U ) )          =  1.;
+      B[ col( i, j, U ) ]               = -Q(i,j,U);
+      ++row;
+      // Theta - Psi_eta = -( 1 / ( zeta0^2 ) ) * Phi_w_hzeta
+      A( row, col( i, j, Theta ) )      =  1.;
+      A( row, col( i, j, Psi ) )        =  3.*Yd/(2*dY);
+      A( row, col( i, j + 1, Psi ) )    = -4.*Yd/(2*dY);
+      A( row, col( i, j + 2, Psi ) )    =  1.*Yd/(2*dY);
+      B[ col( i, j, Theta ) ]           = -Q(i,j,Theta) + Yd*( -3*Q(i,j,Psi) 
+                                          + 4*Q(i,j+1,Psi) - Q(i,j+2,Psi) ) / (2*dY)
+                                          - ( 1. / ( zeta0 * zeta0 ) ) * Phi_w_hzeta;
+      ++row;
+
+
+      /* Main interior grid points */
+      for ( std::size_t j = 1; j < Param::M; ++j )
+      {
+        // eta location
+        double eta( eta_nodes[ j ] );
+        double Yd( Mesh::Yd( eta ) );
+        double Ydd( Mesh::Ydd( eta ) );
+        // Base solution
+        Vector<double> Base( Base_soln.get_interpolated_vars( eta ) );
+        // Guessed/known components and various derivative values
+        Vector<double> Guess( Q.get_nodes_vars( i, j ) );
+        //TODO
+        
+        //////////////////
+        // Phi equation //
+        //////////////////
+
+
+        ++row;
+
+        //////////////////
+        // Psi equation //
+        //////////////////
+
+
+        ++row;
+
+        ////////////////
+        // U equation //
+        ////////////////
+
+
+        ++row;
+
+        ////////////////////
+        // Theta equation //
+        ////////////////////
+
+
+        ++row;
+
+
+      }
+
+      /* eta = eta_inf boundary ( top boundary ) */
+      j = Param::M;
+      eta = eta_nodes[ j ];
+      Yd = Mesh::Yd( eta );
+      
+
+    }
+
+    /* hzeta = hzeta_inf boundary ( right boundary ) */
+    i = Param::N;
+
+    /* A coefficient condition */
 
     ++iteration;
   }while( ( max_residual > 1.e-8 ) && ( iteration < max_iterations ) ); // End iteration

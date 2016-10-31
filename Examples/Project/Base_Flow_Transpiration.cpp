@@ -11,7 +11,7 @@ namespace TSL
 {
   namespace Base_Flow
   {
-    double KB( 0.5 );                      // Transpiration parameter (+ve is blowing)
+    double KB( 2.0 );                      // Transpiration parameter (+ve is blowing)
                        
     class Falkner : public Equation<double>
     {
@@ -247,7 +247,7 @@ int main()
     cout << "beta = " << alt_eqn.beta << ", U'(0) = "<< stress_3D << endl;
     betas_3D.push_back( alt_eqn.beta );
     shear_3D.push_back( stress_3D );
-  }while( std::abs( alt_eqn.beta ) > 0.005 || stress_3D > 1e-6 );
+  }while( std::abs( alt_eqn.beta ) > 0.005 || stress_3D > 1e-5 );
 
   // Create mesh for output
   OneD_node_mesh<double> Solution_3D( betas_3D, 1 );

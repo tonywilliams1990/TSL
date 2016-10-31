@@ -18,7 +18,7 @@ plt.plot(beta_3D, shear_3D, linestyle='dashed' )
 plt.xlabel('beta')
 plt.ylabel('U_B\'(eta=0)')
 axes = plt.gca()
-axes.set_xlim([-0.1,1.0])
+axes.set_xlim([-0.5,1.0])
 axes.set_ylim([-0.5,1.25])
 
 plt.show()
