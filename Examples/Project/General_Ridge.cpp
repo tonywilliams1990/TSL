@@ -20,8 +20,8 @@ namespace TSL
     {
       double hzeta_right( 20.0 );       // Size of the domain in the zeta_hat direction
       double eta_top( 30.0 );           // Size of the domain in the eta direction
-      const std::size_t N( 200 );       // Number of intervals in the zeta_hat direction
-      const std::size_t M( 200 );       // Number of intervals in the eta direction
+      const std::size_t N( 100 );       // Number of intervals in the zeta_hat direction
+      const std::size_t M( 100 );       // Number of intervals in the eta direction
       const std::size_t Nvar( 4 );      // Number of variables
       double beta( 0.0 );               // Hartree parameter
       double KB( 0.0 );                 // Base flow transpiration ( +ve = blowing )
@@ -43,14 +43,15 @@ namespace TSL
 
       double Phi_w( const double& hzeta )
       {
-        //TODO return transpiration function
-        return 0.0;
+        // Return the transpiration function
+        return Param::K * 0.5 * ( 1. - tanh( Param::gamma * ( hzeta - 1. ) ) );
       }
 
       double Phi_w_hzeta( const double& hzeta )
       {
-        //TODO return derivative of transpiration wrt hzeta
-        return 0.0;
+        // Return derivative of transpiration wrt hzeta
+        double sech_squared = 1. - pow( tanh( Param::gamma * ( hzeta - 1. ) ), 2. ); 
+        return - Param::K * 0.5 * Param::gamma * sech_squared;
       } 
 
       double H( const double& hzeta )
@@ -70,6 +71,40 @@ namespace TSL
         //TODO return 2nd derivative of ridge profile wrt hzeta
         return 0.0;
       }
+
+      Vector<double> laplace_vals( const double& Hd, const double& Hdd, const double& Xd,
+                                   const double& Yd, const double& Xdd, const double& Ydd,
+                                   const double& dX, const double& dY, const double& zeta0)
+      {
+        // A function to return the values for the coefficients of the finite-difference
+        // Laplace operator
+        Vector<double> a(9,0.0);
+
+        // X(i-1,j-1)
+        a[0] = -2.*Hd*Yd*Xd / (4.*zeta0*zeta0*dY*dX);
+        // X(i,j-1)
+        a[1] = ( 1. + (Hd*Hd)/(zeta0*zeta0) ) * ( Yd*Yd/(dY*dY) - Ydd/(2.*dY) ) 
+              + Hdd*Yd/(2.*zeta0*zeta0*dY);
+        // X(i+1,j-1)
+        a[2] =  2.*Hd*Yd*Xd / (4.*zeta0*zeta0*dY*dX);
+        // X(i-1,j)
+        a[3] = ( Xd*Xd/(dX*dX) - Xdd/(2.*dX) )/(zeta0*zeta0);
+        // X(i,j)
+        a[4] = -2.*( Yd*Yd*( 1. + Hd*Hd/(zeta0*zeta0) )/(dY*dY) 
+                     + Xd*Xd/(zeta0*zeta0*dX*dX) );
+        // X(i+1,j)
+        a[5] = ( Xdd/(2.*dX) + Xd*Xd/(dX*dX) ) / (zeta0*zeta0);
+        // X(i-1,j+1)
+        a[6] = 2.*Hd*Yd*Xd / (4.*zeta0*zeta0*dY*dX);
+        // X(i,j+1)
+        a[7] = ( 1. + (Hd*Hd)/(zeta0*zeta0) ) * ( Yd*Yd/(dY*dY) + Ydd/(2.*dY) ) 
+              - Hdd*Yd/(2.*zeta0*zeta0*dY);
+        // X(i+1,j+1)
+        a[8] = -2.*Hd*Yd*Xd / (4.*zeta0*zeta0*dY*dX);
+
+        return a;
+      }
+                                          
 
     } // End of namespace Example
 
@@ -468,7 +503,7 @@ int main()
 
   /* Iterate to a solution */
   double max_residual( 0.1 );                           // Maximum residual
-  std::size_t max_iterations( 2 );                     // Maximum number of iterations
+  std::size_t max_iterations( 1 );                     // Maximum number of iterations
   std::size_t iteration( 0 );                           // Initialise iteration counter
 
   do
@@ -650,14 +685,57 @@ int main()
         double Ydd( Mesh::Ydd( eta ) );
         // Base solution
         Vector<double> Base( Base_soln.get_interpolated_vars( eta ) );
+        // PhiB' = (2-beta)*UB - PsiB
+        double PhiBd( ( 2.0 - Param::beta )*Base[ UB ] - Base[ PsiB ] );
+        // PhiB'' = (2-beta)*UB' - PsiB' = (2-beta)*UB' - ThetaB
+        double PhiBdd( ( 2.0 - Param::beta )*Base[ UBd ] -  Base[ ThetaB ] );
+        
+        // Laplacian coefficients for finite-differencing
+        Vector<double> coeff = laplace_vals( Hd, Hdd, Xd, Yd, Xdd, Ydd, dX, dY, zeta0);
         // Guessed/known components and various derivative values
         Vector<double> Guess( Q.get_nodes_vars( i, j ) );
-        //TODO
+        Vector<double> Guess_eta( ( Q.get_nodes_vars( i, j + 1 ) 
+                                  - Q.get_nodes_vars( i, j - 1 ) ) * (Yd/(2.*dY))  );
+        Vector<double> Guess_hzeta( ( Q.get_nodes_vars( i + 1, j ) 
+                                    - Q.get_nodes_vars( i - 1, j ) ) * (Xd/(2.*dX)) );
+        Vector<double> Guess_laplace( Q.get_nodes_vars( i - 1, j - 1 ) * coeff[0]
+                                   +  Q.get_nodes_vars( i, j - 1 ) * coeff[1] 
+                                   +  Q.get_nodes_vars( i + 1, j - 1 ) * coeff[2]
+                                   +  Q.get_nodes_vars( i - 1, j ) * coeff[3]
+                                   +  Q.get_nodes_vars( i, j ) * coeff[4]
+                                   +  Q.get_nodes_vars( i + 1, j ) * coeff[5]
+                                   +  Q.get_nodes_vars( i - 1, j + 1 ) * coeff[6]
+                                   +  Q.get_nodes_vars( i, j + 1 ) * coeff[7]
+                                   +  Q.get_nodes_vars( i + 1, j + 1 ) * coeff[8] );
         
         //////////////////
         // Phi equation //
         //////////////////
 
+        // Laplacian of Phi        
+        A( row, col( i - 1, j - 1, Phi ) )  = coeff[0];
+        A( row, col( i, j - 1, Phi ) )      = coeff[1];
+        A( row, col( i + 1, j - 1, Phi ) )  = coeff[2];
+        A( row, col( i - 1, j, Phi ) )      = coeff[3];
+        A( row, col( i, j, Phi ) )          = coeff[4];
+        A( row, col( i + 1, j, Phi ) )      = coeff[5];
+        A( row, col( i - 1, j + 1, Phi ) )  = coeff[6];
+        A( row, col( i, j + 1, Phi ) )      = coeff[7];
+        A( row, col( i + 1, j + 1, Phi ) )  = coeff[8];
+        // -(2-beta)U_eta
+        A( row, col( i, j + 1, U ) )        = -( 2. - Param::beta )*Yd/(2.*dY);
+        A( row, col( i, j - 1, U ) )        =  ( 2. - Param::beta )*Yd/(2.*dY);
+        // Theta_hzeta
+        A( row, col( i + 1, j, Theta ) )    =  Xd / (2.*dX);
+        A( row, col( i - 1, j, Theta ) )    = -Xd / (2.*dX);
+        // -H' * Theta_eta
+        A( row, col( i, j + 1, Theta ) )    = -Hd*Yd / (2.*dY);
+        A( row, col( i, j - 1, Theta ) )    =  Hd*Yd / (2.*dY);
+        B[ col( i, j, Phi ) ]               = -Guess_laplace[ Phi ] 
+                                  + ( 2. - Param::beta ) * Guess_eta[ U ]
+                                  - Guess_hzeta[ Theta ]
+                                  + Hd * ( hzeta * Base[ ThetaBd ] + Guess_eta[ Theta ] )
+                                  + ( Hdd * PhiBd - Hd * Hd * PhiBdd )/( zeta0 * zeta0 ); 
 
         ++row;
 
