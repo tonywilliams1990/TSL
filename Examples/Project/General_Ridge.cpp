@@ -20,8 +20,8 @@ namespace TSL
     {
       double hzeta_right( 20.0 );       // Size of the domain in the zeta_hat direction
       double eta_top( 30.0 );           // Size of the domain in the eta direction
-      const std::size_t N( 100 );       // Number of intervals in the zeta_hat direction
-      const std::size_t M( 100 );       // Number of intervals in the eta direction
+      const std::size_t N( 50 );       // Number of intervals in the zeta_hat direction
+      const std::size_t M( 50 );       // Number of intervals in the eta direction
       const std::size_t Nvar( 4 );      // Number of variables
       double beta( 0.0 );               // Hartree parameter
       double KB( 0.0 );                 // Base flow transpiration ( +ve = blowing )
@@ -156,7 +156,7 @@ namespace TSL
       }
 
       const double b1( 0.1 );
-      const double b2( 0.5 );   // Y = (eta_hat + b1)^b2
+      const double b2( 0.3 );   // Y = (eta_hat + b1)^b2
 
       double Y( const double& eta )
       {
@@ -731,12 +731,12 @@ int main()
         // -H' * Theta_eta
         A( row, col( i, j + 1, Theta ) )    = -Hd*Yd / (2.*dY);
         A( row, col( i, j - 1, Theta ) )    =  Hd*Yd / (2.*dY);
-        B[ col( i, j, Phi ) ]               = -Guess_laplace[ Phi ] 
+        // Residual
+        B[ col( i, j, Phi ) ]     = -Guess_laplace[ Phi ] 
                                   + ( 2. - Param::beta ) * Guess_eta[ U ]
                                   - Guess_hzeta[ Theta ]
                                   + Hd * ( hzeta * Base[ ThetaBd ] + Guess_eta[ Theta ] )
                                   + ( Hdd * PhiBd - Hd * Hd * PhiBdd )/( zeta0 * zeta0 ); 
-
         ++row;
 
         //////////////////
