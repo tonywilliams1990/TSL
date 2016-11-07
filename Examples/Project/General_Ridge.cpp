@@ -44,14 +44,14 @@ namespace TSL
       double Phi_w( const double& hzeta )
       {
         // Return the transpiration function
-        return Param::K * 0.5 * ( 1. - tanh( Param::gamma * ( hzeta - 1. ) ) );
+        return -Param::K * 0.5 * ( 1. - tanh( Param::gamma * ( hzeta - 1. ) ) );
       }
 
       double Phi_w_hzeta( const double& hzeta )
       {
         // Return derivative of transpiration wrt hzeta
-        double sech_squared = 1. - pow( tanh( Param::gamma * ( hzeta - 1. ) ), 2. ); 
-        return - Param::K * 0.5 * Param::gamma * sech_squared;
+        double sech_squared = pow( cosh( Param::gamma * ( hzeta - 1 ) ) , -2. ); 
+        return Param::K * 0.5 * Param::gamma * sech_squared;
       } 
 
       double H( const double& hzeta )
@@ -498,6 +498,12 @@ int main()
   // We use the mesh below to write the data on the original zeta-eta domain
   TwoD_node_mesh<double> Q_output( hzeta_nodes, eta_nodes, 8 );
 
+  // Track some of the variables
+  TrackerFile metric( "./DATA/A_file.dat" );
+  metric.push_ptr( &Param::A, "A" );
+  metric.header();
+  
+
   // Vector for the RHS of the matrix problem
   Vector<double> B( 4 * N_eta * N_hzeta + 1, 0.0 );
 
@@ -538,7 +544,7 @@ int main()
         A( row, col( i + 2, j, Phi ) )  = -1.*Xd/(2*dX);
         A( row, col( i, j + 1, Phi ) )  = -4.*Hd*Yd/(2*dY);
         A( row, col( i, j + 2, Phi ) )  =  1.*Hd*Yd/(2*dY);
-        B[ col( i, j, Phi ) ]           = -( Xd*( -3*Q(i,j,Phi) + 4*Q(i+1,j,Phi) 
+        B[ row ]                        = -( Xd*( -3*Q(i,j,Phi) + 4*Q(i+1,j,Phi) 
                                              -Q(i+2,j,Phi) )/(2*dX) ) 
                                           + Hd*Yd*( -3*Q(i,j,Phi) + 4*Q(i,j+1,Phi)
                                              -Q(i,j+2,Phi) )/(2*dY)
@@ -552,7 +558,7 @@ int main()
         A( row, col( i + 2, j, Phi ) )  = -1.*Xd/(2*dX);
         A( row, col( i, j - 1, Phi ) )  =  4.*Hd*Yd/(2*dY);
         A( row, col( i, j - 2, Phi ) )  = -1.*Hd*Yd/(2*dY);
-        B[ col( i, j, Phi ) ]           = -( Xd*( -3*Q(i,j,Phi) + 4*Q(i+1,j,Phi) 
+        B[ row ]                        = -( Xd*( -3*Q(i,j,Phi) + 4*Q(i+1,j,Phi) 
                                              -Q(i+2,j,Phi) )/(2*dX) )
                                           + Hd*Yd*( 3*Q(i,j,Phi) - 4*Q(i,j-1,Phi)
                                              +Q(i,j-2,Phi) )/(2*dY)
@@ -566,7 +572,7 @@ int main()
         A( row, col( i + 2, j, Phi ) )  = -1.*Xd/(2*dX);
         A( row, col( i, j + 1, Phi ) )  = -Hd*Yd/(2*dY);
         A( row, col( i, j - 1, Phi ) )  =  Hd*Yd/(2*dY);
-        B[ col( i, j, Phi ) ]           = -( Xd*( -3*Q(i,j,Phi) + 4*Q(i+1,j,Phi) 
+        B[ row ]                        = -( Xd*( -3*Q(i,j,Phi) + 4*Q(i+1,j,Phi) 
                                              -Q(i+2,j,Phi) )/(2*dX) )
                                           + Hd*Yd*( Q(i,j+1,Phi) - Q(i,j-1,Phi) )/(2*dY)
                                           + Hd*PhiBd;
@@ -575,7 +581,7 @@ int main()
 
       // Psi = 0
       A( row, col( i, j, Psi ) )        =  1.;
-      B[ col( i, j, Psi ) ]             = -Q(i,j,Psi);
+      B[ row ]                          = -Q(i,j,Psi);
       ++row;
 
       // U_zeta - H'( UB' + U_eta ) = 0
@@ -586,7 +592,7 @@ int main()
         A( row, col( i + 2, j, U ) )    = -1.*Xd/(2*dX);
         A( row, col( i, j + 1, U ) )    = -4.*Hd*Yd/(2*dY);
         A( row, col( i, j + 2, U ) )    =  1.*Hd*Yd/(2*dY);
-        B[ col( i, j, U ) ]             = -( Xd*( -3*Q(i,j,U) + 4*Q(i+1,j,U) 
+        B[ row ]                        = -( Xd*( -3*Q(i,j,U) + 4*Q(i+1,j,U) 
                                              -Q(i+2,j,U) )/(2*dX) ) 
                                           + Hd*Yd*( -3*Q(i,j,U) + 4*Q(i,j+1,U)
                                              -Q(i,j+2,U) )/(2*dY)
@@ -600,7 +606,7 @@ int main()
         A( row, col( i + 2, j, U ) )    = -1.*Xd/(2*dX);
         A( row, col( i, j - 1, U ) )    =  4.*Hd*Yd/(2*dY);
         A( row, col( i, j - 2, U ) )    = -1.*Hd*Yd/(2*dY);
-        B[ col( i, j, U ) ]             = -( Xd*( -3*Q(i,j,U) + 4*Q(i+1,j,U) 
+        B[ row ]                        = -( Xd*( -3*Q(i,j,U) + 4*Q(i+1,j,U) 
                                              -Q(i+2,j,U) )/(2*dX) )
                                           + Hd*Yd*( 3*Q(i,j,U) - 4*Q(i,j-1,U)
                                              +Q(i,j-2,U) )/(2*dY)
@@ -614,7 +620,7 @@ int main()
         A( row, col( i + 2, j, U ) )    = -1.*Xd/(2*dX);
         A( row, col( i, j + 1, U ) )    = -Hd*Yd/(2*dY);
         A( row, col( i, j - 1, U ) )    =  Hd*Yd/(2*dY);
-        B[ col( i, j, U ) ]             = -( Xd*( -3*Q(i,j,U) + 4*Q(i+1,j,U) 
+        B[ row ]                        = -( Xd*( -3*Q(i,j,U) + 4*Q(i+1,j,U) 
                                              -Q(i+2,j,U) )/(2*dX) )
                                           + Hd*Yd*( Q(i,j+1,U) - Q(i,j-1,U) )/(2*dY)
                                           + Hd*UBd;
@@ -623,7 +629,7 @@ int main()
 
       // Theta = 0      
       A( row, col( i, j, Theta ) )      =  1.;
-      B[ col( i, j, Theta ) ]           = -Q(i,j,Theta);
+      B[ row ]                          = -Q(i,j,Theta);
       ++row;
 
 
@@ -633,7 +639,7 @@ int main()
     for ( std::size_t i = 1; i < Param::N; ++i )
     {
       // hzeta location
-      double hzeta( hzeta_nodes[ 0 ] );
+      double hzeta( hzeta_nodes[ i ] );
       double Xd( Mesh::Xd( hzeta ) );
       double Xdd( Mesh::Xdd( hzeta ) );
       // Wall transpiration
@@ -655,22 +661,22 @@ int main()
             
       // Phi = Phi_w
       A( row, col( i, j, Phi ) )        =  1.;
-      B[ col( i, j, Phi ) ]             = -Q(i,j,Phi) + Phi_w;
+      B[ row ]                          = -Q( i, j, Phi ) + Phi_w;
       ++row;
       // Psi = 0
       A( row, col( i, j, Psi ) )        =  1.;
-      B[ col( i, j, Psi ) ]             = -Q(i,j,Psi);
+      B[ row ]                          = -Q( i, j, Psi );
       ++row;
       // U = 0
       A( row, col( i, j, U ) )          =  1.;
-      B[ col( i, j, U ) ]               = -Q(i,j,U);
+      B[ row ]                          = -Q( i, j, U );
       ++row;
       // Theta - Psi_eta = -( 1 / ( zeta0^2 ) ) * Phi_w_hzeta
       A( row, col( i, j, Theta ) )      =  1.;
-      A( row, col( i, j, Psi ) )        =  3.*Yd/(2*dY);
-      A( row, col( i, j + 1, Psi ) )    = -4.*Yd/(2*dY);
-      A( row, col( i, j + 2, Psi ) )    =  1.*Yd/(2*dY);
-      B[ col( i, j, Theta ) ]           = -Q(i,j,Theta) + Yd*( -3*Q(i,j,Psi) 
+      A( row, col( i, j, Psi ) )        =  3.*Yd / ( 2 * dY );
+      A( row, col( i, j + 1, Psi ) )    = -4.*Yd / ( 2 * dY );
+      A( row, col( i, j + 2, Psi ) )    =  1.*Yd / ( 2 * dY );
+      B[ row ]                          = -Q(i,j,Theta) + Yd*( -3*Q(i,j,Psi) 
                                           + 4*Q(i,j+1,Psi) - Q(i,j+2,Psi) ) / (2*dY)
                                           - ( 1. / ( zeta0 * zeta0 ) ) * Phi_w_hzeta;
       ++row;
@@ -689,15 +695,19 @@ int main()
         double PhiBd( ( 2.0 - Param::beta )*Base[ UB ] - Base[ PsiB ] );
         // PhiB'' = (2-beta)*UB' - PsiB' = (2-beta)*UB' - ThetaB
         double PhiBdd( ( 2.0 - Param::beta )*Base[ UBd ] -  Base[ ThetaB ] );
+        // PsiB' = Theta_B
+        double PsiBd( Base[ ThetaB ] );
+        // PsiB'' = ThetaB'
+        double PsiBdd( Base[ ThetaBd ] ); 
         
         // Laplacian coefficients for finite-differencing
         Vector<double> coeff = laplace_vals( Hd, Hdd, Xd, Yd, Xdd, Ydd, dX, dY, zeta0);
         // Guessed/known components and various derivative values
         Vector<double> Guess( Q.get_nodes_vars( i, j ) );
         Vector<double> Guess_eta( ( Q.get_nodes_vars( i, j + 1 ) 
-                                  - Q.get_nodes_vars( i, j - 1 ) ) * (Yd/(2.*dY))  );
+                                  - Q.get_nodes_vars( i, j - 1 ) ) * ( Yd /( 2 * dY )) );
         Vector<double> Guess_hzeta( ( Q.get_nodes_vars( i + 1, j ) 
-                                    - Q.get_nodes_vars( i - 1, j ) ) * (Xd/(2.*dX)) );
+                                    - Q.get_nodes_vars( i - 1, j ) ) * ( Xd /( 2 * dX )) );
         Vector<double> Guess_laplace( Q.get_nodes_vars( i - 1, j - 1 ) * coeff[0]
                                    +  Q.get_nodes_vars( i, j - 1 ) * coeff[1] 
                                    +  Q.get_nodes_vars( i + 1, j - 1 ) * coeff[2]
@@ -722,27 +732,58 @@ int main()
         A( row, col( i - 1, j + 1, Phi ) )  = coeff[6];
         A( row, col( i, j + 1, Phi ) )      = coeff[7];
         A( row, col( i + 1, j + 1, Phi ) )  = coeff[8];
-        // -(2-beta)U_eta
-        A( row, col( i, j + 1, U ) )        = -( 2. - Param::beta )*Yd/(2.*dY);
-        A( row, col( i, j - 1, U ) )        =  ( 2. - Param::beta )*Yd/(2.*dY);
+        // -(2-beta)*U_eta
+        A( row, col( i, j + 1, U ) )        = -( 2. - Param::beta )*Yd/( 2 * dY );
+        A( row, col( i, j - 1, U ) )        =  ( 2. - Param::beta )*Yd/( 2 * dY );
         // Theta_hzeta
-        A( row, col( i + 1, j, Theta ) )    =  Xd / (2.*dX);
-        A( row, col( i - 1, j, Theta ) )    = -Xd / (2.*dX);
+        A( row, col( i + 1, j, Theta ) )    =  Xd / ( 2 * dX );
+        A( row, col( i - 1, j, Theta ) )    = -Xd / ( 2 * dX );
         // -H' * Theta_eta
-        A( row, col( i, j + 1, Theta ) )    = -Hd*Yd / (2.*dY);
-        A( row, col( i, j - 1, Theta ) )    =  Hd*Yd / (2.*dY);
+        A( row, col( i, j + 1, Theta ) )    = -Hd*Yd / ( 2 * dY );
+        A( row, col( i, j - 1, Theta ) )    =  Hd*Yd / ( 2 * dY );
         // Residual
-        B[ col( i, j, Phi ) ]     = -Guess_laplace[ Phi ] 
-                                  + ( 2. - Param::beta ) * Guess_eta[ U ]
-                                  - Guess_hzeta[ Theta ]
-                                  + Hd * ( hzeta * Base[ ThetaBd ] + Guess_eta[ Theta ] )
-                                  + ( Hdd * PhiBd - Hd * Hd * PhiBdd )/( zeta0 * zeta0 ); 
+        B[ row ]      = - Guess_laplace[ Phi ] + ( 2. - Param::beta ) * Guess_eta[ U ]
+                        - Guess_hzeta[ Theta ]
+                        + Hd * ( hzeta * Base[ ThetaBd ] + Guess_eta[ Theta ] )
+                        + ( Hdd * PhiBd - Hd * Hd * PhiBdd )/( zeta0 * zeta0 ); 
         ++row;
 
         //////////////////
         // Psi equation //
         //////////////////
 
+        // Laplacian of Psi
+        A( row, col( i - 1, j - 1, Psi ) )  = coeff[0];
+        A( row, col( i, j - 1, Psi ) )      = coeff[1];
+        A( row, col( i + 1, j - 1, Psi ) )  = coeff[2];
+        A( row, col( i - 1, j, Psi ) )      = coeff[3];
+        A( row, col( i, j, Psi ) )          = coeff[4];
+        A( row, col( i + 1, j, Psi ) )      = coeff[5];
+        A( row, col( i - 1, j + 1, Psi ) )  = coeff[6];
+        A( row, col( i, j + 1, Psi ) )      = coeff[7];
+        A( row, col( i + 1, j + 1, Psi ) )  = coeff[8];
+
+        // -(2-beta)*U_hzeta / (zeta0^2)
+        A( row, col( i + 1, j, U ) )        = - ( 2. - Param::beta ) * Xd 
+                                              / ( 2. * dX * zeta0 * zeta0 );
+        A( row, col( i - 1, j, U ) )        =   ( 2. - Param::beta ) * Xd
+                                              / ( 2. * dX * zeta0 * zeta0 );
+
+        // (2-beta)*H'*U_eta / (zeta0^2)
+        A( row, col( i, j + 1, U ) )        =   ( 2. - Param::beta ) * Hd * Yd
+                                              / ( 2. * dY * zeta0 * zeta0 );
+        A( row, col( i, j - 1, U ) )        = - ( 2. - Param::beta ) * Hd * Yd
+                                              / ( 2. * dY * zeta0 * zeta0 );
+
+        // -Theta_eta
+        A( row, col( i, j + 1, Theta ) )    = - Yd / ( 2 * dY ); 
+        A( row, col( i, j - 1, Theta ) )    =   Yd / ( 2 * dY ); 
+
+        // Residual
+        B[ row ]      = - Guess_laplace[ Psi ] + ( 2. - Param::beta ) 
+                        * ( Guess_hzeta[ U ] - Hd * ( Base[ UBd ] + Guess_eta[ U ]  ) )
+                        + Guess_eta[ Theta ] - Hd * Hd * hzeta * PsiBdd / ( zeta0 * zeta0 )
+                        + PsiBd * ( 2. * Hd + hzeta * Hdd ) / ( zeta0 * zeta0 );
 
         ++row;
 
@@ -750,6 +791,38 @@ int main()
         // U equation //
         ////////////////
 
+        // Laplacian of U
+        A( row, col( i - 1, j - 1, U ) )    = coeff[0];
+        A( row, col( i, j - 1, U ) )        = coeff[1];
+        A( row, col( i + 1, j - 1, U ) )    = coeff[2];
+        A( row, col( i - 1, j, U ) )        = coeff[3];
+        A( row, col( i, j, U ) )            = coeff[4];
+        A( row, col( i + 1, j, U ) )        = coeff[5];
+        A( row, col( i - 1, j + 1, U ) )    = coeff[6];
+        A( row, col( i, j + 1, U ) )        = coeff[7];
+        A( row, col( i + 1, j + 1, U ) )    = coeff[8];
+
+        // -2 * beta * ( UB + UGuess ) * U
+        A( row, col( i, j, U ) )           += -2.* Param::beta * (Base[ UB ] + Guess[ U ]);
+
+        // ( hzeta * PsiB + PsiGuess ) * U_hzeta
+        A( row, col( i + 1, j, U ) )       +=   ( hzeta * Base[ PsiB ] + Guess[ Psi ] )
+                                              * Xd / ( 2 * dX ); 
+        A( row, col( i - 1, j, U ) )       += - ( hzeta * Base[ PsiB ] + Guess[ Psi ] )
+                                              * Xd / ( 2 * dX );
+
+        // [ PhiB + PhiGuess - ( hzeta * PsiB + PsiGuess ) * H' ] * U_eta 
+        A( row, col( i, j + 1, U ) )       +=   ( Base[ PhiB ] + Guess[ Phi ] - 
+                                                ( hzeta * PsiB + Guess[ Psi ] ) * Hd )
+                                              * Yd / ( 2 * dY );
+        A( row, col( i, j - 1, U ) )       += - ( Base[ PhiB ] + Guess[ Phi ] - 
+                                                ( hzeta * PsiB + Guess[ Psi ] ) * Hd )
+                                              * Yd / ( 2 * dY );
+        
+        // [ UGuess_hzeta - H' * ( UB' + UGuess_eta ) ] * Psi
+
+
+        // ( UB' + UGuess_eta ) * Phi
 
         ++row;
 
@@ -776,6 +849,9 @@ int main()
 
     /* A coefficient condition */
 
+    //TODO test tracker
+    Param::A += 0.3;
+
     ++iteration;
   }while( ( max_residual > 1.e-8 ) && ( iteration < max_iterations ) ); // End iteration
   
@@ -784,6 +860,11 @@ int main()
     cout << "STOPPED AFTER TOO MANY ITERATIONS" << endl;
   }
   
+  // Update the metric file
+  metric.update();
+
+  Param::A += 0.4;
+  metric.update();
 
   cout << "FINISHED" << endl;
 }
