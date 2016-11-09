@@ -20,8 +20,8 @@ namespace TSL
     {
       double hzeta_right( 16.0 );       // Size of the domain in the zeta_hat direction
       double eta_top( 128.0 );          // Size of the domain in the eta direction
-      const std::size_t N( 100 );       // Number of intervals in the zeta_hat direction
-      const std::size_t M( 100 );       // Number of intervals in the eta direction
+      const std::size_t N( 50 );       // Number of intervals in the zeta_hat direction
+      const std::size_t M( 50 );       // Number of intervals in the eta direction
       const std::size_t Nvar( 4 );      // Number of variables
       double beta( 0.0 );               // Hartree parameter
       double KB( 0.0 );                 // Base flow transpiration ( +ve = blowing )
@@ -617,7 +617,7 @@ int main()
       double PhiBd( ( 2.0 - Param::beta )*Base[ UB ] - Base[ PsiB ] );
       double UBd( Base[ UBd ] );
 
-      // Phi_zeta - H'( PhiB' + Phi_eta ) = 0
+      // Phi_hzeta - H'( PhiB' + Phi_eta ) = 0
       if( j == 0 ) // eta = 0 ( bottom left corner )
       {
         A( row, col( i, j, Phi ) )      = -3.*Xd/(2*dX) + 3.*Hd*Yd/(2*dY); 
@@ -665,7 +665,7 @@ int main()
       B[ row ]                          = -Q(i,j,Psi);
       ++row;
 
-      // U_zeta - H'( UB' + U_eta ) = 0
+      // U_hzeta - H'( UB' + U_eta ) = 0
       if( j == 0 ) // eta = 0 ( bottom left corner )
       {
         A( row, col( i, j, U ) )        = -3.*Xd/(2*dX) + 3.*Hd*Yd/(2*dY); 

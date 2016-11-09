@@ -243,36 +243,36 @@ using namespace std;
 
 int main()
 {
+  cout << "*** ---------- Blowing Code ---------- ***" << endl;
+
   double zeta0( 4.0 );                                      // zeta0 is the gap size
-  //Example::A  = 1.1*zeta0;                                  // Guess the (unknow) displacement constant
-  // Original coordinates are zeta & eta, then we change to X=X(zeta) & Y=Y(eta), for a non-uniform mesh.
-  // Note here that zeta_hat = zeta/zeta_0 , so the edge of the plate is always at zeta_hat=1.
-  double zeta_hat_right = Example::zeta_hat_right;          // The size of the domain in the zeta_hat direction
-  double eta_top = Example::eta_top;                        // The size of the domain in the eta direction
+  
+  // Original coordinates are zeta & eta, then we change to X=X(zeta) & Y=Y(eta)
+  double zeta_hat_right = Example::zeta_hat_right; 
+  double eta_top = Example::eta_top;                      
   //
-  // define the remapped (non-uniform mesh) domain
+  // Define the remapped (non-uniform mesh) domain
   double left   = Example::X( 0.0 );
   double right  = Example::X( zeta_hat_right );
   double bottom = Example::Y(0.0);
   double top    = Example::Y( eta_top );
   //
-	// number of points to solve for 
+	// Number of points 
   unsigned N_zeta = Example::N + 1;
   unsigned N_X( N_zeta );
   unsigned N_eta = Example::M + 1;
   unsigned N_Y( N_eta );     
-  // nodal positions in the remapped domain (spanned by X,Y)
+  // Nodal positions in the remapped domain (spanned by X,Y)
   Vector<double> X_nodes, Y_nodes;
   X_nodes.linspace( left, right, N_X );
   Y_nodes.linspace( bottom, top, N_Y );
 
-  //
-  // we still store the original coordinates for writing data on the original zeta-eta domain
+  // Store the original coordinates for writing data on the original zeta-eta domain
   Vector<double> eta_nodes, zeta_hat_nodes;
   eta_nodes.linspace( 0.0, eta_top, N_eta );
   zeta_hat_nodes.linspace( 0.0, zeta_hat_right, N_zeta );
   //
-  // to find eta=eta(Y) and zeta=zeta(X) we will use Newton iteration 
+  // To find eta=eta(Y) and zeta=zeta(X) we will use Newton iteration 
   Example::invert_eta find_eta;
   Newton<double> newton_eta( &find_eta, 50 );
   //
@@ -314,34 +314,28 @@ int main()
     newton_zeta.iterate(guess);
     zeta_hat_nodes[i] = guess[0];
   } 
-  // we now know both the nodal positions as (X,Y) and (zeta,eta).
-  //zeta_hat_nodes.dump_file("./DATA/zeta_hat.nodes");
-  //eta_nodes.dump_file("./DATA/eta.nodes");
   //
-  // step sizes in the remapped domain : these should be constants
+  // Step sizes in the remapped domain : these should be constants
   const double dY( Y_nodes[ 1 ] - Y_nodes[ 0 ] );
   const double dX( X_nodes[ 1 ] - X_nodes[ 0 ] );
   //
-  // construct and solve the ODE for the far field in the BL  
+  // Construct and solve the ODE for the far field in the BL  
   Example::Farfield_equation equation;
   Example::Farfield_free_BC freebc;
   Example::Farfield_plate_BC platebc;
   //
 
-  unsigned ODE_N_eta( N_eta );           // Number of nodes to use in the ODE solution
-  Vector<double> ODE_eta_nodes( eta_nodes );
-  // use the line below to use different nodal distribution for the ODE solution
-  // DenseVector<double> ODE_eta_nodes( Utility::uniform_node_vector( 0, eta_top, ODE_N_eta ) );
+  unsigned ODE_N_eta( N_eta );                  // Number of nodes in the ODE solution
+  Vector<double> ODE_eta_nodes( eta_nodes );    // ODE nodes
   cout << "# WE ARE SOLVING USING A " << N_zeta << " x " << N_eta << " mesh, and " 
        << ODE_N_eta << " points in the ODE solver.\n";  
-  //
+
   ODE_BVP<double> farfield( &equation, ODE_eta_nodes, &platebc, &freebc );
   farfield.max_iterations() = 50;
-  // initial guesstimate
+  // Initial guesstimate
   for ( unsigned j = 0; j < ODE_N_eta; ++j )
   {
     double eta( ODE_eta_nodes[ j ] );
-    // converges to non-triv solution when n=1
     farfield.solution()( j, oU )      =   1 - exp( -eta );
     farfield.solution()( j, oUd )     =   exp(-eta);
     farfield.solution()( j, oPhi )    =   eta - 1.5 * tanh(eta);
@@ -379,20 +373,20 @@ int main()
   /* Vector for the RHS of the matrix problem  */
   Vector<double> B( 4 * N_eta * N_zeta + 1, 0.0 );
   
-  do                                                                         // Iterate over values of zeta_0
+  do                                                   // Iterate over values of zeta_0
   {
     /* Iterate to a solution */
-    double max_residual( 0.0 );                                              // Maximum residual
-    unsigned max_iterations( 20 );                                           // Maximum number of iterations  
-    unsigned iteration( 0 );                                                 // Initialise iteration counter
+    double max_residual( 0.0 );                        // Maximum residual
+    unsigned max_iterations( 20 );                     // Maximum number of iterations  
+    unsigned iteration( 0 );                           // Initialise iteration counter
     do 
     {
-      /* N_eta x N_zeta mesh, with 4 unknowns at each node + 1 for the unknow coefficient "A". */
+      /* N_eta x N_zeta mesh, with 4 unknowns at each node + 1 the coefficient "A". */
       SparseMatrix<double> A( 4 * N_eta * N_zeta + 1, 4 * N_eta * N_zeta + 1 );
       cout << "Assembling global sparse matrix problem.\n";
       
       using namespace Example;
-      unsigned row( 0 );                                                      // Initialise row counter
+      unsigned row( 0 );                               // Initialise row counter
 
       /* zeta_hat = 0 boundary ( left boundary ) */
       unsigned i( 0 );
@@ -406,7 +400,8 @@ int main()
           A( row, col( i, j, Phi ) )      = - 3.*Xd/(2*dX);
           A( row, col( i + 1, j, Phi ) )  =   4.*Xd/(2*dX);
           A( row, col( i + 2, j, Phi ) )  = - 1.*Xd/(2*dX);
-          B[ row ]                        = - ( ( -3*Q(i,j,Phi) + 4*Q(i+1,j,Phi) - Q(i+2,j,Phi) )*Xd/(2*dX) );
+          B[ row ]                        = - ( ( -3*Q(i,j,Phi) + 4*Q(i+1,j,Phi) 
+                                            - Q(i+2,j,Phi) )*Xd/(2*dX) );
           ++row;
           // psi = 0
           A( row, col( i, j, Psi ) )      =   1;
@@ -416,7 +411,8 @@ int main()
           A( row, col( i, j, U ) )        = - 3.*Xd/(2*dX);
           A( row, col( i + 1, j, U ) )    =   4.*Xd/(2*dX);
           A( row, col( i + 2, j, U ) )    = - 1.*Xd/(2*dX);
-          B[ row ]                        = - ( ( -3*Q(i,j,U) + 4*Q(i+1,j,U) - Q(i+2,j,U) )*Xd/(2*dX) );
+          B[ row ]                        = - ( ( -3*Q(i,j,U) + 4*Q(i+1,j,U) 
+                                            - Q(i+2,j,U) )*Xd/(2*dX) );
           ++row;
           //// theta = 0
           A( row, col( i, j, Theta ) )    =   1;
@@ -462,8 +458,8 @@ int main()
         A( row, col( i, j + 1, Psi ) )    = - Yd*4./(2*dY);
         A( row, col( i, j + 2, Psi ) )    =   Yd/(2*dY);
         B[ row ]                          = - Q( i, j, Theta ) + Yd*( -3*Q(i, j, Psi) 
-                                            + 4 * Q(i, j + 1, Psi) - Q(i, j + 2, Psi) ) / (2*dY) 
-                                            - Phi_w_zeta_hat / (zeta0 * zeta0);
+                                            + 4 * Q(i, j + 1, Psi) - Q(i, j + 2, Psi) )
+                                            / (2*dY) - Phi_w_zeta_hat / (zeta0 * zeta0);
         ++row;     
       
         // Main interior grid points 
@@ -473,17 +469,21 @@ int main()
           double eta( eta_nodes[ j ] );
           double Yd( Example::Yd(eta) );
           double Ydd( Example::Ydd(eta) );
-          /* Get the underlying 2D base flow solution as given by the ODE for this value of eta */
+          /* Get the underlying 2D base flow solution for this value of eta */
           Vector<double> base( farfield.solution().get_interpolated_vars( eta ) );
           /* Get the guessed/known components and find various derivative values */      
           Vector<double> Guess( Q.get_nodes_vars(i,j) );
-          Vector<double> Guess_Y( ( Q.get_nodes_vars(i,j+1) - Q.get_nodes_vars(i,j-1) ) / (2*dY) );
-          Vector<double> Guess_X( ( Q.get_nodes_vars(i+1,j) - Q.get_nodes_vars(i-1,j) ) / (2*dX) );
-          Vector<double> Guess_laplace( 
-            ( Q.get_nodes_vars(i+1,j) - Q.get_nodes_vars(i,j)*2 + Q.get_nodes_vars(i-1,j) ) * Xd * Xd 
+          Vector<double> Guess_Y( ( Q.get_nodes_vars(i,j+1) 
+                                  - Q.get_nodes_vars(i,j-1) ) / (2*dY) );
+          Vector<double> Guess_X( ( Q.get_nodes_vars(i+1,j) 
+                                  - Q.get_nodes_vars(i-1,j) ) / (2*dX) );
+          Vector<double> Guess_laplace( ( Q.get_nodes_vars(i+1,j) 
+            - Q.get_nodes_vars(i,j)*2 + Q.get_nodes_vars(i-1,j) ) * Xd * Xd 
             / (zeta0*zeta0*dX*dX)
-            + ( Q.get_nodes_vars(i+1,j) - Q.get_nodes_vars(i-1,j) ) * Xdd / (zeta0*zeta0*2*dX) 
-            + ( Q.get_nodes_vars(i,j+1) - Q.get_nodes_vars(i,j)*2 + Q.get_nodes_vars(i,j-1) ) * Yd * Yd / (dY*dY) 
+            + ( Q.get_nodes_vars(i+1,j) - Q.get_nodes_vars(i-1,j) ) * Xdd 
+            / (zeta0*zeta0*2*dX) 
+            + ( Q.get_nodes_vars(i,j+1) - Q.get_nodes_vars(i,j)*2 
+            +   Q.get_nodes_vars(i,j-1) ) * Yd * Yd / (dY*dY) 
             + ( Q.get_nodes_vars(i,j+1) - Q.get_nodes_vars(i,j-1) ) * Ydd / (2*dY) );
           //
 
@@ -494,13 +494,16 @@ int main()
           // phi_i,j+1
           A( row, col( i, j + 1, Phi ) )    =   Yd*Yd/(dY*dY) + Ydd/(2*dY);       
           // phi_i,j
-          A( row, col( i, j, Phi ) )        = - 2*Yd*Yd/(dY*dY) - 2*Xd*Xd/(zeta0*zeta0*dX*dX);
+          A( row, col( i, j, Phi ) )        = - 2*Yd*Yd/(dY*dY) - 2*Xd*Xd
+                                              / ( zeta0 * zeta0 * dX * dX );
           // phi_i,j-1
           A( row, col( i, j - 1, Phi ) )    =   Yd*Yd/(dY*dY) - Ydd/(2*dY);
           // phi_i+1,j
-          A( row, col( i + 1, j, Phi ) )    =   Xd*Xd/(zeta0*zeta0*dX*dX) + Xdd/(2*zeta0*zeta0*dX);
+          A( row, col( i + 1, j, Phi ) )    =   Xd*Xd/(zeta0*zeta0*dX*dX) + Xdd
+                                              / ( 2*zeta0*zeta0*dX );
           // phi_i-1,j
-          A( row, col( i - 1, j, Phi ) )    =   Xd*Xd/(zeta0*zeta0*dX*dX) - Xdd/(2*zeta0*zeta0*dX);
+          A( row, col( i - 1, j, Phi ) )    =   Xd*Xd/(zeta0*zeta0*dX*dX) - Xdd
+                                              / ( 2*zeta0*zeta0*dX );
           // u_i,j+1
           A( row, col( i, j + 1, U ) )      = - Yd/dY;
           // u_i,j-1
@@ -511,7 +514,8 @@ int main()
           A( row, col( i - 1, j, Theta ) )  = - Xd/(2*dX);
           // RHS
           B[ row ]                          = - Guess_laplace[ Phi ] 
-                                              + 2 * Yd * Guess_Y[ U ] - Xd * Guess_X[ Theta ]; 
+                                              + 2 * Yd * Guess_Y[ U ] 
+                                              - Xd * Guess_X[ Theta ]; 
           ++row;
 
           //////////////////
@@ -521,13 +525,16 @@ int main()
           // psi_i,j+1
           A( row, col( i, j + 1, Psi ) )    =   Yd*Yd/(dY*dY) + Ydd/(2*dY);        
           // psi_i,j
-          A( row, col( i, j, Psi ) )        = - 2*Yd*Yd/(dY*dY) - 2*Xd*Xd/(zeta0*zeta0*dX*dX);
+          A( row, col( i, j, Psi ) )        = - 2*Yd*Yd/(dY*dY) - 2*Xd*Xd
+                                              / ( zeta0*zeta0*dX*dX );
           // psi_i,j-1
           A( row, col( i, j - 1, Psi ) )    =   Yd*Yd/(dY*dY) - Ydd/(2*dY);
           // psi_i+1,j
-          A( row, col( i + 1, j, Psi ) )    =   Xd*Xd/(zeta0*zeta0*dX*dX) + Xdd/(2*zeta0*zeta0*dX);
+          A( row, col( i + 1, j, Psi ) )    =   Xd*Xd/(zeta0*zeta0*dX*dX) + Xdd
+                                              / ( 2*zeta0*zeta0*dX );
           // psi_i-1,j  
-          A( row, col( i - 1, j, Psi ) )    =   Xd*Xd/(zeta0*zeta0*dX*dX) - Xdd/(2*zeta0*zeta0*dX);
+          A( row, col( i - 1, j, Psi ) )    =   Xd*Xd/(zeta0*zeta0*dX*dX) - Xdd
+                                              / ( 2*zeta0*zeta0*dX );
           // u_i+1,j
           A( row, col( i + 1, j, U ) )      = - Xd/(zeta0*zeta0*dX);        
           // u_i-1,j  
@@ -538,7 +545,8 @@ int main()
           A( row, col( i, j - 1, Theta ) )  =   Yd/(2*dY);        
           // RHS      
           B[ row  ]                         = - Guess_laplace[ Psi ] 
-                                              + 2 * Xd * Guess_X[ U ] / (zeta0*zeta0) + Yd * Guess_Y[ Theta ];
+                                              + 2 * Xd * Guess_X[ U ] / (zeta0*zeta0) 
+                                              + Yd * Guess_Y[ Theta ];
           ++row;
 
           ////////////////    
@@ -546,26 +554,34 @@ int main()
           ////////////////
 
           // u_i,j+1
-          A( row, col( i, j + 1, U ) )      =   Yd*Yd/(dY*dY) + Ydd/(2*dY) + (Guess[Phi] + base[oPhi])* Yd / (2*dY);
+          A( row, col( i, j + 1, U ) )      =   Yd*Yd/(dY*dY) + Ydd/(2*dY) + (Guess[Phi] 
+                                              + base[oPhi])* Yd / (2*dY);
           // u_i,j
-          A( row, col( i, j, U ) )          = - 2*Yd*Yd/(dY*dY) - 2*Xd*Xd/(zeta0*zeta0*dX*dX);
+          A( row, col( i, j, U ) )          = - 2*Yd*Yd/(dY*dY) - 2*Xd*Xd
+                                              / ( zeta0*zeta0*dX*dX );
           // u_i,j-1
-          A( row, col( i, j - 1, U ) )      =   Yd*Yd/(dY*dY) - Ydd/(2*dY) - (Guess[Phi] + base[oPhi])* Yd / (2*dY);
+          A( row, col( i, j - 1, U ) )      =   Yd*Yd/(dY*dY) - Ydd/(2*dY) - (Guess[Phi] 
+                                              + base[oPhi])* Yd / (2*dY);
           // u_i+1,j
-          A( row, col( i + 1, j, U ) )      =   Xd*Xd/(zeta0*zeta0*dX*dX) + Xdd/(2*zeta0*zeta0*dX) 
-                                              + (Guess[Psi] + base[oPsi]*zeta_hat) * Xd / (2*dX);
+          A( row, col( i + 1, j, U ) )      =   Xd*Xd/(zeta0*zeta0*dX*dX) + Xdd
+                                              / ( 2 * zeta0 * zeta0 * dX ) 
+                                              + (Guess[Psi] + base[oPsi]*zeta_hat) * Xd 
+                                              / ( 2 * dX );
           // u_i-1,j
-          A( row, col( i - 1, j, U ) )      =   Xd*Xd/(zeta0*zeta0*dX*dX) - Xdd/(2*zeta0*zeta0*dX) 
-                                              - (Guess[Psi] + base[oPsi]*zeta_hat) * Xd / (2*dX);
+          A( row, col( i - 1, j, U ) )      =   Xd*Xd/(zeta0*zeta0*dX*dX) - Xdd
+                                              / ( 2*zeta0*zeta0*dX ) 
+                                              - (Guess[Psi] + base[oPsi]*zeta_hat) * Xd 
+                                              / ( 2*dX );
           // phi_i,j
           A( row, col( i, j, Phi ) )        =   ( Yd * Guess_Y[U] + base[oUd] );
           // psi_i,j
           A( row, col( i, j, Psi ) )        =   ( Xd * Guess_X[U] + 0);
           // RHS
           B[ row ]                          = - Guess_laplace[ U ] 
-                                              - Yd * (base[oPhi] + Guess[Phi]) * Guess_Y[ U ] 
-                                              - Xd * (zeta_hat*base[oPsi] + Guess[Psi]) * Guess_X[ U ] 
-                                              - base[oUd] * Guess[Phi];
+                                              - Yd * (base[oPhi] + Guess[Phi]) 
+                                              * Guess_Y[ U ] - Xd 
+                                              * (zeta_hat*base[oPsi] + Guess[Psi]) 
+                                              * Guess_X[ U ] - base[oUd] * Guess[Phi];
           ++row;
 
           ////////////////////
@@ -573,17 +589,25 @@ int main()
           ////////////////////
 
           // theta_i,j+1
-          A( row, col( i, j + 1, Theta ) )  =   Yd*Yd/(dY*dY) + Ydd/(2*dY) + (Guess[Phi]+base[oPhi]) * Yd / (2*dY);
+          A( row, col( i, j + 1, Theta ) )  =   Yd*Yd/(dY*dY) + Ydd/(2*dY) 
+                                              + (Guess[Phi]+base[oPhi]) * Yd / (2*dY);
           // theta_i,j  
-          A( row, col( i, j, Theta ) )      = - 2*Yd*Yd/(dY*dY) - 2*Xd*Xd/(zeta0*zeta0*dX*dX) + 2*(Guess[U]+base[oU]);
+          A( row, col( i, j, Theta ) )      = - 2 * Yd*Yd / (dY*dY) - 2*Xd*Xd 
+                                              / (zeta0*zeta0*dX*dX) 
+                                              +  2 * (Guess[U]+base[oU]);
           // theta_i,j-1
-          A( row, col( i, j - 1, Theta ) )  =   Yd*Yd/(dY*dY) - Ydd/(2*dY) - (Guess[Phi]+base[oPhi]) * Yd / (2*dY);
+          A( row, col( i, j - 1, Theta ) )  =   Yd*Yd/(dY*dY) - Ydd/(2*dY) 
+                                              - (Guess[Phi]+base[oPhi]) * Yd / (2*dY);
           // theta_i+1,j
-          A( row, col( i + 1, j, Theta ) )  =   Xd*Xd/(zeta0*zeta0*dX*dX) + Xdd/(2*zeta0*zeta0*dX) 
-                                              + (Guess[Psi]+zeta_hat*base[oPsi]) * Xd / (2*dX);
+          A( row, col( i + 1, j, Theta ) )  =   Xd*Xd/(zeta0*zeta0*dX*dX) + Xdd
+                                              / ( 2*zeta0*zeta0*dX ) 
+                                              + (Guess[Psi]+zeta_hat*base[oPsi]) * Xd 
+                                              / (2*dX);
           // theta_i-1,j
-          A( row, col( i - 1, j, Theta ) )  =   Xd*Xd/(zeta0*zeta0*dX*dX) - Xdd/(2*zeta0*zeta0*dX) 
-                                              - (Guess[Psi]+zeta_hat*base[oPsi]) * Xd / (2*dX);
+          A( row, col( i - 1, j, Theta ) )  =   Xd*Xd/(zeta0*zeta0*dX*dX) - Xdd
+                                              / ( 2*zeta0*zeta0*dX ) 
+                                              - (Guess[Psi]+zeta_hat*base[oPsi]) * Xd 
+                                              / (2*dX);
           // u_i,j+1
           A( row, col( i, j + 1, U ) )      = - zeta_hat*(Guess[U]+base[oU])*Yd / dY;
           // u_i,j
@@ -593,22 +617,25 @@ int main()
           // u_i,j-1
           A( row, col( i, j - 1, U ) )      =   zeta_hat*(Guess[U]+base[oU])*Yd / dY;
           // u_i+1,j
-          A( row, col( i + 1, j, U ) )      =   eta*(Guess[ U ]+base[oU])*Xd/(zeta0*zeta0*dX);
+          A( row, col( i + 1, j, U ) )      =   eta*(Guess[ U ]+base[oU])*Xd
+                                              / ( zeta0*zeta0*dX );
           // u_i-1,j
-          A( row, col( i - 1, j, U ) )      = - eta*(Guess[ U ]+base[oU])*Xd/(zeta0*zeta0*dX);
+          A( row, col( i - 1, j, U ) )      = - eta*(Guess[ U ]+base[oU])*Xd
+                                              / ( zeta0*zeta0*dX );
           // phi_i,j
-          A( row, col( i, j, Phi ) )        =   ( Yd*Guess_Y[ Theta ] + zeta_hat*base[oThetad] );
+          A( row, col( i, j, Phi ) )        =   ( Yd*Guess_Y[ Theta ] 
+                                              + zeta_hat*base[oThetad] );
           // psi_i,j
           A( row, col( i, j, Psi ) )        =   ( Xd*Guess_X[ Theta ] + base[oTheta] );
           // RHS
-          B[ row ]                          = - Guess_laplace[ Theta ] 
-                                              - Yd * (base[oPhi] + Guess[Phi]) * Guess_Y[Theta]
-					      - Xd * (zeta_hat * base[oPsi] + Guess[Psi]) * Guess_X[Theta]
-					      + 2 * zeta_hat * Yd * (base[oU] + Guess[U]) * Guess_Y[U]
-					      - 2 * (eta / (zeta0 * zeta0)) * Xd * (base[oU] + Guess[U]) * Guess_X[U]
-					      - 2 * (Guess[Theta] + zeta_hat * (base[oTheta] - base[oUd])) * Guess[U]
-					      - zeta_hat * base[oThetad] * Guess[Phi] - base[oTheta] * Guess[Psi]
-					      - 2 * base[oU] * Guess[Theta]; 
+          B[ row ]    = - Guess_laplace[ Theta ] - Yd * (base[oPhi] + Guess[Phi]) 
+                        * Guess_Y[Theta] - Xd * (zeta_hat * base[oPsi] + Guess[Psi]) 
+                        * Guess_X[Theta] + 2 * zeta_hat * Yd * (base[oU] + Guess[U]) 
+                        * Guess_Y[U] - 2 * (eta / (zeta0 * zeta0)) * Xd 
+                        * (base[oU] + Guess[U]) * Guess_X[U] - 2 * (Guess[Theta] 
+                        + zeta_hat * (base[oTheta] - base[oUd])) * Guess[U]
+					              - zeta_hat * base[oThetad] * Guess[Phi] - base[oTheta] * Guess[Psi]
+					              - 2 * base[oU] * Guess[Theta]; 
           ++row;
         }
         // eta = eta_inf boundary ( top boundary )
@@ -622,11 +649,14 @@ int main()
           A( row, col( i, j, Phi ) )        =   3.0 *Yd/ (2*dY);
           A( row, col( i, j - 1, Phi ) )    = - 4.0 *Yd/ (2*dY);
           A( row, col( i, j - 2, Phi ) )    =   1.0 *Yd/ (2*dY);
-          A( row, 4 * N_zeta * N_eta )      = - (zeta0 * zeta0 * zeta_hat * zeta_hat - eta * eta)
-                                              / pow(eta*eta + zeta0*zeta0*zeta_hat*zeta_hat,2);
-          B[ row ]                          = - ( ( 3*Q(i,j,Phi) - 4*Q(i,j-1,Phi) + Q(i,j-2,Phi) ) * Yd / (2*dY) 
-                                              - Example::A*(zeta0*zeta0*zeta_hat*zeta_hat-eta*eta)
-                                              / pow(eta*eta + zeta0*zeta0*zeta_hat*zeta_hat,2) );
+          A( row, 4 * N_zeta * N_eta )      = - (zeta0 * zeta0 * zeta_hat * zeta_hat 
+                                              - eta * eta) / pow(eta*eta 
+                                              + zeta0*zeta0*zeta_hat*zeta_hat,2);
+          B[ row ]                          = - ( ( 3*Q(i,j,Phi) - 4*Q(i,j-1,Phi) 
+                                              + Q(i,j-2,Phi) ) * Yd / (2*dY) 
+                                              - Example::A*(zeta0*zeta0*zeta_hat*zeta_hat
+                                              - eta*eta) / pow(eta*eta 
+                                              + zeta0*zeta0*zeta_hat*zeta_hat,2) );
           ++row;
         }
 
@@ -635,10 +665,12 @@ int main()
           A( row, col( i, j, Psi ) )        =   3.0 *Yd/ (2*dY);
           A( row, col( i, j - 1, Psi ) )    = - 4.0 *Yd/ (2*dY);
           A( row, col( i, j - 2, Psi ) )    =   1.0 *Yd/ (2*dY);
-          A( row, 4 * N_zeta * N_eta )      = - (-2*eta*zeta_hat)/pow(eta*eta+zeta0*zeta0*zeta_hat*zeta_hat,2);
-          B[ row ]                          = - ( ( 3*Q(i,j,Psi) - 4*Q(i,j-1,Psi) + Q(i,j-2,Psi) ) * Yd / (2*dY) 
-                                              - Example::A*(-2*eta*zeta_hat)
-                                              / pow(eta*eta + zeta0*zeta0*zeta_hat*zeta_hat,2) );
+          A( row, 4 * N_zeta * N_eta )      = - (-2*eta*zeta_hat) 
+                                              / pow(eta*eta
+                                              + zeta0*zeta0*zeta_hat*zeta_hat,2);
+          B[ row ]    = - ( ( 3*Q(i,j,Psi) - 4*Q(i,j-1,Psi) + Q(i,j-2,Psi) ) * Yd / (2*dY) 
+                        - Example::A*(-2*eta*zeta_hat) / pow(eta*eta 
+                        + zeta0*zeta0*zeta_hat*zeta_hat,2) );
           ++row; 
         }
           
@@ -672,19 +704,25 @@ int main()
         A( row, col( i - 1, j, Phi ) )      = - zeta_hat_right*4.*Xd/(2*dX);
         A( row, col( i - 2, j, Phi ) )      =   zeta_hat_right*Xd/(2*dX);
         A( row, 4 * N_zeta * N_eta )        = - 2*pow(eta,3)/pow(zeta*zeta+eta*eta,2);
-        B[ row ]                            = - ( zeta_hat_right*( 3*Q( i, j, Phi) - 4*Q( i - 1, j, Phi) 
-                                              + Q( i - 2, j, Phi) )*Xd/(2*dX) + 2*Q( i, j, Phi)
-                                              - 2*Example::A*pow(eta,3.0)/pow(zeta*zeta+eta*eta,2) );
+        B[ row ]                            = - ( zeta_hat_right*( 3*Q( i, j, Phi) 
+                                              - 4*Q( i - 1, j, Phi) 
+                                              + Q( i - 2, j, Phi) )*Xd/(2*dX) 
+                                              + 2*Q( i, j, Phi) - 2*Example::A*pow(eta,3.)
+                                              / pow(zeta*zeta+eta*eta,2) );
         ++row;
         
         // zeta_hat*psi_zeta + psi = A*(...)   
         A( row, col( i, j, Psi ) )          =   zeta_hat_right*3.*Xd/(2*dX) + 1.0;
         A( row, col( i - 1, j, Psi ) )      = - zeta_hat_right*4.*Xd/(2*dX);
         A( row, col( i - 2, j, Psi ) )      =   zeta_hat_right*Xd/(2*dX);
-        A( row, 4 * N_zeta * N_eta )        = - 2.0*zeta_hat*pow(eta,2.0)/pow(zeta*zeta+eta*eta,2);
+        A( row, 4 * N_zeta * N_eta )        = - 2.0*zeta_hat*pow(eta,2.0)
+                                              / pow(zeta*zeta+eta*eta,2);
         B[ row ]                            = - ( zeta_hat_right*( 3*Q( i, j, Psi) 
-                                              - 4*Q( i - 1, j, Psi) + Q( i - 2, j, Psi) )*Xd/(2*dX) + Q( i, j, Psi)
-                                              - 2.0*Example::A*zeta_hat*pow(eta,2.0)/pow(zeta*zeta+eta*eta,2) );
+                                              - 4*Q( i - 1, j, Psi) 
+                                              + Q( i - 2, j, Psi) )*Xd/(2*dX) 
+                                              + Q( i, j, Psi)
+                                              - 2.0*Example::A*zeta_hat*pow(eta,2.0)
+                                              / pow(zeta*zeta+eta*eta,2) );
         ++row;
 
         // zeta_hat*u_zeta_hat + 2*u = 0
@@ -692,7 +730,8 @@ int main()
         A( row, col( i - 1, j, U ) )        = - zeta_hat_right*4.*Xd/(2*dX);
         A( row, col( i - 2, j, U ) )        =   zeta_hat_right*Xd/(2*dX);
         B[ row  ]                           = - ( zeta_hat_right*( 3*Q( i, j, U) 
-                                              - 4*Q( i - 1, j, U) + Q( i - 2, j, U) )*Xd/(2*dX) + 2.0 * Q( i, j, U) );
+                                              - 4*Q( i - 1, j, U) + Q( i - 2, j, U) )*Xd
+                                              / (2*dX) + 2.0 * Q( i, j, U) );
         ++row;
         
         // zeta_hat*theta_zeta_hat + theta = 0
@@ -701,7 +740,8 @@ int main()
         A( row, col( i - 2, j, Theta ) )    =   zeta_hat_right*Xd/(2*dX);
         B[ row ]                            = - ( zeta_hat_right*( 3*Q( i, j, Theta) 
                                               - 4*Q( i - 1, j, Theta) 
-                                              + Q( i - 2, j, Theta) )*Xd/(2*dX) + Q(i, j, Theta) );
+                                              + Q( i - 2, j, Theta) )*Xd/(2*dX) 
+                                              + Q(i, j, Theta) );
         ++row;
 
       }
@@ -713,10 +753,12 @@ int main()
       A( 4 * N_eta * N_zeta, 4 * N_eta * N_zeta ) = -base[otheta];
       A( 4 * N_eta * N_zeta, 4 * N_eta * (N_zeta - 1) + 3 ) =  zeta0*zeta0*zeta_hat_right;
       // RHS
-      B[ row ] = -( Q( N_zeta-1, 0, Theta )*zeta0*zeta0*zeta_hat_right - Example::A*base[otheta] );   
+      B[ row ] = -( Q( N_zeta-1, 0, Theta )*zeta0*zeta0*zeta_hat_right 
+                 - Example::A*base[otheta] );   
     
       max_residual = B.norm_inf();
-      cout << "***                                              Maximum residual = " << B.norm_inf() << "\n";  
+      cout << "***                                              Maximum residual = " 
+           << B.norm_inf() << "\n";  
 
       Timer timer;
       timer.start();
@@ -776,7 +818,12 @@ int main()
                    + zeta_hat * farfield.solution().get_interpolated_vars( eta )[oTheta];
       }
     }
-    Q_output.dump_gnu( Example::output_path + "Qout_" + ".dat" );
+    // Convert to string //TODO need a utility function to do this
+    std::stringstream ss;
+    ss << zeta0;
+    std::string zeta0_str = ss.str(); 
+
+    Q_output.dump_gnu( Example::output_path + "Qout_" + zeta0_str + ".dat" );
 
     Vector<double> base( farfield.solution().get_interpolated_vars( 0.0 ) ); 
     U_eta = -( 3*Q_output(0,0,U+4) - 4*Q_output(0,1,U+4) 
