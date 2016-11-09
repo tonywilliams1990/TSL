@@ -122,12 +122,16 @@ namespace TSL
           ++row;
         }
 
-			  // Calculate the equations at i + 1/2
-			  J.fill( 0.0 );								                // Reset Jacobian
-			  R.assign( order, 0.0 );						            // Reset RHS of equation
+      
+
+			// Calculate the equations at i + 1/2
+			J.fill( 0.0 );								                // Reset Jacobian
+			R.assign( order, 0.0 );						            // Reset RHS of equation
 
 			for (std::size_t i=0; i < N-1; ++i)
 			{
+        ptr_EQUATION -> coord( 0 ) = NODES[ i ];   // Set the coordinate value in eqn ?
+
 				T x_i = NODES[ i ];						                    // Get the nodal positions x_i
 				T x_i_1 = NODES[ i + 1 ];				                  // and x_i+1
 				T Dx_i = x_i_1 - x_i;					                    // Step between x_i and x_i+1 
@@ -178,7 +182,7 @@ namespace TSL
 					}
 					B[ row ] = R[ n ];
 					++row;
-				}
+				 }
 			  }
 
         // Fill in the RHS boundary conditions in the matrix

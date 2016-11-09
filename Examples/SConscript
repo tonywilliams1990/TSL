@@ -19,6 +19,7 @@ env.Program( 'Test/Eigen_test.out' , ['Test/Eigen_test.cpp'] , OPTS = opts, LIBS
 env.Program( 'Test/Dual_test.out' , ['Test/Dual_test.cpp'] , OPTS = opts, LIBS = libs)  #Dual numbers
 env.Program( 'Test/AutoDiff_test.out' , ['Test/AutoDiff_test.cpp'] , OPTS = opts, LIBS = libs)  #AutoDiff
 env.Program( 'Test/Arc_BVP_test.out' , ['Test/Arc_BVP_test.cpp'] , OPTS = opts, LIBS = libs)  #ODE_BVP (arc-length)
+env.Program( 'Test/BVP_test.out' , ['Test/BVP_test.cpp'] , OPTS = opts, LIBS = libs)  #BVP
 
 # Project codes
 
@@ -26,3 +27,4 @@ env.Program( 'Project/Base_Flow_Transpiration.out' , ['Project/Base_Flow_Transpi
 env.Program( 'Project/Eigenvalue_Problem.out' , ['Project/Eigenvalue_Problem.cpp'] , OPTS = opts, LIBS = libs )
 env.Program( 'Project/General_Ridge.out' , ['Project/General_Ridge.cpp'] , OPTS = opts, LIBS = libs )
 env.Program( 'Project/General_Base_Flow.out' , ['Project/General_Base_Flow.cpp'] , OPTS = opts, LIBS = libs )
+env.Program( 'Project/Blowing.out' , ['Project/Blowing.cpp'] , OPTS = opts, LIBS = libs )

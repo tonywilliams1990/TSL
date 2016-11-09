@@ -4,10 +4,10 @@
 #include "Core"
 
 // Enumerations
-enum{ f, fd, fdd, g, gd, gdd };                         // Base ODE enumeration
-enum{ UB, UBd, PhiB, ThetaB, ThetaBd, PsiB };           // Base flow enumeration
-
-enum{ Phi, Psi, U, Theta };                             // PDE enumeration
+enum{ f, fd, fdd, g, gd, gdd };                               // Base ODE
+enum{ UB, UBd, PhiB, ThetaB, ThetaBd, PsiB };                 // Base ODE 
+enum{ Ubar, Ubard, Phibar, Thetabar, Thetabard, Psibar };     // Far-field ODE           
+enum{ Phi, Psi, U, Theta };                                   // PDE 
 
 // Either BASE_2D or BASE_3D for 2D or 3D base flows
 #define BASE_2D
@@ -18,18 +18,17 @@ namespace TSL
 {
     namespace Param
     {
-      double hzeta_right( 20.0 );       // Size of the domain in the zeta_hat direction
-      double eta_top( 30.0 );           // Size of the domain in the eta direction
-      const std::size_t N( 50 );       // Number of intervals in the zeta_hat direction
-      const std::size_t M( 50 );       // Number of intervals in the eta direction
+      double hzeta_right( 16.0 );       // Size of the domain in the zeta_hat direction
+      double eta_top( 128.0 );          // Size of the domain in the eta direction
+      const std::size_t N( 100 );       // Number of intervals in the zeta_hat direction
+      const std::size_t M( 100 );       // Number of intervals in the eta direction
       const std::size_t Nvar( 4 );      // Number of variables
       double beta( 0.0 );               // Hartree parameter
       double KB( 0.0 );                 // Base flow transpiration ( +ve = blowing )
       double zeta0( 1.0 );              // Ridge/transpiration width
       double A( 0.0 );                  // Mass flux parameter
-      double K( 0.0 );                  // Transpiration parameter ( +ve = blowing )
+      double K( 2.5 );                  // Transpiration parameter ( +ve = blowing )
       double gamma( 20.0 );             // Steepness factor
-      //TODO far-field ODE for A constraint
 
     } // End of namespace Param
 
@@ -155,12 +154,12 @@ namespace TSL
         return a2 * (a2 - 1) * std::pow(zeta + a1, a2 - 2);
       }
 
-      const double b1( 0.1 );
+      const double b1( 0.3 );
       const double b2( 0.3 );   // Y = (eta_hat + b1)^b2
 
       double Y( const double& eta )
       {
-        return std::pow(eta + b1, b2);
+        return std::pow(eta + b1, b2) - pow(b1,b2);
       }
       double Yd( const double& eta )
       {
@@ -296,6 +295,71 @@ namespace TSL
       }; // End 3D alternative far_BC class
 #endif                  
     } // End of namespace Base_Flow
+
+    namespace Far_ODE
+    {
+      class far_equation : public Equation<double>
+      {
+        public:
+          double beta;
+          
+          OneD_node_mesh<double> Base_soln;
+          // The far-field equation is 6th order
+          far_equation() : Equation<double> ( 6 ) {}
+          // Define the equation
+          void residual_fn( const Vector<double>& u, Vector<double>& F  ) const
+          { 
+            double eta( coord( 0 ) );
+            Vector<double> Base( Base_soln.get_interpolated_vars( eta ) );
+            //TODO need to check that this stuff is working
+            F[ Phibar ]     =   ( 2. - beta ) * u[ Ubar ] + u[ Psibar ];
+            F[ Psibar ]     =   u[ Thetabar ];
+            F[ Ubar ]       =   u[ Ubard ];
+            F[ Ubard ]      =   2. * beta * Base[ UB ] * u[ Ubar ] 
+                              - Base[ UBd ] * u[ Phibar ] - Base[ PhiB ] * u[ Ubard ]
+                              + 2. * Base[ PsiB ] * u[ Ubar ];
+            F[ Thetabar ]   =   u[ Thetabard ];
+            F[ Thetabard ]  =   2. * ( 1. - beta ) * ( Base[ UB ] * u[ Ubard ] 
+                              + u[ Ubar ] * Base[ UBd ] ) 
+                              - Base[ PhiB ] * u[ Thetabard ] 
+                              - Base[ ThetaBd ] * u[ Phibar ] 
+                              + Base[ PsiB ] * u[ Thetabar ]
+                              - u[ Psibar ] * Base[ ThetaB ]
+                              - ( 2. - beta ) * ( Base[ UB ] * u[ Thetabar ] 
+                              + Base[ ThetaB ] * u[ Ubar ] ) ;
+          }
+      }; // End of far-field ODE class
+
+      class far_plate_BC : public Residual<double>
+      {
+        public:
+
+          far_plate_BC() : Residual<double> ( 3, 6 ) {}
+
+          void residual_fn( const Vector<double> &z, Vector<double> &B ) const
+          {
+            B[ 0 ] = z[ Ubar ];
+            B[ 1 ] = z[ Phibar ];
+            B[ 2 ] = z[ Psibar ];
+          }
+      }; // End of far-field plate BC class
+
+      class far_far_BC : public Residual<double>
+      {
+        public:
+
+          far_far_BC() : Residual<double> ( 3, 6 ) {}
+
+          void residual_fn( const Vector<double> &z, Vector<double> &B ) const
+          {
+            B[ 0 ] = z[ Ubar ];
+            B[ 1 ] = z[ Thetabar ];
+            B[ 2 ] = z[ Psibar ] - 1.0;
+          }
+      }; // End of far-field far BC class
+
+
+    }
    
 } // End of namespace TSL
 
@@ -306,7 +370,6 @@ int main()
 { 
   cout << "*** ---------- General Ridge Code ---------- ***" << endl;
   //TODO output information about the mesh and number of ODE points etc
-  
 
   /* ----- Setup the mesh ----- */
 
@@ -484,9 +547,27 @@ int main()
 #endif
   cout << "Base transpiration KB = " << plate_BC.KB << endl;
   cout << "Hartree parameter beta = " << equation.beta << endl;
-  cout << "U'(eta=0) =" << base.solution()( 0, fdd ) << endl;
+  cout << "UB'(eta=0) =" << base.solution()( 0, fdd ) << endl;
 
   cout << "We have solved the ODE problem, it is output to ./DATA/Base_soln.dat" << endl;
+
+  /* ----- Solve the far-field ODE ----- */
+
+  // Setup the far-field ODE problem
+  Far_ODE::far_equation far_equation;
+  Far_ODE::far_plate_BC far_plate_BC;
+  Far_ODE::far_far_BC   far_far_BC; 
+  far_equation.beta = Param::beta;
+  far_equation.Base_soln = Base_soln;
+   
+  // Create boundary value problem
+  ODE_BVP<double> far_ode( &far_equation, eta_nodes, &far_plate_BC, &far_far_BC );
+
+  // Solve the system
+  far_ode.solve_bvp();
+  
+  
+  cout << "Thetabar(0) = " << far_ode.solution()( 0, Thetabar ) << endl;
 
   /* ----- Solve for the perturbation quantities ----- */
 
@@ -509,11 +590,11 @@ int main()
 
   /* Iterate to a solution */
   double max_residual( 0.1 );                           // Maximum residual
-  std::size_t max_iterations( 1 );                     // Maximum number of iterations
+  std::size_t max_iterations( 5 );                     // Maximum number of iterations
   std::size_t iteration( 0 );                           // Initialise iteration counter
 
   do
-  {
+  { 
     // N_eta x N_hzeta mesh with 4 unknowns at each node + 1 for mass flux parameter A
     SparseMatrix<double> A( 4 * N_eta * N_hzeta + 1, 4 * N_eta * N_hzeta + 1 ); 
     cout << "Assembling sparse matrix problem" << endl; 
@@ -620,8 +701,8 @@ int main()
         A( row, col( i + 2, j, U ) )    = -1.*Xd/(2*dX);
         A( row, col( i, j + 1, U ) )    = -Hd*Yd/(2*dY);
         A( row, col( i, j - 1, U ) )    =  Hd*Yd/(2*dY);
-        B[ row ]                        = -( Xd*( -3*Q(i,j,U) + 4*Q(i+1,j,U) 
-                                             -Q(i+2,j,U) )/(2*dX) )
+        B[ row ]                        = -( Xd *( -3 * Q( i, j, U ) + 4 * Q( i+1, j, U ) 
+                                          -Q( i + 2, j, U ) ) / ( 2 * dX ) )
                                           + Hd*Yd*( Q(i,j+1,U) - Q(i,j-1,U) )/(2*dY)
                                           + Hd*UBd;
         ++row;
@@ -656,8 +737,6 @@ int main()
       std::size_t j( 0 );
       double eta( eta_nodes[ j ] );
       double Yd( Mesh::Yd( eta ) );
-      // Base solution
-      Vector<double> Base( Base_soln.get_interpolated_vars( eta ) );//TODO do we need this?
             
       // Phi = Phi_w
       A( row, col( i, j, Phi ) )        =  1.;
@@ -714,7 +793,8 @@ int main()
         Vector<double> Guess_eta( ( Q.get_nodes_vars( i, j + 1 ) 
                                   - Q.get_nodes_vars( i, j - 1 ) ) * ( Yd /( 2 * dY )) );
         Vector<double> Guess_hzeta( ( Q.get_nodes_vars( i + 1, j ) 
-                                    - Q.get_nodes_vars( i - 1, j ) ) * ( Xd /( 2 * dX )) );
+                                    - Q.get_nodes_vars( i - 1, j ) ) 
+                                    * ( Xd /( 2 * dX )) );
         Vector<double> Guess_laplace( Q.get_nodes_vars( i - 1, j - 1 ) * coeff[0]
                                    +  Q.get_nodes_vars( i, j - 1 ) * coeff[1] 
                                    +  Q.get_nodes_vars( i + 1, j - 1 ) * coeff[2]
@@ -789,7 +869,8 @@ int main()
         // Residual
         B[ row ]      = - Guess_laplace[ Psi ] + ( 2. - Param::beta ) 
                         * ( Guess_hzeta[ U ] - Hd * ( Base[ UBd ] + Guess_eta[ U ]  ) )
-                        + Guess_eta[ Theta ] - Hd * Hd * hzeta * PsiBdd / ( zeta0 * zeta0 )
+                        + Guess_eta[ Theta ] - Hd * Hd * hzeta * PsiBdd 
+                        / ( zeta0 * zeta0 )
                         + PsiBd * ( 2. * Hd + hzeta * Hdd ) / ( zeta0 * zeta0 );
 
         ++row;
@@ -810,7 +891,8 @@ int main()
         A( row, col( i + 1, j + 1, U ) )    = coeff[8];
 
         // -2 * beta * ( UB + UG ) * U
-        A( row, col( i, j, U ) )           += -2.* Param::beta * (Base[ UB ] + Guess[ U ]);
+        A( row, col( i, j, U ) )           += - 2.* Param::beta * ( Base[ UB ] 
+                                              + Guess[ U ] );
 
         // ( hzeta * PsiB + PsiG ) * U_hzeta
         A( row, col( i + 1, j, U ) )       +=   ( hzeta * Base[ PsiB ] + Guess[ Psi ] )
@@ -875,11 +957,11 @@ int main()
                                                 + Guess_eta[ U ] ) + Guess_hzeta[ U ] );
 
         // 2 * (1-beta) * (eta + H) * (UB + UG) * U_hzeta / ( zeta0^2 )
-        A( row, col( i + 1, j, U ) )         =  2. * ( 1. - Param::beta )
-                                                * ( eta + H ) * ( Base[ UB ] + Guess[ U ] )
+        A( row, col( i + 1, j, U ) )         =  2. * ( 1. - Param::beta ) * ( eta + H ) 
+                                                * ( Base[ UB ] + Guess[ U ] )
                                                 * Xd / ( 2 * dX * zeta0 * zeta0 );
-        A( row, col( i - 1, j, U ) )         = -2. * ( 1. - Param::beta )
-                                                * ( eta + H ) * ( Base[ UB ] + Guess[ U ] )
+        A( row, col( i - 1, j, U ) )         = -2. * ( 1. - Param::beta ) * ( eta + H ) 
+                                                * ( Base[ UB ] + Guess[ U ] )
                                                 * Xd / ( 2 * dX * zeta0 * zeta0 );
 
         // ( PhiB + PhiG ) * Theta_eta
@@ -910,17 +992,18 @@ int main()
                                                + Guess_eta[ Theta ] );
 
         // (2-beta) * ( UB + UG ) * Theta
-        A( row, col( i, j, Theta ) )        +=  ( 2. - Param::beta ) * ( Base[ UB ] 
+        A( row, col( i, j, Theta ) )        +=   ( 2. - Param::beta ) * ( Base[ UB ] 
                                                + Guess[ U ] );
 
         // (2-beta) * ( hzeta * ThetaB + ThetaG ) * U
-        A( row, col( i, j, U ) )            +=  ( 2. - Param::beta ) 
-                                              * ( hzeta * Base[ Theta ] + Guess[ Theta ] );
+        A( row, col( i, j, U ) )            +=   ( 2. - Param::beta ) 
+                                               * ( hzeta * Base[ Theta ] 
+                                               + Guess[ Theta ] );
 
         // Residual
         B[ row ]      = - Guess_laplace[ Theta ]
                         + ( Base[ ThetaBd ] * ( 2. * Hd + hzeta * Hdd ) 
-                          - hzeta * ThetaBdd * Hd * Hd  ) / ( zeta0 * zeta0 )
+                        - hzeta * ThetaBdd * Hd * Hd  ) / ( zeta0 * zeta0 )
                         + 2.*( 1. - Param::beta ) * ( hzeta * ( Base[ UB ] + Guess[ U ] ) 
                         * Guess_eta[ U ] + hzeta * Base[ UBd ] * Guess[ U ] 
                         - ( eta + H ) * ( Base[ UB ] + Guess[ U ] ) 
@@ -933,7 +1016,6 @@ int main()
                         + Guess_eta[ U ] ) ) - Guess[ Psi ] * Base[ ThetaB]
                         - ( 2. - Param::beta ) * ( ( Base[ UB ] + Guess[ U ] ) 
                         * Guess[ Theta ] + hzeta * Base[ ThetaB ] * Guess[ U ] );
-
         ++row;
 
 
@@ -945,34 +1027,145 @@ int main()
       Yd = Mesh::Yd( eta );
 
       // Phi_eta = A*(...)
-      //TODO
-
+      A( row, col( i, j, Phi ) )        =   3.0 *Yd/ (2*dY);
+      A( row, col( i, j - 1, Phi ) )    = - 4.0 *Yd/ (2*dY);
+      A( row, col( i, j - 2, Phi ) )    =   1.0 *Yd/ (2*dY);
+      A( row, 4 * N_hzeta * N_eta )     = - ( zeta0 * zeta0 * hzeta * hzeta 
+                                          - ( eta + H ) * ( eta + H ) ) 
+                                          / pow( ( zeta0 * zeta0 * hzeta * hzeta 
+                                          + ( eta + H ) * ( eta + H ) ), 2);
+  
+      B[ row ]        = - ( 3 * Q( i, j, Phi ) - 4 * Q( i, j-1, Phi ) 
+                        + Q( i, j-2, Phi ) ) * Yd / ( 2 * dY ) 
+                        + Param::A * ( zeta0 * zeta0 * hzeta * hzeta 
+                        - ( eta + H ) * ( eta + H ) ) 
+                        / pow( ( zeta0 * zeta0 * hzeta * hzeta 
+                        + ( eta + H ) * ( eta + H ) ), 2);
       ++row;
 
       // Psi_eta = A*(...)
-      //TODO
+      A( row, col( i, j, Psi ) )        =   3.0 *Yd/ (2*dY);
+      A( row, col( i, j - 1, Psi ) )    = - 4.0 *Yd/ (2*dY);
+      A( row, col( i, j - 2, Psi ) )    =   1.0 *Yd/ (2*dY);
+      A( row, 4 * N_hzeta * N_eta )     =   2. * hzeta * ( eta + H )
+                                          / pow( ( zeta0 * zeta0 * hzeta * hzeta 
+                                          + ( eta + H ) * ( eta + H ) ) , 2 );
 
+      B[ row ]        = - ( 3 * Q( i, j, Psi ) - 4 * Q( i, j-1, Psi ) 
+                        + Q( i, j-2, Psi ) ) * Yd / ( 2 * dY )  
+                        - 2. * hzeta * ( eta + H )
+                        / pow( ( zeta0 * zeta0 * hzeta * hzeta 
+                        + ( eta + H ) * ( eta + H ) ) , 2 );
       ++row;
 
       // U = 0
-      A( row, col( i, j, U ) )              =  1;
-      B[ row ]                              = - Q( i, j, U );
+      A( row, col( i, j, U ) )          =  1;
+      B[ row ]                          = - Q( i, j, U );
       ++row;
 
       // Theta = 0
-      A( row, col( i, j, Theta ) )          =  1;
-      B[ row ]                              = - Q( i, j, Theta );
+      A( row, col( i, j, Theta ) )      =  1;
+      B[ row ]                          = - Q( i, j, Theta );
       ++row;
 
     } // End of for loop over interior nodes
 
     /* hzeta = hzeta_inf boundary ( right boundary ) */
-    i = Param::N;
+    for ( std::size_t j = 0; j < Param::M + 1; ++j )
+    {
+      std::size_t i( Param::N );
+      double hzeta( hzeta_nodes[ i ] );
+      double Xd( Mesh::Xd( hzeta ) );
+      double eta( eta_nodes[ j ] );
+      double zeta0( Param::zeta0 ); 
 
+      // hzeta * Phi_hzeta + 2 * Phi = A*(...)
+      A( row, col( i, j, Phi ) )          =   hzeta * 3. * Xd / ( 2 * dX ) + 2.;
+      A( row, col( i - 1, j, Phi ) )      = - hzeta * 4. * Xd / ( 2 * dX );
+      A( row, col( i - 2, j, Phi ) )      =   hzeta * 1. * Xd / ( 2 * dX );
+      A( row, 4 * N_hzeta * N_eta )       = - 2 * pow( eta, 3 ) 
+                                          / pow( zeta0 * zeta0 * hzeta * hzeta 
+                                          + eta * eta, 2 ); 
+
+      B[ row ]        = - hzeta * ( 3 * Q( i, j, Phi) - 4 * Q( i - 1, j, Phi) 
+                        + Q( i - 2, j, Phi) ) * Xd / ( 2 * dX ) 
+                        - 2 * Q( i, j, Phi )
+                        + 2 * Param::A * pow( eta, 3. ) 
+                        / pow( zeta0 * zeta0 * hzeta * hzeta + eta * eta, 2 );
+      ++row; 
+
+      // hzeta * Psi_hzeta + Psi = A*(...) 
+      A( row, col( i, j, Psi ) )          =   hzeta * 3. * Xd / ( 2 * dX ) + 1.;
+      A( row, col( i - 1, j, Psi ) )      = - hzeta * 4. * Xd / ( 2 * dX );
+      A( row, col( i - 2, j, Psi ) )      =   hzeta * 1. * Xd / ( 2 * dX );
+      A( row, 4 * N_hzeta * N_eta )       = - 2. * hzeta * pow( eta, 2. )
+                                          / pow( zeta0 * zeta0 * hzeta * hzeta 
+                                          + eta * eta, 2 );
+
+      B[ row ]        = - hzeta * ( 3 * Q( i, j, Psi ) - 4 * Q( i - 1, j, Psi ) 
+                        + Q( i - 2, j, Psi) ) * Xd / ( 2 * dX ) 
+                        - Q( i, j, Psi)
+                        + 2. * Param::A * hzeta * pow( eta, 2. )
+                        / pow( zeta0 * zeta0 * hzeta * hzeta + eta * eta, 2 ) ;
+      ++row;
+
+      // hzeta * U_hzeta + 2 * U = 0
+      A( row, col( i, j, U ) )            =   hzeta * 3. * Xd / ( 2 * dX ) + 2.;
+      A( row, col( i - 1, j, U ) )        = - hzeta * 4. * Xd / ( 2 * dX );
+      A( row, col( i - 2, j, U ) )        =   hzeta * 1. * Xd / ( 2 * dX );
+
+      B[ row  ]       = - hzeta * ( 3 * Q( i, j, U ) - 4 * Q( i - 1, j, U ) 
+                        + Q( i - 2, j, U) ) * Xd / ( 2 * dX ) - 2 * Q( i, j, U );
+      
+      ++row;
+
+      // hzeta * Theta_hzeta + Theta = 0
+      A( row, col( i, j, Theta )  )       =   hzeta * 3. * Xd / ( 2 * dX ) + 1.;
+      A( row, col( i - 1, j, Theta ) )    = - hzeta * 4. * Xd / ( 2 * dX );
+      A( row, col( i - 2, j, Theta ) )    =   hzeta * 1. * Xd / ( 2 * dX );
+
+      B[ row ]        = - hzeta * ( 3 * Q( i, j, Theta ) - 4 * Q( i - 1, j, Theta ) 
+                        + Q( i - 2, j, Theta ) ) * Xd / ( 2 * dX ) - Q( i, j, Theta ) ;
+
+      ++row;
+
+    }
+
+    double hzeta( hzeta_nodes[ Param::N ] );    // hzeta = hzeta_inf
+    double zeta0( Param::zeta0 );
     /* A coefficient condition */
+    A( 4 * N_eta * N_hzeta, 4 * N_eta * N_hzeta ) = - far_ode.solution()( 0, Thetabar );
+    A( 4 * N_eta * N_hzeta, 4 * N_eta * (N_hzeta - 1) + 3 ) = zeta0 * zeta0 * hzeta;
+    B[ row ] = - Q( N_hzeta-1, 0, Theta ) * zeta0 * zeta0 * hzeta 
+               + Param::A * far_ode.solution()( 0, Thetabar ) ;
+    
+    max_residual = B.norm_inf();
+    cout << "*** \t \t \t \t Maximum residual = " << max_residual << endl;
 
-    //TODO test tracker
-    Param::A += 0.3;
+    Timer timer;
+    timer.start();
+    Vector<double> x;
+    x = A.solve( B );
+    B = x;   
+    timer.print();
+    timer.stop();
+
+    // Update the known values using the correction which we just found
+    
+    for ( std::size_t i = 0; i < Param::N + 1; ++i )
+    {
+      for ( std::size_t j = 0; j < Param::M + 1; ++j )
+      {
+        Q( i, j, Phi )    += B[ col( i, j, Phi ) ];
+        Q( i, j, Psi )    += B[ col( i, j, Psi ) ];
+        Q( i, j, U )      += B[ col( i, j, U ) ];
+        Q( i, j, Theta )  += B[ col( i, j, Theta ) ];
+      }
+    }
+    Param::A += B[ 4 * ( Param::N + 1 ) * ( Param::M + 1 ) ];
+  
+    cout << "*** Iteration = " << iteration << " \t \t Maximum correction = " 
+         << B.norm_inf() << endl;
 
     ++iteration;
   }while( ( max_residual > 1.e-8 ) && ( iteration < max_iterations ) ); // End iteration
@@ -981,12 +1174,12 @@ int main()
   {
     cout << "STOPPED AFTER TOO MANY ITERATIONS" << endl;
   }
+
+  // TODO push the data back into the unmapped domain
   
   // Update the metric file
   metric.update();
 
-  Param::A += 0.4;
-  metric.update();
 
   cout << "FINISHED" << endl;
 }
