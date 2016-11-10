@@ -127,6 +127,9 @@ namespace TSL
         VARS = vec;
       }
 
+      /// Integrate a given variable over the domain 
+      T integral2( std::size_t var = 0 ) const;
+
 	}; // End of class OneD_node_mesh
 
 

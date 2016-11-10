@@ -135,6 +135,20 @@ namespace TSL
     }
   }
 
+  template < class T, class X >
+  T OneD_node_mesh<T, X>::integral2( std::size_t var ) const
+  {
+    T sum( 0.0 );
+    X dx( 0.0 );
+    // Sum 
+    for ( std::size_t node = 0; node < NODES.size() - 1; ++node )
+    {
+      dx = ( NODES[ node + 1 ] - NODES[ node ] );
+      sum += 0.5 * dx * ( VARS[ node * NV + var ] + VARS[ ( node + 1 ) * NV + var ] );
+    }
+    return sum;    
+  }
+
 
   //the templated versions we require are:
   template class OneD_node_mesh<double>

@@ -10,8 +10,11 @@ enum{ Phi, Psi, U, Theta };
 // ODE enumeration -- similarly for the ODE
 enum{ UB, UBd, PhiB, ThetaB, ThetaBd, PsiB, ou, oud, ophi, otheta, othetad, opsi }; 
 
-// either NONUNIFORM or UNIFORM meshes
+// Either NONUNIFORM or UNIFORM meshes
 #define NONUNIFORM // => X=zeta, Xd=1, Xdd=0, Y=eta, Yd=1, Ydd=0
+// Either DIRICHLET or NEUMANN boundary conditions on Phi and Psi at eta=eta_inf
+#define NEUMANN
+
 namespace TSL
 {
   namespace Example
@@ -98,7 +101,6 @@ namespace TSL
 
       return a;
     }
-
 
 #ifdef UNIFORM
     // USE A UNIFORM MESH    
@@ -239,7 +241,8 @@ namespace TSL
                          - z[ PhiB ] * z[ oud ] + 2. * z[ PsiB ] * z[ ou ];
           g[ ophi ]     =  ( 2. - beta ) * z[ ou ] + z[ opsi ];
           g[ otheta ]   =  z[ othetad ];
-          g[ othetad ]  =  2. * ( 1. - beta ) * ( z[ UB ] * z[ oud ] + z[ ou ] * z[ UBd ] )
+          g[ othetad ]  =  2. * ( 1. - beta )
+                         * ( z[ UB ] * z[ oud ] + z[ ou ] * z[ UBd ] )
                          - z[ PhiB ] * z[ othetad ] - z[ ThetaBd ] * z[ ophi ] 
                          + z[ PsiB ] * z[ otheta ] - z[ opsi ] * z[ ThetaB ] 
                          - ( 2. - beta ) * ( z[ UB ] * z[ otheta ] 
@@ -299,9 +302,9 @@ using namespace std;
 
 int main()
 {
-  cout << "*** ---------- Blowing Code ---------- ***" << endl;
+  cout << "*** ---------- Ridge Code ---------- ***" << endl;
 
-  double zeta0( 4.0 );                                      // zeta0 is the gap size
+  double zeta0( 4.0 );                 // zeta0 is the ridge/transpiration width
   
   // Original coordinates are zeta & eta, then we change to X=X(zeta) & Y=Y(eta)
   double hzeta_right = Example::hzeta_right; 
@@ -407,9 +410,6 @@ int main()
   cout << "# We have solved the ODE problem, it is output to " + Example::output_path + "base.dat.\n";
   // initial guess  
   base.solution().output( Example::output_path + "base.dat" );
-
-  //cout << "# THE NUMBER BELOW SHOULD BE CLOSE TO ZERO for the 2D ODE solution\n";
-  //cout << base.solution().integral2(UB) - base.solution().integral2(PsiB) << endl;
   cout << "# We now have a solution for the far-field on-plate flow " <<  endl;  
   cout << "# UB'(0) = " << base.solution()( 0, UBd ) << endl;
   cout << "# Thetabar(0) = " << base.solution()( 0, otheta ) << endl;
@@ -432,18 +432,21 @@ int main()
   /* Vector for the RHS of the matrix problem  */
   Vector<double> B( 4 * N_eta * N_hzeta + 1, 0.0 );
   
-  do                                                   // Iterate over values of zeta_0
+  do                                             // Iterate over values of zeta_0
   {
     /* Iterate to a solution */
-    double max_residual( 0.0 );                        // Maximum residual
-    std::size_t max_iterations( 20 );                     // Maximum number of iterations  
-    std::size_t iteration( 0 );                           // Initialise iteration counter
+    double max_residual( 0.0 );                  // Maximum residual
+    std::size_t max_iterations( 20 );            // Maximum number of iterations  
+    std::size_t iteration( 0 );                  // Initialise iteration counter
     do 
     {
       /* N_eta x N_hzeta mesh, with 4 unknowns at each node + 1 the coefficient "A". */
       SparseMatrix<double> A( 4 * N_eta * N_hzeta + 1, 4 * N_eta * N_hzeta + 1 );
       cout << "Assembling global sparse matrix problem.\n";
       
+      Timer timer;
+      timer.start();
+
       using namespace Example;
       std::size_t row( 0 );                               // Initialise row counter
 
@@ -732,91 +735,156 @@ int main()
           ////////////////    
           // U equation //
           ////////////////
+             
+          // Laplacian of U
+          A( row, col( i - 1, j - 1, U ) )    = coeff[0];
+          A( row, col( i, j - 1, U ) )        = coeff[1];
+          A( row, col( i + 1, j - 1, U ) )    = coeff[2];
+          A( row, col( i - 1, j, U ) )        = coeff[3];
+          A( row, col( i, j, U ) )            = coeff[4];
+          A( row, col( i + 1, j, U ) )        = coeff[5];
+          A( row, col( i - 1, j + 1, U ) )    = coeff[6];
+          A( row, col( i, j + 1, U ) )        = coeff[7];
+          A( row, col( i + 1, j + 1, U ) )    = coeff[8];
 
-          // u_i,j+1
-          A( row, col( i, j + 1, U ) )      =   Yd*Yd/(dY*dY) + Ydd/(2*dY) + (Guess[Phi] 
-                                              + Base[PhiB])* Yd / (2*dY);
-          // u_i,j
-          A( row, col( i, j, U ) )          = - 2*Yd*Yd/(dY*dY) - 2*Xd*Xd
-                                              / ( zeta0*zeta0*dX*dX );
-          // u_i,j-1
-          A( row, col( i, j - 1, U ) )      =   Yd*Yd/(dY*dY) - Ydd/(2*dY) - (Guess[Phi] 
-                                              + Base[PhiB])* Yd / (2*dY);
-          // u_i+1,j
-          A( row, col( i + 1, j, U ) )      =   Xd*Xd/(zeta0*zeta0*dX*dX) + Xdd
-                                              / ( 2 * zeta0 * zeta0 * dX ) 
-                                              + (Guess[Psi] + Base[PsiB]*hzeta) * Xd 
-                                              / ( 2 * dX );
-          // u_i-1,j
-          A( row, col( i - 1, j, U ) )      =   Xd*Xd/(zeta0*zeta0*dX*dX) - Xdd
-                                              / ( 2*zeta0*zeta0*dX ) 
-                                              - (Guess[Psi] + Base[PsiB]*hzeta) * Xd 
-                                              / ( 2*dX );
-          // phi_i,j
-          A( row, col( i, j, Phi ) )        =   ( Yd * Guess_Y[U] + Base[UBd] );
-          // psi_i,j
-          A( row, col( i, j, Psi ) )        =   ( Xd * Guess_X[U] + 0);
-          // RHS
-          B[ row ]                          = - Guess_laplace[ U ] 
-                                              - Yd * (Base[PhiB] + Guess[Phi]) 
-                                              * Guess_Y[ U ] - Xd 
-                                              * (hzeta*Base[PsiB] + Guess[Psi]) 
-                                              * Guess_X[ U ] - Base[UBd] * Guess[Phi];
+          // -2 * beta * ( UB + UG ) * U
+          A( row, col( i, j, U ) )           += - 2.* Example::beta * ( Base[ UB ] 
+                                                + Guess[ U ] );
+
+          // ( hzeta * PsiB + PsiG ) * U_hzeta
+          A( row, col( i + 1, j, U ) )       +=   ( hzeta * Base[ PsiB ] + Guess[ Psi ] )
+                                                * Xd / ( 2 * dX ); 
+          A( row, col( i - 1, j, U ) )       += - ( hzeta * Base[ PsiB ] + Guess[ Psi ] )
+                                                * Xd / ( 2 * dX );
+
+          // [ PhiB + PhiG - ( hzeta * PsiB + PsiG ) * H' ] * U_eta 
+          A( row, col( i, j + 1, U ) )       +=   ( Base[ PhiB ] + Guess[ Phi ] - 
+                                                  ( hzeta * PsiB + Guess[ Psi ] ) * Hd )
+                                                * Yd / ( 2 * dY );
+          A( row, col( i, j - 1, U ) )       += - ( Base[ PhiB ] + Guess[ Phi ] - 
+                                                  ( hzeta * PsiB + Guess[ Psi ] ) * Hd )
+                                                * Yd / ( 2 * dY );
+          
+          // [ UG_hzeta - H' * ( UB' + UG_eta ) ] * Psi
+          A( row, col( i, j, Psi ) )          =   ( Guess_hzeta[ U ] - Hd * ( Base[ UBd ]
+                                                  + Guess_eta[ U ] ) );
+
+          // ( UB' + UG_eta ) * Phi
+          A( row, col( i, j, Phi ) )          =   ( Base[ UBd ] + Guess_eta[ U ] );
+          
+          // Residual
+          B[ row ]        = - Guess_laplace[ U ] 
+                          + Example::beta * ( 2. * Base[ UB ] + Guess[ U ] ) * Guess[ U ]
+                          - ( hzeta * Base[ PsiB ] + Guess[ Psi ] ) 
+                          * ( Guess_hzeta[ U ] - Hd * ( Base[ UBd ] + Guess_eta[ U ] ) ) 
+                          - (Base[PhiB] + Guess[Phi]) * Guess_eta[ U ]
+                          - Base[UBd] * Guess[Phi] 
+                          + ( Hdd * Base[ UBd ] - Hd * Hd * UBdd ) / ( zeta0 * zeta0 ) ;
           ++row;
 
           ////////////////////
           // Theta equation //
           ////////////////////
+ 
+          // Laplacian of Theta
+          A( row, col( i - 1, j - 1, Theta ) ) = coeff[0];
+          A( row, col( i, j - 1, Theta ) )     = coeff[1];
+          A( row, col( i + 1, j - 1, Theta ) ) = coeff[2];
+          A( row, col( i - 1, j, Theta ) )     = coeff[3];
+          A( row, col( i, j, Theta ) )         = coeff[4];
+          A( row, col( i + 1, j, Theta ) )     = coeff[5];
+          A( row, col( i - 1, j + 1, Theta ) ) = coeff[6];
+          A( row, col( i, j + 1, Theta ) )     = coeff[7];
+          A( row, col( i + 1, j + 1, Theta ) ) = coeff[8];
 
-          // theta_i,j+1
-          A( row, col( i, j + 1, Theta ) )  =   Yd*Yd/(dY*dY) + Ydd/(2*dY) 
-                                              + (Guess[Phi]+Base[PhiB]) * Yd / (2*dY);
-          // theta_i,j  
-          A( row, col( i, j, Theta ) )      = - 2 * Yd*Yd / (dY*dY) - 2*Xd*Xd 
-                                              / (zeta0*zeta0*dX*dX) 
-                                              +  2 * (Guess[U]+Base[UB]);
-          // theta_i,j-1
-          A( row, col( i, j - 1, Theta ) )  =   Yd*Yd/(dY*dY) - Ydd/(2*dY) 
-                                              - (Guess[Phi]+Base[PhiB]) * Yd / (2*dY);
-          // theta_i+1,j
-          A( row, col( i + 1, j, Theta ) )  =   Xd*Xd/(zeta0*zeta0*dX*dX) + Xdd
-                                              / ( 2*zeta0*zeta0*dX ) 
-                                              + (Guess[Psi]+hzeta*Base[PsiB]) * Xd 
-                                              / (2*dX);
-          // theta_i-1,j
-          A( row, col( i - 1, j, Theta ) )  =   Xd*Xd/(zeta0*zeta0*dX*dX) - Xdd
-                                              / ( 2*zeta0*zeta0*dX ) 
-                                              - (Guess[Psi]+hzeta*Base[PsiB]) * Xd 
-                                              / (2*dX);
-          // u_i,j+1
-          A( row, col( i, j + 1, U ) )      = - hzeta*(Guess[U]+Base[UB])*Yd / dY;
-          // u_i,j
-          A( row, col( i, j, U ) )          = - 2*hzeta*(Yd*Guess_Y[U]+Base[UBd]) 
-                                              + 2*eta*Xd*Guess_X[ U ]/(zeta0*zeta0) 
-                                              + 2*(Guess[Theta]+hzeta*Base[ThetaB]) ;
-          // u_i,j-1
-          A( row, col( i, j - 1, U ) )      =   hzeta*(Guess[U]+Base[UB])*Yd / dY;
-          // u_i+1,j
-          A( row, col( i + 1, j, U ) )      =   eta*(Guess[ U ]+Base[UB])*Xd
-                                              / ( zeta0*zeta0*dX );
-          // u_i-1,j
-          A( row, col( i - 1, j, U ) )      = - eta*(Guess[ U ]+Base[UB])*Xd
-                                              / ( zeta0*zeta0*dX );
-          // phi_i,j
-          A( row, col( i, j, Phi ) )        =   ( Yd*Guess_Y[ Theta ] 
-                                              + hzeta*Base[ThetaBd] );
-          // psi_i,j
-          A( row, col( i, j, Psi ) )        =   ( Xd*Guess_X[ Theta ] + Base[ThetaB] );
-          // RHS
-          B[ row ]    = - Guess_laplace[ Theta ] - Yd * (Base[PhiB] + Guess[Phi]) 
-                        * Guess_Y[Theta] - Xd * (hzeta * Base[PsiB] + Guess[Psi]) 
-                        * Guess_X[Theta] + 2 * hzeta * Yd * (Base[UB] + Guess[U]) 
-                        * Guess_Y[U] - 2 * (eta / (zeta0 * zeta0)) * Xd 
-                        * (Base[UB] + Guess[U]) * Guess_X[U] - 2 * (Guess[Theta] 
-                        + hzeta * (Base[ThetaB] - Base[UBd])) * Guess[U]
-					              - hzeta * Base[ThetaBd] * Guess[Phi] - Base[ThetaB] * Guess[Psi]
-					              - 2 * Base[UB] * Guess[Theta]; 
+          // -2 * (1-beta) * (UB+UG) * [hzeta + (eta+H)*H'/(zeta0^2)] * U_eta
+          A( row, col( i, j + 1, U ) )         = - 2. * ( 1. - Example::beta )
+                                                   * ( Base[ UB ] + Guess[ U ] ) 
+                                                   * ( hzeta + ( eta + H ) * Hd 
+                                                   / ( zeta0 * zeta0 ) ) * Yd 
+                                                   / ( 2 * dY );
+          A( row, col( i, j - 1, U ) )         =   2. * ( 1. - Example::beta )
+                                                   * ( Base[ UB ] + Guess[ U ] ) 
+                                                   * ( hzeta + ( eta + H ) * Hd 
+                                                   / ( zeta0 * zeta0 ) ) * Yd 
+                                                   / ( 2 * dY );
+
+          // -2 * (1-beta) * (UB + UG) * ( hzeta + (eta+H)*H'/(zeta0^2) ) * U
+          A( row, col( i, j, U ) )             = -2. * ( 1. - Example::beta )
+                                                  * ( Base[ UBd ] + Guess_eta[ U ] ) 
+                                                  * ( hzeta + ( eta + H ) * Hd 
+                                                  / ( zeta0 * zeta0 ) );
+
+          // (2 * (1-beta) * (eta + H) * UG_hzeta / (zeta0^2)) * U
+          A( row, col( i, j, U ) )            +=  2. * ( 1. - Example::beta )
+                                                  * ( eta + H ) * Guess_hzeta[ U ]
+                                                  / ( zeta0 * zeta0 );
+
+          // 2 * (1-beta) * (eta + H) * (UB + UG) * U_hzeta / ( zeta0^2 )
+          A( row, col( i + 1, j, U ) )         =  2. * ( 1. - Example::beta ) 
+                                                  * ( eta + H ) 
+                                                  * ( Base[ UB ] + Guess[ U ] )
+                                                  * Xd / ( 2 * dX * zeta0 * zeta0 );
+          A( row, col( i - 1, j, U ) )         = -2. * ( 1. - Example::beta ) 
+                                                  * ( eta + H ) 
+                                                  * ( Base[ UB ] + Guess[ U ] )
+                                                  * Xd / ( 2 * dX * zeta0 * zeta0 );
+
+          // ( PhiB + PhiG ) * Theta_eta
+          A( row, col( i, j + 1, Theta ) )    +=  ( Base[ PhiB ] + Guess[ Phi ] ) * Yd 
+                                                  / ( 2 * dY );
+          A( row, col( i, j - 1, Theta ) )    += -( Base[ PhiB ] + Guess[ Phi ] ) * Yd 
+                                                  / ( 2 * dY );
+
+          // (hzeta * ThetaB' + ThetaG_eta ) * Phi
+          A( row, col( i, j, Phi ) )           =   hzeta * Base[ ThetaBd ] 
+                                                 + Guess_eta[ Theta ];
+
+          // (hzeta * PsiB + PsiG ) * Theta_hzeta
+          A( row, col( i + 1, j, Theta ) )    +=  ( hzeta * Base[ PsiB ] + Guess[ Psi ] )
+                                                 * Xd / ( 2 * dX );
+          A( row, col( i - 1, j, Theta ) )    += -( hzeta * Base[ PsiB ] + Guess[ Psi ] )
+                                                 * Xd / ( 2 * dX );
+
+          // - H' * ( hzeta * PsiB + PsiG ) * Theta_eta
+          A( row, col( i, j + 1, Theta ) )    += -( hzeta * Base[ PsiB ] + Guess[ Psi ] ) 
+                                                 * Hd * Yd / ( 2 * dY );
+          A( row, col( i, j - 1, Theta ) )    +=  ( hzeta * Base[ PsiB ] + Guess[ Psi ] ) 
+                                                 * Hd * Yd / ( 2 * dY );
+
+          // [ThetaB + ThetaG_hzeta - H' * ( hzeta * ThetaB' + ThetaG_eta ) ] * Psi
+          A( row, col( i, j, Psi ) )           =  Base[ ThetaB ] + Guess_hzeta[ Theta ]
+                                                 - Hd * ( hzeta * Base[ ThetaBd ]
+                                                 + Guess_eta[ Theta ] );
+
+          // (2-beta) * ( UB + UG ) * Theta
+          A( row, col( i, j, Theta ) )        +=   ( 2. - Example::beta ) * ( Base[ UB ] 
+                                                 + Guess[ U ] );
+
+          // (2-beta) * ( hzeta * ThetaB + ThetaG ) * U
+          A( row, col( i, j, U ) )            +=   ( 2. - Example::beta ) 
+                                                 * ( hzeta * Base[ Theta ] 
+                                                 + Guess[ Theta ] );
+          
+          // Residual
+          B[ row ]    = - Guess_laplace[ Theta ]
+                        + ( Base[ ThetaBd ] * ( 2. * Hd + hzeta * Hdd ) 
+                        - hzeta * ThetaBdd * Hd * Hd  ) / ( zeta0 * zeta0 )
+                        + 2.*( 1. - Example::beta ) 
+                        * ( hzeta * ( Base[ UB ] + Guess[ U ] ) 
+                        * Guess_eta[ U ] + hzeta * Base[ UBd ] * Guess[ U ] 
+                        - ( eta + H ) * ( Base[ UB ] + Guess[ U ] ) 
+                        * ( Guess_hzeta[ U ] - Hd * ( Base[ UBd ] + Guess_eta[ U ] ) ) 
+                        / ( zeta0 * zeta0 ) )  
+                        - ( Base[ PhiB ] + Guess[ Phi ] ) * Guess_eta[ Theta ]
+                        - hzeta * Base[ ThetaBd ] * Guess[ Phi ]
+                        - ( hzeta * Base[ PsiB ] + Guess[ Psi ] ) 
+                        * ( Guess_hzeta[ Theta ] - Hd * ( hzeta * Base[ ThetaBd ] 
+                        + Guess_eta[ U ] ) ) - Guess[ Psi ] * Base[ ThetaB]
+                        - ( 2. - Example::beta ) * ( ( Base[ UB ] + Guess[ U ] ) 
+                        * Guess[ Theta ] + hzeta * Base[ ThetaB ] * Guess[ U ] );
           ++row;
+
         }
 
         /* eta = eta_inf boundary ( top boundary ) */
@@ -824,7 +892,30 @@ int main()
         eta = eta_nodes[ j ];
         Yd = Example::Yd(eta);
 
-        // Phi_eta = A*(...)
+#ifdef DIRICHLET
+        // Phi = (1-beta)*H + A*(...)
+        A( row, col( i, j, Phi ) )        =   1.0;
+        A( row, 4 * N_hzeta * N_eta )     = - ( eta + H ) / ( ( eta + H ) * ( eta + H ) 
+                                            + zeta0 * zeta0 * hzeta * hzeta );
+
+        B[ row ]        = - Q( i, j, Phi ) + ( 1. - Example::beta ) * H
+                          + ( eta + H ) * Example::A / ( ( eta + H ) * ( eta + H ) 
+                          + zeta0 * zeta0 * hzeta * hzeta );
+
+        ++row;
+
+        // Psi = A*(...)
+        A( row, col( i, j, Psi ) )        =   1.0;
+        A( row, 4 * N_hzeta * N_eta )     = - hzeta / ( ( eta + H ) * ( eta + H ) 
+                                            + zeta0 * zeta0 * hzeta * hzeta );
+
+        B[ row ]        = - Q( i, j, Psi ) + hzeta * Example::A 
+                          / ( ( eta + H ) * ( eta + H ) + zeta0 * zeta0 * hzeta * hzeta );
+
+        ++row;
+#endif
+#ifdef NEUMANN
+        // Phi_eta = A*(...) - derivative condition
         A( row, col( i, j, Phi ) )        =   3.0 *Yd/ (2*dY);
         A( row, col( i, j - 1, Phi ) )    = - 4.0 *Yd/ (2*dY);
         A( row, col( i, j - 2, Phi ) )    =   1.0 *Yd/ (2*dY);
@@ -855,6 +946,7 @@ int main()
                           / pow( ( zeta0 * zeta0 * hzeta * hzeta 
                           + ( eta + H ) * ( eta + H ) ) , 2 );
         ++row;
+#endif 
           
         // U = 0
         A( row, col( i, j, U ) )            =   1;
@@ -945,10 +1037,10 @@ int main()
     
       max_residual = B.norm_inf();
       cout << "***                                              Maximum residual = " 
-           << B.norm_inf() << "\n";  
+           << B.norm_inf() << endl;  
 
-      Timer timer;
-      timer.start();
+      //Timer timer;
+      //timer.start();
       Vector<double> x;
       x = A.solve( B );
       B = x;      
@@ -970,7 +1062,7 @@ int main()
       Example::A += B[ 4 * ( Example::N + 1 ) * ( Example::M + 1 ) ];
 
       cout << "***    Iteration = " << iteration 
-           << "    Maximum correction = " << B.norm_inf() << "\n";  
+           << "    Maximum correction = " << B.norm_inf() << endl;  
       ++iteration;
     } while ( ( max_residual > 1.e-8 ) && ( iteration < max_iterations ) );
     

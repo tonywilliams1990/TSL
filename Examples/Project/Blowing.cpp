@@ -349,8 +349,8 @@ int main()
   // initial guess  
   farfield.solution().output( Example::output_path + "farfield.dat" );
 
-  //cout << "# THE NUMBER BELOW SHOULD BE CLOSE TO ZERO for the 2D ODE solution\n";
-  //cout << farfield.solution().integral2(oU) - farfield.solution().integral2(oPsi) << endl;
+  cout << "# THE NUMBER BELOW SHOULD BE CLOSE TO ZERO for the 2D ODE solution\n";
+  cout << farfield.solution().integral2(oU) - farfield.solution().integral2(oPsi) << endl;
   cout << "# We now have a solution for the far-field on-plate flow " <<  endl;  
   cout << "# UB'(0) = " << farfield.solution()( 0, oUd ) << endl;
   cout << "# Thetabar(0) = " << farfield.solution()( 0, otheta ) << endl;
