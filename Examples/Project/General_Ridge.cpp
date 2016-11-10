@@ -1,5 +1,7 @@
 #include <cassert>
 #include <cmath>
+#include <sys/stat.h>
+#include <sstream>
 
 #include "Core"
 
@@ -38,7 +40,7 @@ namespace TSL
 
     namespace Example
     {
-      std::string output_path("./DATA/BLOWING_Cw_2.5_101x101_16_128/");// Data output path
+      std::string output_path;          // Output path ( made later )
 
       std::size_t col( const std::size_t& i, const std::size_t& j, const std::size_t& k )
       {
@@ -390,8 +392,18 @@ using namespace TSL;
 int main()
 { 
   cout << "*** ---------- General Ridge Code ---------- ***" << endl;
-  //TODO output information about the mesh and number of ODE points etc
-  
+  cout << "  * We are solving using a " << Param::N + 1 << " x " << Param::M + 1 
+       << " mesh with zeta_hat_inf = " << Param::hzeta_right << " and eta_inf = " 
+       << Param::eta_top << "." << endl;
+
+  /* ----- Make the output directory ----- */
+  std::ostringstream ss;
+  ss << "./DATA/K_" << Param::K << "_" << Param::N + 1 << "x" 
+     << Param::M + 1 << "_" << Param::hzeta_right << "_" << Param::eta_top << "/";
+  Example::output_path = ss.str();               
+  int status = mkdir( Example::output_path.c_str(), S_IRWXU );
+  cout << "  * Output directory " + Example::output_path + 
+          " has been made successfully." << endl;
 
   /* ----- Setup the mesh ----- */
 
@@ -559,20 +571,22 @@ int main()
                               - ( 2.0 - Param::beta ) * base.solution()( j, gd );
 	}
 #endif
-  Base_soln.output( "./DATA/Base_soln.dat" );         // Output the solution to a file
+  // Output the solution to a file
+  Base_soln.output( Example::output_path + "Base_soln.dat" ); 
   // Output the wall shear to the screen
 #ifdef BASE_2D
-  cout << "Base flow: 2D Falkner-Skan with transpiration" << endl; 
-  cout << "# THE NUMBER BELOW SHOULD BE CLOSE TO ZERO for the 2D ODE solution" << endl;
-  cout << Base_soln.integral2(UB) - Base_soln.integral2(PsiB) << endl;
+  cout << "  * Base flow: 2D Falkner-Skan with transpiration" << endl; 
+  //cout << "# THE NUMBER BELOW SHOULD BE CLOSE TO ZERO for the 2D ODE solution" << endl;
+  //cout << Base_soln.integral2(UB) - Base_soln.integral2(PsiB) << endl;
 #endif
 #ifdef BASE_3D
-  cout << "Base flow: 3D alternative with transpiration" << endl;
+  cout << "  * Base flow: 3D alternative with transpiration" << endl;
 #endif
-  cout << "Base transpiration KB = " << plate_BC.KB << endl;
-  cout << "Hartree parameter beta = " << equation.beta << endl;
-  cout << "UB'(eta=0) =" << base.solution()( 0, fdd ) << endl;
-  cout << "We have solved the ODE problem, it is output to ./DATA/Base_soln.dat" << endl;
+  cout << "  * Base transpiration KB = " << plate_BC.KB << endl;
+  cout << "  * Hartree parameter beta = " << equation.beta << endl;
+  cout << "  * UB'(eta=0) =" << base.solution()( 0, fdd ) << endl;
+  cout << "  * We have solved the ODE problem, it is output to " + Example::output_path +
+          "Base_soln.dat" << endl;
 
   /* ----- Solve the far-field ODE ----- */
 
@@ -588,9 +602,7 @@ int main()
 
   // Solve the system
   far_ode.solve_bvp();
-  
-  
-  cout << "Thetabar(0) = " << far_ode.solution()( 0, Thetabar ) << endl;
+  //cout << "Thetabar(0) = " << far_ode.solution()( 0, Thetabar ) << endl;
 
   /* ----- Solve for the perturbation quantities ----- */
 
@@ -626,7 +638,7 @@ int main()
   { 
     // N_eta x N_hzeta mesh with 4 unknowns at each node + 1 for mass flux parameter A
     SparseMatrix<double> A( 4 * N_eta * N_hzeta + 1, 4 * N_eta * N_hzeta + 1 ); 
-    cout << "Assembling sparse matrix problem" << endl; 
+    cout << "  * Assembling sparse matrix problem" << endl; 
 
     Timer timer;
     timer.start();
