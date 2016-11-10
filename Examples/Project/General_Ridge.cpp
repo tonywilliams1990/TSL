@@ -40,7 +40,7 @@ namespace TSL
 
     namespace Example
     {
-      std::string output_path;          // Output path ( made later )
+      std::string output_path;          // Output path
 
       std::size_t col( const std::size_t& i, const std::size_t& j, const std::size_t& k )
       {
@@ -334,7 +334,7 @@ namespace TSL
           { 
             double eta( coord( 0 ) );
             Vector<double> Base( Base_soln.get_interpolated_vars( eta ) );
-            //TODO need to check that this stuff is working
+
             F[ Phibar ]     =   ( 2. - beta ) * u[ Ubar ] + u[ Psibar ];
             F[ Psibar ]     =   u[ Thetabar ];
             F[ Ubar ]       =   u[ Ubard ];
