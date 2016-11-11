@@ -523,7 +523,7 @@ int main()
   
   // Solve the system with beta = 0.1 then arc-length continue until beta = Param::beta
   arc_step = -0.01;
-  if ( Param::beta > 0.1 ) { arc_step = 0.01; }
+  if ( Param::beta >= 0.1 ) { arc_step = 0.01; }
 
   base.init_arc( &equation.beta, arc_step, max_arc_step );
   do
@@ -576,8 +576,8 @@ int main()
   // Output the wall shear to the screen
 #ifdef BASE_2D
   cout << "  * Base flow: 2D Falkner-Skan with transpiration" << endl; 
-  //cout << "# THE NUMBER BELOW SHOULD BE CLOSE TO ZERO for the 2D ODE solution" << endl;
-  //cout << Base_soln.integral2(UB) - Base_soln.integral2(PsiB) << endl;
+  cout << "  * This number should be close to zero for the 2D ODE solution: " <<
+       ( 1. - Param::beta ) * Base_soln.integral2(UB) - Base_soln.integral2(PsiB) << endl;
 #endif
 #ifdef BASE_3D
   cout << "  * Base flow: 3D alternative with transpiration" << endl;
