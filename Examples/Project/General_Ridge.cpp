@@ -576,12 +576,14 @@ int main()
   // Output the wall shear to the screen
 #ifdef BASE_2D
   cout << "  * Base flow: 2D Falkner-Skan with transpiration" << endl; 
-  cout << "  * This number should be close to zero for the 2D ODE solution: " <<
-       ( 1. - Param::beta ) * Base_soln.integral2(UB) - Base_soln.integral2(PsiB) << endl;
+  
 #endif
 #ifdef BASE_3D
   cout << "  * Base flow: 3D alternative with transpiration" << endl;
 #endif
+  cout << "  * This number should be zero for the 2D ODE solution and non-zero for the " 
+       << " 3D solution: " << ( 1. - Param::beta ) * Base_soln.integral2(UB) 
+                                                   - Base_soln.integral2(PsiB) << endl;
   cout << "  * Base transpiration KB = " << plate_BC.KB << endl;
   cout << "  * Hartree parameter beta = " << equation.beta << endl;
   cout << "  * UB'(eta=0) =" << base.solution()( 0, fdd ) << endl;
