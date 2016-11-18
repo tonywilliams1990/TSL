@@ -20,9 +20,10 @@ namespace TSL
 	
 	class SparseMatrix 
 	{
+    typedef Eigen::SparseMatrix<T, Eigen::ColMajor, long long> SpMat;
 		
 		protected:
-      Eigen::SparseMatrix<T> S_MATRIX;      // Eigen sparse matrix container
+      SpMat S_MATRIX;      // Eigen sparse matrix container
       
 		public:
 		  /// Constructor for an empty matrix of unspecified size
@@ -153,8 +154,8 @@ namespace TSL
       Vector<T> solve( const Vector<T>& b ) const
       {
         if ( this->rows() != b.SIZE ) {throw Error( "Sparse solver error: dimension 1 " );}
-        Eigen::SparseLU< Eigen::SparseMatrix<T> > solver;
-        Eigen::SparseMatrix<T> S_mat( S_MATRIX );
+        Eigen::SparseLU< SpMat > solver;
+        SpMat S_mat( S_MATRIX );
         S_mat.makeCompressed(); 
         solver.compute( S_mat );
         Eigen::Matrix<T, -1, 1> X;
@@ -164,6 +165,7 @@ namespace TSL
         x.VECTOR = X;
         return x;
       }
+      
        
 	}; // End of class SparseMatrix
 

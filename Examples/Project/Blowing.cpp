@@ -384,6 +384,9 @@ int main()
       /* N_eta x N_zeta mesh, with 4 unknowns at each node + 1 the coefficient "A". */
       SparseMatrix<double> A( 4 * N_eta * N_zeta + 1, 4 * N_eta * N_zeta + 1 );
       cout << "Assembling global sparse matrix problem.\n";
+
+      Timer timer;
+      timer.start();
       
       using namespace Example;
       unsigned row( 0 );                               // Initialise row counter
@@ -760,8 +763,8 @@ int main()
       cout << "***                                              Maximum residual = " 
            << B.norm_inf() << "\n";  
 
-      Timer timer;
-      timer.start();
+      //Timer timer;
+      //timer.start();
       Vector<double> x;
       x = A.solve( B );
       B = x;      

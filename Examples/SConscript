@@ -29,3 +29,4 @@ env.Program( 'Project/General_Ridge.out' , ['Project/General_Ridge.cpp'] , OPTS 
 env.Program( 'Project/General_Base_Flow.out' , ['Project/General_Base_Flow.cpp'] , OPTS = opts, LIBS = libs )
 env.Program( 'Project/Blowing.out' , ['Project/Blowing.cpp'] , OPTS = opts, LIBS = libs )
 env.Program( 'Project/Ridge_test.out' , ['Project/Ridge_test.cpp'] , OPTS = opts, LIBS = libs )
+env.Program( 'Project/Blowing_pressure_gradient.out' , ['Project/Blowing_pressure_gradient.cpp'] , OPTS = opts, LIBS = libs )

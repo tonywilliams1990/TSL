@@ -37,19 +37,21 @@ int main()
 
   /* ----- TESTING sparse linear system solver ----- */
 
-  size_t N = 10;
+  size_t N = 1000000;
   TSL::SparseMatrix<double> A_matrix(N,N);
   for (size_t i=0; i<N; ++i)
   {
      A_matrix(i,i) = 0.435 * (i + 1.0);
   }
-
+  
   TSL::Vector<double> B_vector(N,0.435);
   TSL::Vector<double> X_vector(N,0.0);
-    
+  
 	X_vector = A_matrix.solve( B_vector );
-  cout << "B_vector = " << endl << B_vector << endl;
-  cout << "X_vector = " << endl << X_vector << endl;
+  //cout << "B_vector = " << endl << B_vector << endl;
+  //cout << "X_vector = " << endl << X_vector << endl;
+  cout << "X[N-1] = " << X_vector[ N - 1 ] << endl;
+  cout << "1 / N  = " << 1.0 / N << endl;
 
 	cout << "FINISHED" << endl;
 

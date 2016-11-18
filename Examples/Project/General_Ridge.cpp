@@ -32,6 +32,7 @@ namespace TSL
       double beta( 0.0 );               // Hartree parameter
       double KB( 0.0 );                 // Base flow transpiration ( +ve = blowing )
       double zeta0( 4.0 );              // Ridge/transpiration width
+      double zeta0_2 = zeta0 * zeta0;   // Square of the ridge/transpiration width
       double A( 0.0 );                  // Mass flux parameter
       double K( 2.5 );                  // Transpiration parameter ( +ve = blowing )
       double gamma( 20.0 );             // Steepness factor
@@ -92,41 +93,7 @@ namespace TSL
 #ifdef NORIDGE
         return 0.0;
 #endif
-      }
-
-      Vector<double> laplace_vals( const double& Hd, const double& Hdd, const double& Xd,
-                                 const double& Yd, const double& Xdd, const double& Ydd,
-                                 const double& dX, const double& dY, const double& zeta0)
-      {
-        // A function to return the values for the coefficients of the finite-difference
-        // Laplace operator
-        Vector<double> a(9,0.0);
-
-        // X(i-1,j-1)
-        a[0] = -2.*Hd*Yd*Xd / (4.*zeta0*zeta0*dY*dX);
-        // X(i,j-1)
-        a[1] = ( 1. + (Hd*Hd)/(zeta0*zeta0) ) * ( Yd*Yd/(dY*dY) - Ydd/(2.*dY) ) 
-              + Hdd*Yd/(2.*zeta0*zeta0*dY);
-        // X(i+1,j-1)
-        a[2] =  2.*Hd*Yd*Xd / (4.*zeta0*zeta0*dY*dX);
-        // X(i-1,j)
-        a[3] = ( Xd*Xd/(dX*dX) - Xdd/(2.*dX) )/(zeta0*zeta0);
-        // X(i,j)
-        a[4] = -2.*( Yd*Yd*( 1. + Hd*Hd/(zeta0*zeta0) )/(dY*dY) 
-                     + Xd*Xd/(zeta0*zeta0*dX*dX) );
-        // X(i+1,j)
-        a[5] = ( Xdd/(2.*dX) + Xd*Xd/(dX*dX) ) / (zeta0*zeta0);
-        // X(i-1,j+1)
-        a[6] = 2.*Hd*Yd*Xd / (4.*zeta0*zeta0*dY*dX);
-        // X(i,j+1)
-        a[7] = ( 1. + (Hd*Hd)/(zeta0*zeta0) ) * ( Yd*Yd/(dY*dY) + Ydd/(2.*dY) ) 
-              - Hdd*Yd/(2.*zeta0*zeta0*dY);
-        // X(i+1,j+1)
-        a[8] = -2.*Hd*Yd*Xd / (4.*zeta0*zeta0*dY*dX);
-
-        return a;
-      }
-                                          
+      }                                       
 
     } // End of namespace Example
 
@@ -398,8 +365,8 @@ int main()
 
   /* ----- Make the output directory ----- */
   std::ostringstream ss;
-  ss << "./DATA/K_" << Param::K << "_" << Param::N + 1 << "x" 
-     << Param::M + 1 << "_" << Param::hzeta_right << "_" << Param::eta_top << "/";
+  ss << "./DATA/K_" << Param::K << "_" << "beta_" << Param::beta << "_" << Param::N + 1 
+     << "x" << Param::M + 1 << "_" << Param::hzeta_right << "_" << Param::eta_top << "/";
   Example::output_path = ss.str();               
   int status = mkdir( Example::output_path.c_str(), S_IRWXU );
   cout << "  * Output directory " + Example::output_path + 
@@ -609,6 +576,7 @@ int main()
   /* ----- Solve for the perturbation quantities ----- */
 
   cout << "*** Solving the perturbation equations ***" << endl;
+  cout << "  * Perturbation transpiration K = " << Param::K << endl;
   // Set the current guess states  
   TwoD_node_mesh<double> Q( X_nodes, Y_nodes, 4 );
   // We use the mesh below to write the data on the original zeta-eta domain
@@ -672,6 +640,7 @@ int main()
             A( row, col( i + 2, j, Phi ) )  = -1.*Xd/(2*dX);
             A( row, col( i, j + 1, Phi ) )  = -4.*Hd*Yd/(2*dY);
             A( row, col( i, j + 2, Phi ) )  =  1.*Hd*Yd/(2*dY);
+
             B[ row ]                        = -( Xd*( -3*Q(i,j,Phi) + 4*Q(i+1,j,Phi) 
                                                  -Q(i+2,j,Phi) )/(2*dX) ) 
                                               + Hd*Yd*( -3*Q(i,j,Phi) + 4*Q(i,j+1,Phi)
@@ -686,6 +655,7 @@ int main()
             A( row, col( i + 2, j, Phi ) )  = -1.*Xd/(2*dX);
             A( row, col( i, j - 1, Phi ) )  =  4.*Hd*Yd/(2*dY);
             A( row, col( i, j - 2, Phi ) )  = -1.*Hd*Yd/(2*dY);
+
             B[ row ]                        = -( Xd*( -3*Q(i,j,Phi) + 4*Q(i+1,j,Phi) 
                                                  -Q(i+2,j,Phi) )/(2*dX) )
                                               + Hd*Yd*( 3*Q(i,j,Phi) - 4*Q(i,j-1,Phi)
@@ -700,6 +670,7 @@ int main()
             A( row, col( i + 2, j, Phi ) )  = -1.*Xd/(2*dX);
             A( row, col( i, j + 1, Phi ) )  = -Hd*Yd/(2*dY);
             A( row, col( i, j - 1, Phi ) )  =  Hd*Yd/(2*dY);
+
             B[ row ]                        = -( Xd*( -3*Q(i,j,Phi) + 4*Q(i+1,j,Phi) 
                                                  -Q(i+2,j,Phi) )/(2*dX) )
                                               + Hd*Yd*( Q(i,j+1,Phi) - Q(i,j-1,Phi) )
@@ -734,8 +705,10 @@ int main()
             A( row, col( i + 2, j, U ) )    = -1.*Xd/(2*dX);
             A( row, col( i, j - 1, U ) )    =  4.*Hd*Yd/(2*dY);
             A( row, col( i, j - 2, U ) )    = -1.*Hd*Yd/(2*dY);
+
             B[ row ]                        = -( Xd*( -3*Q(i,j,U) + 4*Q(i+1,j,U) 
                                                  -Q(i+2,j,U) )/(2*dX) )
+
                                               + Hd*Yd*( 3*Q(i,j,U) - 4*Q(i,j-1,U)
                                                  +Q(i,j-2,U) )/(2*dY)
                                               + Hd*UBd;
@@ -746,8 +719,10 @@ int main()
             A( row, col( i, j, U ) )        = -3.*Xd/(2*dX);
             A( row, col( i + 1, j, U ) )    =  4.*Xd/(2*dX);
             A( row, col( i + 2, j, U ) )    = -1.*Xd/(2*dX);
+
             A( row, col( i, j + 1, U ) )    = -Hd*Yd/(2*dY);
             A( row, col( i, j - 1, U ) )    =  Hd*Yd/(2*dY);
+
             B[ row ]                        = -( Xd *( -3 * Q( i, j, U ) 
                                               + 4 * Q( i+1, j, U ) - Q( i + 2, j, U ) ) 
                                               / ( 2 * dX ) )
@@ -804,7 +779,7 @@ int main()
       A( row, col( i, j + 2, Psi ) )    =  1.*Yd / ( 2 * dY );
       B[ row ]                          = -Q(i,j,Theta) + Yd*( -3*Q(i,j,Psi) 
                                           + 4*Q(i,j+1,Psi) - Q(i,j+2,Psi) ) / (2*dY)
-                                          - ( 1. / ( Param::zeta0 * Param::zeta0 ) ) 
+                                          - ( 1. / ( Param::zeta0_2 ) ) 
                                           * Phi_w_hzeta;
       ++row; 
 
@@ -835,8 +810,29 @@ int main()
                         - ( 2. - Param::beta ) * Base[ UB ] * Base[ ThetaB ] );
         
         // Laplacian coefficients for finite-differencing
-        Vector<double> coeff = laplace_vals( Hd, Hdd, Xd, Yd, Xdd, 
-                                             Ydd, dX, dY, Param::zeta0);
+        
+        // X(i-1,j-1)
+        double laplace_0 = -2.*Hd*Yd*Xd / ( 4. * Param::zeta0_2 * dY * dX );
+        // X(i,j-1)
+        double laplace_1 = ( 1. + ( Hd * Hd ) / ( Param::zeta0_2 ) ) * ( Yd*Yd/(dY*dY) 
+                          - Ydd/ (2.*dY) ) + Hdd*Yd / ( 2. * Param::zeta0_2 * dY );
+        // X(i+1,j-1)
+        double laplace_2 =  2.*Hd*Yd*Xd / ( 4. * Param::zeta0_2 * dY * dX );
+        // X(i-1,j)
+        double laplace_3 = ( Xd*Xd/(dX*dX) - Xdd/(2.*dX) ) / ( Param::zeta0_2 );
+        // X(i,j)
+        double laplace_4 = -2.*( Yd*Yd*( 1. + Hd*Hd/( Param::zeta0_2 ) )/(dY*dY) 
+                           + Xd*Xd/( Param::zeta0_2 * dX * dX ) );
+        // X(i+1,j)
+        double laplace_5 = ( Xdd/(2.*dX) + Xd*Xd/(dX*dX) ) / ( Param::zeta0_2 );
+        // X(i-1,j+1)
+        double laplace_6 = 2.*Hd*Yd*Xd / ( 4. * Param::zeta0_2 * dY * dX );
+        // X(i,j+1)
+        double laplace_7 = ( 1. + (Hd*Hd)/( Param::zeta0_2 ) ) * ( Yd*Yd/(dY*dY) + Ydd/
+                           (2.*dY) ) - Hdd*Yd/( 2. * Param::zeta0_2 * dY );
+        // X(i+1,j+1)
+        double laplace_8 = -2.*Hd*Yd*Xd / ( 4. * Param::zeta0_2 * dY * dX );
+
         // Guessed/known components and various derivative values
         Vector<double> Guess( Q.get_nodes_vars( i, j ) );
         Vector<double> Guess_eta( ( Q.get_nodes_vars( i, j + 1 ) 
@@ -844,45 +840,47 @@ int main()
         Vector<double> Guess_hzeta( ( Q.get_nodes_vars( i + 1, j ) 
                                     - Q.get_nodes_vars( i - 1, j ) ) 
                                     * ( Xd /( 2 * dX )) );
-        Vector<double> Guess_laplace( Q.get_nodes_vars( i - 1, j - 1 ) * coeff[0]
-                                   +  Q.get_nodes_vars( i, j - 1 ) * coeff[1] 
-                                   +  Q.get_nodes_vars( i + 1, j - 1 ) * coeff[2]
-                                   +  Q.get_nodes_vars( i - 1, j ) * coeff[3]
-                                   +  Q.get_nodes_vars( i, j ) * coeff[4]
-                                   +  Q.get_nodes_vars( i + 1, j ) * coeff[5]
-                                   +  Q.get_nodes_vars( i - 1, j + 1 ) * coeff[6]
-                                   +  Q.get_nodes_vars( i, j + 1 ) * coeff[7]
-                                   +  Q.get_nodes_vars( i + 1, j + 1 ) * coeff[8] );
+        Vector<double> Guess_laplace( Q.get_nodes_vars( i - 1, j - 1 ) * laplace_0
+                                   +  Q.get_nodes_vars( i, j - 1 ) * laplace_1 
+                                   +  Q.get_nodes_vars( i + 1, j - 1 ) * laplace_2
+                                   +  Q.get_nodes_vars( i - 1, j ) * laplace_3
+                                   +  Q.get_nodes_vars( i, j ) * laplace_4
+                                   +  Q.get_nodes_vars( i + 1, j ) * laplace_5
+                                   +  Q.get_nodes_vars( i - 1, j + 1 ) * laplace_6
+                                   +  Q.get_nodes_vars( i, j + 1 ) * laplace_7
+                                   +  Q.get_nodes_vars( i + 1, j + 1 ) * laplace_8 );
         
         //////////////////
         // Phi equation //
         //////////////////
 
         // Laplacian of Phi        
-        A( row, col( i - 1, j - 1, Phi ) )  = coeff[0];
-        A( row, col( i, j - 1, Phi ) )      = coeff[1];
-        A( row, col( i + 1, j - 1, Phi ) )  = coeff[2];
-        A( row, col( i - 1, j, Phi ) )      = coeff[3];
-        A( row, col( i, j, Phi ) )          = coeff[4];
-        A( row, col( i + 1, j, Phi ) )      = coeff[5];
-        A( row, col( i - 1, j + 1, Phi ) )  = coeff[6];
-        A( row, col( i, j + 1, Phi ) )      = coeff[7];
-        A( row, col( i + 1, j + 1, Phi ) )  = coeff[8];
+        A( row, col( i - 1, j - 1, Phi ) )  = laplace_0;
+        A( row, col( i, j - 1, Phi ) )      = laplace_1;
+        A( row, col( i + 1, j - 1, Phi ) )  = laplace_2;
+        A( row, col( i - 1, j, Phi ) )      = laplace_3;
+        A( row, col( i, j, Phi ) )          = laplace_4;
+        A( row, col( i + 1, j, Phi ) )      = laplace_5;
+        A( row, col( i - 1, j + 1, Phi ) )  = laplace_6;
+        A( row, col( i, j + 1, Phi ) )      = laplace_7;
+        A( row, col( i + 1, j + 1, Phi ) )  = laplace_8;
         // -(2-beta)*U_eta
         A( row, col( i, j + 1, U ) )        = -( 2. - Param::beta )*Yd/( 2 * dY );
         A( row, col( i, j - 1, U ) )        =  ( 2. - Param::beta )*Yd/( 2 * dY );
         // Theta_hzeta
         A( row, col( i + 1, j, Theta ) )    =  Xd / ( 2 * dX );
         A( row, col( i - 1, j, Theta ) )    = -Xd / ( 2 * dX );
+
         // -H' * Theta_eta
         A( row, col( i, j + 1, Theta ) )    = -Hd*Yd / ( 2 * dY );
         A( row, col( i, j - 1, Theta ) )    =  Hd*Yd / ( 2 * dY );
+
         // Residual
         B[ row ]      = - Guess_laplace[ Phi ] + ( 2. - Param::beta ) * Guess_eta[ U ]
                         - Guess_hzeta[ Theta ]
                         + Hd * ( hzeta * Base[ ThetaBd ] + Guess_eta[ Theta ] )
                         + ( Hdd * PhiBd - Hd * Hd * PhiBdd )
-                        / ( Param::zeta0 * Param::zeta0 ); 
+                        / ( Param::zeta0_2 ); 
         ++row;
 
         //////////////////
@@ -890,31 +888,27 @@ int main()
         //////////////////
 
         // Laplacian of Psi
-        A( row, col( i - 1, j - 1, Psi ) )  = coeff[0];
-        A( row, col( i, j - 1, Psi ) )      = coeff[1];
-        A( row, col( i + 1, j - 1, Psi ) )  = coeff[2];
-        A( row, col( i - 1, j, Psi ) )      = coeff[3];
-        A( row, col( i, j, Psi ) )          = coeff[4];
-        A( row, col( i + 1, j, Psi ) )      = coeff[5];
-        A( row, col( i - 1, j + 1, Psi ) )  = coeff[6];
-        A( row, col( i, j + 1, Psi ) )      = coeff[7];
-        A( row, col( i + 1, j + 1, Psi ) )  = coeff[8];
+        A( row, col( i - 1, j - 1, Psi ) )  = laplace_0;
+        A( row, col( i, j - 1, Psi ) )      = laplace_1;
+        A( row, col( i + 1, j - 1, Psi ) )  = laplace_2;
+        A( row, col( i - 1, j, Psi ) )      = laplace_3;
+        A( row, col( i, j, Psi ) )          = laplace_4;
+        A( row, col( i + 1, j, Psi ) )      = laplace_5;
+        A( row, col( i - 1, j + 1, Psi ) )  = laplace_6;
+        A( row, col( i, j + 1, Psi ) )      = laplace_7;
+        A( row, col( i + 1, j + 1, Psi ) )  = laplace_8;
 
         // -(2-beta)*U_hzeta / (zeta0^2)
         A( row, col( i + 1, j, U ) )        = - ( 2. - Param::beta ) * Xd 
-                                              / ( 2. * dX * Param::zeta0 
-                                                     * Param::zeta0 );
+                                              / ( 2. * dX * Param::zeta0_2 );
         A( row, col( i - 1, j, U ) )        =   ( 2. - Param::beta ) * Xd
-                                              / ( 2. * dX * Param::zeta0 
-                                                     * Param::zeta0 );
+                                              / ( 2. * dX * Param::zeta0_2 );
 
         // (2-beta)*H'*U_eta / (zeta0^2)
         A( row, col( i, j + 1, U ) )        =   ( 2. - Param::beta ) * Hd * Yd
-                                              / ( 2. * dY * Param::zeta0 
-                                                     * Param::zeta0 );
+                                              / ( 2. * dY * Param::zeta0_2 );
         A( row, col( i, j - 1, U ) )        = - ( 2. - Param::beta ) * Hd * Yd
-                                              / ( 2. * dY * Param::zeta0 
-                                                     * Param::zeta0 );
+                                              / ( 2. * dY * Param::zeta0_2 );
 
         // -Theta_eta
         A( row, col( i, j + 1, Theta ) )    = - Yd / ( 2 * dY ); 
@@ -923,11 +917,11 @@ int main()
         // Residual
         B[ row ]      = - Guess_laplace[ Psi ] + ( 2. - Param::beta ) 
                         * ( Guess_hzeta[ U ] - Hd * ( Base[ UBd ] + Guess_eta[ U ]  ) )
-                        / ( Param::zeta0 * Param::zeta0 )
+                        / ( Param::zeta0_2 )
                         + Guess_eta[ Theta ] 
-                        - Hd * Hd * hzeta * PsiBdd / ( Param::zeta0 * Param::zeta0 )  
+                        - Hd * Hd * hzeta * PsiBdd / ( Param::zeta0_2 )  
                         + PsiBd * ( 2. * Hd + hzeta * Hdd ) 
-                        / ( Param::zeta0 * Param::zeta0 );
+                        / ( Param::zeta0_2 );
 
         ++row;
 
@@ -936,15 +930,15 @@ int main()
         ////////////////
 
         // Laplacian of U
-        A( row, col( i - 1, j - 1, U ) )    = coeff[0];
-        A( row, col( i, j - 1, U ) )        = coeff[1];
-        A( row, col( i + 1, j - 1, U ) )    = coeff[2];
-        A( row, col( i - 1, j, U ) )        = coeff[3];
-        A( row, col( i, j, U ) )            = coeff[4];
-        A( row, col( i + 1, j, U ) )        = coeff[5];
-        A( row, col( i - 1, j + 1, U ) )    = coeff[6];
-        A( row, col( i, j + 1, U ) )        = coeff[7];
-        A( row, col( i + 1, j + 1, U ) )    = coeff[8];
+        A( row, col( i - 1, j - 1, U ) )    = laplace_0;
+        A( row, col( i, j - 1, U ) )        = laplace_1;
+        A( row, col( i + 1, j - 1, U ) )    = laplace_2;
+        A( row, col( i - 1, j, U ) )        = laplace_3;
+        A( row, col( i, j, U ) )            = laplace_4;
+        A( row, col( i + 1, j, U ) )        = laplace_5;
+        A( row, col( i - 1, j + 1, U ) )    = laplace_6;
+        A( row, col( i, j + 1, U ) )        = laplace_7;
+        A( row, col( i + 1, j + 1, U ) )    = laplace_8;
 
         // -2 * beta * ( UB + UG ) * U
         A( row, col( i, j, U ) )           += - 2.* Param::beta * ( Base[ UB ] 
@@ -965,11 +959,11 @@ int main()
                                               * Yd / ( 2 * dY );
           
         // [ UG_hzeta - H' * ( UB' + UG_eta ) ] * Psi
-        A( row, col( i, j, Psi ) )          =   ( Guess_hzeta[ U ] - Hd * ( Base[ UBd ]
-                                              + Guess_eta[ U ] ) );
+        A( row, col( i, j, Psi ) )          =   Guess_hzeta[ U ] - Hd * ( Base[ UBd ]
+                                              + Guess_eta[ U ] );
 
         // ( UB' + UG_eta ) * Phi
-        A( row, col( i, j, Phi ) )          =   ( Base[ UBd ] + Guess_eta[ U ] );
+        A( row, col( i, j, Phi ) )          =    Base[ UBd ] + Guess_eta[ U ];
          
         // Residual
         B[ row ]        = - Guess_laplace[ U ] 
@@ -979,7 +973,7 @@ int main()
                           - (Base[PhiB] + Guess[Phi]) * Guess_eta[ U ]
                           - Base[UBd] * Guess[Phi] 
                           + ( Hdd * Base[ UBd ] - Hd * Hd * UBdd ) 
-                          / ( Param::zeta0 * Param::zeta0 ) ;
+                          / ( Param::zeta0_2 ) ;
         ++row;
 
         ////////////////////
@@ -987,50 +981,48 @@ int main()
         ////////////////////
 
         // Laplacian of Theta
-        A( row, col( i - 1, j - 1, Theta ) ) = coeff[0];
-        A( row, col( i, j - 1, Theta ) )     = coeff[1];
-        A( row, col( i + 1, j - 1, Theta ) ) = coeff[2];
-        A( row, col( i - 1, j, Theta ) )     = coeff[3];
-        A( row, col( i, j, Theta ) )         = coeff[4];
-        A( row, col( i + 1, j, Theta ) )     = coeff[5];
-        A( row, col( i - 1, j + 1, Theta ) ) = coeff[6];
-        A( row, col( i, j + 1, Theta ) )     = coeff[7];
-        A( row, col( i + 1, j + 1, Theta ) ) = coeff[8];
+        A( row, col( i - 1, j - 1, Theta ) ) = laplace_0;
+        A( row, col( i, j - 1, Theta ) )     = laplace_1;
+        A( row, col( i + 1, j - 1, Theta ) ) = laplace_2;
+        A( row, col( i - 1, j, Theta ) )     = laplace_3;
+        A( row, col( i, j, Theta ) )         = laplace_4;
+        A( row, col( i + 1, j, Theta ) )     = laplace_5;
+        A( row, col( i - 1, j + 1, Theta ) ) = laplace_6;
+        A( row, col( i, j + 1, Theta ) )     = laplace_7;
+        A( row, col( i + 1, j + 1, Theta ) ) = laplace_8;
 
         // -2 * (1-beta) * (UB+UG) * [hzeta + (eta+H)*H'/(zeta0^2)] * U_eta
         A( row, col( i, j + 1, U ) )         = - 2. * ( 1. - Param::beta )
                                                  * ( Base[ UB ] + Guess[ U ] ) 
                                                  * ( hzeta + ( eta + H ) * Hd 
-                                                 / ( Param::zeta0 * Param::zeta0 ) ) 
+                                                 / ( Param::zeta0_2 ) ) 
                                                  * Yd / ( 2 * dY );
         A( row, col( i, j - 1, U ) )         =   2. * ( 1. - Param::beta )
                                                  * ( Base[ UB ] + Guess[ U ] ) 
                                                  * ( hzeta + ( eta + H ) * Hd 
-                                                 / ( Param::zeta0 * Param::zeta0 ) ) 
+                                                 / ( Param::zeta0_2 ) ) 
                                                  * Yd / ( 2 * dY );
 
         // -2 * (1-beta) * (UB + UG) * ( hzeta + (eta+H)*H'/(zeta0^2) ) * U
         A( row, col( i, j, U ) )             = - 2. * ( 1. - Param::beta )
                                                  * ( Base[ UBd ] + Guess_eta[ U ] ) 
                                                  * ( hzeta + ( eta + H ) * Hd 
-                                                 / ( Param::zeta0 * Param::zeta0 ) );
+                                                 / ( Param::zeta0_2 ) );
 
         // (2 * (1-beta) * (eta + H) * UG_hzeta / (zeta0^2)) * U
         A( row, col( i, j, U ) )            +=  2. * ( 1. - Param::beta )
                                                 * ( eta + H ) * Guess_hzeta[ U ]
-                                                / ( Param::zeta0 * Param::zeta0 );
+                                                / ( Param::zeta0_2 );
 
         // 2 * (1-beta) * (eta + H) * (UB + UG) * U_hzeta / ( zeta0^2 )
         A( row, col( i + 1, j, U ) )         =  2. * ( 1. - Param::beta ) 
                                                 * ( eta + H ) 
                                                 * ( Base[ UB ] + Guess[ U ] )
-                                                * Xd / ( 2 * dX * Param::zeta0 
-                                                * Param::zeta0 );
+                                                * Xd / ( 2 * dX * Param::zeta0_2 );
         A( row, col( i - 1, j, U ) )         = -2. * ( 1. - Param::beta ) 
                                                 * ( eta + H ) 
                                                 * ( Base[ UB ] + Guess[ U ] )
-                                                * Xd / ( 2 * dX * Param::zeta0 
-                                                * Param::zeta0 );
+                                                * Xd / ( 2 * dX * Param::zeta0_2 );
 
         // ( PhiB + PhiG ) * Theta_eta
         A( row, col( i, j + 1, Theta ) )    +=  ( Base[ PhiB ] + Guess[ Phi ] ) * Yd 
@@ -1053,7 +1045,6 @@ int main()
                                                * Hd * Yd / ( 2 * dY );
         A( row, col( i, j - 1, Theta ) )    +=  ( hzeta * Base[ PsiB ] + Guess[ Psi ] ) 
                                                * Hd * Yd / ( 2 * dY );
-
         // [ThetaB + ThetaG_hzeta - H' * ( hzeta * ThetaB' + ThetaG_eta ) ] * Psi
         A( row, col( i, j, Psi ) )           =  Base[ ThetaB ] + Guess_hzeta[ Theta ]
                                                - Hd * ( hzeta * Base[ ThetaBd ]
@@ -1072,13 +1063,13 @@ int main()
         B[ row ]      = - Guess_laplace[ Theta ]
                         + ( Base[ ThetaBd ] * ( 2. * Hd + hzeta * Hdd ) 
                         - hzeta * ThetaBdd * Hd * Hd  ) 
-                        / ( Param::zeta0 * Param::zeta0 )
+                        / ( Param::zeta0_2 )
                         + 2.*( 1. - Param::beta ) 
                         * ( hzeta * ( Base[ UB ] + Guess[ U ] ) 
                         * Guess_eta[ U ] + hzeta * Base[ UBd ] * Guess[ U ] 
                         - ( eta + H ) * ( Base[ UB ] + Guess[ U ] ) 
                         * ( Guess_hzeta[ U ] - Hd * ( Base[ UBd ] + Guess_eta[ U ] ) ) 
-                        / ( Param::zeta0 * Param::zeta0 ) )  
+                        / ( Param::zeta0_2 ) )  
                         - ( Base[ PhiB ] + Guess[ Phi ] ) * Guess_eta[ Theta ]
                         - hzeta * Base[ ThetaBd ] * Guess[ Phi ]
                         - ( hzeta * Base[ PsiB ] + Guess[ Psi ] ) 
@@ -1100,24 +1091,24 @@ int main()
         // Phi = (1-beta)*H + A*(...)
         A( row, col( i, j, Phi ) )        =   1.0;
         A( row, 4 * N_hzeta * N_eta )     = - ( eta + H ) / ( ( eta + H ) * ( eta + H ) 
-                                            + Param::zeta0 * Param::zeta0 * hzeta 
+                                            + Param::zeta0_2 * hzeta 
                                             * hzeta );
 
         B[ row ]        = - Q( i, j, Phi ) + ( 1. - Param::beta ) * H
                           + ( eta + H ) * Param::A / ( ( eta + H ) * ( eta + H ) 
-                          + Param::zeta0 * Param::zeta0 * hzeta * hzeta );
+                          + Param::zeta0_2 * hzeta * hzeta );
 
         ++row;
 
         // Psi = A*(...)
         A( row, col( i, j, Psi ) )        =   1.0;
         A( row, 4 * N_hzeta * N_eta )     = - hzeta / ( ( eta + H ) * ( eta + H ) 
-                                            + Param::zeta0 * Param::zeta0 * hzeta 
+                                            + Param::zeta0_2 * hzeta 
                                             * hzeta );
 
         B[ row ]        = - Q( i, j, Psi ) + hzeta * Param::A 
-                          / ( ( eta + H ) * ( eta + H ) + Param::zeta0 
-                          * Param::zeta0 * hzeta * hzeta );
+                          / ( ( eta + H ) * ( eta + H ) 
+                          + Param::zeta0_2 * hzeta * hzeta );
 
         ++row;
 #endif
@@ -1126,18 +1117,18 @@ int main()
         A( row, col( i, j, Phi ) )        =   3.0 *Yd/ (2*dY);
         A( row, col( i, j - 1, Phi ) )    = - 4.0 *Yd/ (2*dY);
         A( row, col( i, j - 2, Phi ) )    =   1.0 *Yd/ (2*dY);
-        A( row, 4 * N_hzeta * N_eta )     = - ( Param::zeta0 * Param::zeta0 
+        A( row, 4 * N_hzeta * N_eta )     = - ( Param::zeta0_2 
                                             * hzeta * hzeta 
                                             - ( eta + H ) * ( eta + H ) ) 
-                                            / pow( ( Param::zeta0 * Param::zeta0 
+                                            / pow( ( Param::zeta0_2 
                                             * hzeta * hzeta 
                                             + ( eta + H ) * ( eta + H ) ), 2);
     
         B[ row ]        = - ( 3 * Q( i, j, Phi ) - 4 * Q( i, j-1, Phi ) 
                           + Q( i, j-2, Phi ) ) * Yd / ( 2 * dY ) 
-                          + Param::A * ( Param::zeta0 * Param::zeta0 * hzeta * hzeta 
+                          + Param::A * ( Param::zeta0_2 * hzeta * hzeta 
                           - ( eta + H ) * ( eta + H ) ) 
-                          / pow( ( Param::zeta0 * Param::zeta0 * hzeta * hzeta 
+                          / pow( ( Param::zeta0_2 * hzeta * hzeta 
                           + ( eta + H ) * ( eta + H ) ), 2);
         ++row;
 
@@ -1146,14 +1137,14 @@ int main()
         A( row, col( i, j - 1, Psi ) )    = - 4.0 *Yd/ (2*dY);
         A( row, col( i, j - 2, Psi ) )    =   1.0 *Yd/ (2*dY);
         A( row, 4 * N_hzeta * N_eta )     =   2. * hzeta * ( eta + H )
-                                            / pow( ( Param::zeta0 * Param::zeta0 
+                                            / pow( ( Param::zeta0_2 
                                             * hzeta * hzeta 
                                             + ( eta + H ) * ( eta + H ) ) , 2 );
 
         B[ row ]        = - ( 3 * Q( i, j, Psi ) - 4 * Q( i, j-1, Psi ) 
                           + Q( i, j-2, Psi ) ) * Yd / ( 2 * dY )  
                           - Param::A * 2. * hzeta * ( eta + H )
-                          / pow( ( Param::zeta0 * Param::zeta0 * hzeta * hzeta 
+                          / pow( ( Param::zeta0_2 * hzeta * hzeta 
                           + ( eta + H ) * ( eta + H ) ) , 2 );
         ++row;
 #endif 
@@ -1188,7 +1179,7 @@ int main()
       A( row, col( i - 1, j, Phi ) )      = - hzeta * 4. * Xd / ( 2 * dX );
       A( row, col( i - 2, j, Phi ) )      =   hzeta * 1. * Xd / ( 2 * dX );
       A( row, 4 * N_hzeta * N_eta )       = - 2 * pow( eta, 3 ) 
-                                            / pow( Param::zeta0 * Param::zeta0 
+                                            / pow( Param::zeta0_2 
                                             * hzeta * hzeta 
                                             + eta * eta, 2 ); 
 
@@ -1196,7 +1187,7 @@ int main()
                         + Q( i - 2, j, Phi) ) * Xd / ( 2 * dX ) 
                         - 2 * Q( i, j, Phi )
                         + 2 * Param::A * pow( eta, 3. ) 
-                        / pow( Param::zeta0 * Param::zeta0 * hzeta * hzeta 
+                        / pow( Param::zeta0_2 * hzeta * hzeta 
                         + eta * eta, 2 );
       ++row;
 
@@ -1205,14 +1196,14 @@ int main()
       A( row, col( i - 1, j, Psi ) )      = - hzeta * 4. * Xd / ( 2 * dX );
       A( row, col( i - 2, j, Psi ) )      =   hzeta * 1. * Xd / ( 2 * dX );
       A( row, 4 * N_hzeta * N_eta )       = - 2. * hzeta * pow( eta, 2. )
-                                            / pow( Param::zeta0 * Param::zeta0 
+                                            / pow( Param::zeta0_2 
                                             * hzeta * hzeta + eta * eta, 2 );
 
       B[ row ]        = - hzeta * ( 3 * Q( i, j, Psi ) - 4 * Q( i - 1, j, Psi ) 
                         + Q( i - 2, j, Psi) ) * Xd / ( 2 * dX ) 
                         - Q( i, j, Psi)
                         + 2. * Param::A * hzeta * pow( eta, 2. )
-                        / pow( Param::zeta0 * Param::zeta0 * hzeta * hzeta 
+                        / pow( Param::zeta0_2 * hzeta * hzeta 
                         + eta * eta, 2 ) ;
       ++row;
 
@@ -1244,10 +1235,9 @@ int main()
     // zeta0^2 * hzeta_max theta( zeta=zeta_max, eta=0 ) = A*otheta(0)
     Vector<double> Base( base.solution().get_interpolated_vars( 0.0 ) );
     A( 4 * N_eta * N_hzeta, 4 * N_eta * N_hzeta ) = - far_ode.solution()( 0, Thetabar );
-    A( 4 * N_eta * N_hzeta, 4 * N_eta * (N_hzeta - 1) + 3 ) =   Param::zeta0
-                                                              * Param::zeta0 * hzeta;
+    A( 4 * N_eta * N_hzeta, 4 * N_eta * (N_hzeta - 1) + 3 ) =   Param::zeta0_2 * hzeta;
     // RHS
-    B[ row ] = - Q( N_hzeta-1, 0, Theta ) * Param::zeta0 * Param::zeta0 * hzeta 
+    B[ row ] = - Q( N_hzeta-1, 0, Theta ) * Param::zeta0_2 * hzeta 
                + Param::A * far_ode.solution()( 0, Thetabar ) ;   
     
     max_residual = B.norm_inf();
@@ -1336,8 +1326,9 @@ int main()
 
     cout << " zeta0 = " << Param::zeta0 << ", A = " << Param::A << endl;
     Param::zeta0 += 0.5; // 0.5 is best for blowing
+    Param::zeta0_2 = Param::zeta0 * Param::zeta0;
 
-  }while(Param::zeta0 < 4.5);
+  }while( Param::zeta0 < 4.5 );
 
 
   cout << "FINISHED" << endl;
