@@ -1,4 +1,4 @@
-/* Tmatrix class - Encapsulates the Eigen matrix container
+/* Matrix class - Encapsulates the Eigen matrix container
 */
 #include "Matrix.h"
 

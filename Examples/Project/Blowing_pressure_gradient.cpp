@@ -4,6 +4,7 @@
 #include <sstream>
 
 #include "Core"
+#include "Sparse"
 
 // Enumerations
 enum{ f, fd, fdd, g, gd, gdd };                               // Base ODE
@@ -26,12 +27,12 @@ namespace TSL
     {
       double hzeta_right( 16.0 );       // Size of the domain in the zeta_hat direction
       double eta_top( 128.0 );          // Size of the domain in the eta direction
-      const std::size_t N( 100 );       // Number of intervals in the zeta_hat direction
-      const std::size_t M( 100 );       // Number of intervals in the eta direction
+      const std::size_t N( 400 );       // Number of intervals in the zeta_hat direction
+      const std::size_t M( 400 );       // Number of intervals in the eta direction
       const std::size_t Nvar( 4 );      // Number of variables
       double beta( 0.01 );               // Hartree parameter
       double KB( 0.0 );                 // Base flow transpiration ( +ve = blowing )
-      double zeta0( 4.0 );              // Ridge/transpiration width
+      double zeta0( 1.0 );              // Ridge/transpiration width
       double zeta0_2 = zeta0 * zeta0;   // Square of the ridge/transpiration width
       double A( 0.0 );                  // Mass flux parameter
       double K( 2.5 );                  // Transpiration parameter ( +ve = blowing )
@@ -575,6 +576,7 @@ int main()
   { 
     // N_eta x N_hzeta mesh with 4 unknowns at each node + 1 for mass flux parameter A
     SparseMatrix<double> A( 4 * N_eta * N_hzeta + 1, 4 * N_eta * N_hzeta + 1 ); 
+    //Sparse_matrix<double> A( 4 * N_eta * N_hzeta + 1, 4 * N_eta * N_hzeta + 1 ); 
     cout << "  * Assembling sparse matrix problem" << endl; 
 
     Timer timer;
@@ -595,7 +597,7 @@ int main()
           Vector<double> Base( Base_soln.get_interpolated_vars( eta ) );
           // PhiB' = (2-beta)*UB - PsiB
           double PhiBd( ( 2.0 - Param::beta ) * Base[ UB ] - Base[ PsiB ] );
-          double UBd( Base[ UBd ] );      // TODO do we need this    
+          //double UBd( Base[ UBd ] );      // TODO do we need this    
           
 
           // Phi_hzeta = 0
@@ -1065,7 +1067,7 @@ int main()
     //Timer timer;
     //timer.start();
     Vector<double> x;
-    x = A.solve( B );
+    x = A.solve( B );      
     B = x;   
     timer.print();
     timer.stop();
@@ -1143,10 +1145,10 @@ int main()
     metric.update();
 
     cout << " zeta0 = " << Param::zeta0 << ", A = " << Param::A << endl;
-    Param::zeta0 += 0.5; // 0.5 is best for blowing
+    Param::zeta0 += 1.0; // 0.5 is best for blowing
     Param::zeta0_2 = Param::zeta0 * Param::zeta0;
 
-  }while( Param::zeta0 < 4.5 );
+  }while( Param::zeta0 < 20.5 );
 
 
   cout << "FINISHED" << endl;
