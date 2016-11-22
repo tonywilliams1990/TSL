@@ -30,7 +30,7 @@ namespace TSL
       const std::size_t N( 400 );       // Number of intervals in the zeta_hat direction
       const std::size_t M( 400 );       // Number of intervals in the eta direction
       const std::size_t Nvar( 4 );      // Number of variables
-      double beta( 0.01 );               // Hartree parameter
+      double beta( 2.0 );               // Hartree parameter
       double KB( 0.0 );                 // Base flow transpiration ( +ve = blowing )
       double zeta0( 1.0 );              // Ridge/transpiration width
       double zeta0_2 = zeta0 * zeta0;   // Square of the ridge/transpiration width
@@ -1144,7 +1144,7 @@ int main()
 
     metric.update();
 
-    cout << " zeta0 = " << Param::zeta0 << ", A = " << Param::A << endl;
+    cout << "  * zeta0 = " << Param::zeta0 << ", A = " << Param::A << endl;
     Param::zeta0 += 1.0; // 0.5 is best for blowing
     Param::zeta0_2 = Param::zeta0 * Param::zeta0;
 
