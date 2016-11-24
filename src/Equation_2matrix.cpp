@@ -8,42 +8,43 @@
 namespace TSL
 {
 
-  template <typename _Type, typename _Xtype>
-  Equation_2matrix<_Type, _Xtype >::Equation_2matrix( const unsigned& order ) :
-      Equation_1matrix<_Type, _Xtype>( order )
+  template <class T, class X>
+  Equation_2matrix<T, X >::Equation_2matrix( const unsigned& order ) :
+      Equation_1matrix<T, X>( order )
   {
     // initialise the container for the extra matrix
-    MATRIX1_AT_LAST_STATE = Matrix<_Type>( order, order, 0.0 );
+    MATRIX1_AT_LAST_STATE = Matrix<T>( order, order, 0.0 );
     // add an extra coordinate to the vector stored in the residual_with_coords baseclass 
-    Residual_with_coords<_Type,_Xtype>::coords.resize( 2, 0.0 );
+    Residual_with_coords<T,X>::coords.resize( 2, 0.0 );
   }
 
-  template <typename _Type, typename _Xtype>
-  Equation_2matrix<_Type, _Xtype >::~Equation_2matrix()
+  template <class T, class X>
+  Equation_2matrix<T, X >::~Equation_2matrix()
   {
     // timer reporting is done via the Equation (base) class
   }
 
-  template <typename _Type, typename _Xtype>
-  void Equation_2matrix<_Type, _Xtype >::update( const Vector<_Type> &state )
+  template <class T, class X>
+  void Equation_2matrix<T, X >::update( const Vector<T> &state )
   {
     // call the base class's update method
-    Equation_1matrix<_Type, _Xtype>::update( state );
+    Equation_1matrix<T, X>::update( state );
     // now deal with the additional matrix separately
     matrix1( state, MATRIX1_AT_LAST_STATE );
   }
 
-  template <typename _Type, typename _Xtype>
-  void Equation_2matrix<_Type, _Xtype>::get_jacobian_of_matrix1_mult_vector( 
-        const Vector<_Type> &state, const Vector<_Type> &vec, Matrix<_Type> &h ) const
+  template <class T, class X>
+  void Equation_2matrix<T, X>::get_jacobian_of_matrix1_mult_vector( 
+        const Vector<T> &state, const Vector<T> &vec, Matrix<T> &h ) const
   {
-    // we dont need state in the default implementation as its already been set by the update method. You do need it for the user
-    // to overload this method with an explicit analytical version however.
+    // we dont need state in the default implementation as its already been set by
+    // the update method. You do need it for the user to overload this method with an      
+    // explicit analytical version however.
     //
     // copy some items for FD computation of Jacobian of mass matrix
-    Vector<_Type> copy_of_state( this -> LAST_STATE );
-    Matrix<_Type> copy_of_matrix( MATRIX1_AT_LAST_STATE );
-    std::vector< Matrix<_Type> > jacmatrix;
+    Vector<T> copy_of_state( this -> LAST_STATE );
+    Matrix<T> copy_of_matrix( MATRIX1_AT_LAST_STATE );
+    std::vector< Matrix<T> > jacmatrix;
     // update the Jacobian of the mass matrix
     for ( std::size_t i = 0; i < this -> ORDER_OF_SYSTEM; ++i )
     {

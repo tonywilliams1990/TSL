@@ -32,7 +32,7 @@ namespace TSL
   /// A templated object for real/complex vector system
   /// of unsteady equations.
 
-  template <typename _Type>
+  template <class T>
   class PDE_IBVP
   {
   public:
@@ -42,10 +42,10 @@ namespace TSL
     /// \param nodes A vector that defines the nodal positions.
     /// \param ptr_to_left_residual A pointer to a residual object that defines the LHS boundary conditions.
     /// \param ptr_to_right_residual A pointer to a residual object that defines the RHS boundary conditions.
-    PDE_IBVP( Equation_2matrix<_Type > *equation_ptr,
+    PDE_IBVP( Equation_2matrix<T > *equation_ptr,
               const Vector<double>& nodes,
-              Residual_with_coords<_Type>* ptr_to_left_residual,
-              Residual_with_coords<_Type>* ptr_to_right_residual );
+              Residual_with_coords<T>* ptr_to_left_residual,
+              Residual_with_coords<T>* ptr_to_right_residual );
 
     /// Destructor
     ~PDE_IBVP();
@@ -58,18 +58,18 @@ namespace TSL
     /// \param a The LHS (banded) matrix.
     /// \param b The RHS (dense) vector.
     /// \param dt The 'time step' to be taken.
-    void assemble_matrix_problem( SparseMatrix<_Type>& a, Vector<_Type>& b, 
+    void assemble_matrix_problem( SparseMatrix<T>& a, Vector<T>& b, 
                                   const double& dt );
 
     /// Return a reference to the current value of the 'timelike/parabolic' coordinate
     /// \return A handle to the current time stored in the object
     double& coord()
     {
-      return T;
+      return TIME;
     }
 
     /// \return A handle to the solution mesh
-    OneD_node_mesh<_Type>& solution();
+    OneD_node_mesh<T>& solution();
 
     /// Access method to the tolerance
     /// \return A handle to the private member data TOL
@@ -87,27 +87,27 @@ namespace TSL
 
   private:
     /// The solution at the current time level
-    OneD_node_mesh<_Type> SOLN;
+    OneD_node_mesh<T> SOLN;
     /// The solution at the previous time step
-    OneD_node_mesh<_Type> PREV_SOLN;
+    OneD_node_mesh<T> PREV_SOLN;
     /// tolerance
     double TOL;
     /// The current value of the timelike variable
-    double T;
+    double TIME;
     /// maximum number of iterations
     int MAX_ITERATIONS;
     /// The function associated with this instance.
-    Equation_2matrix<_Type > *p_EQUATION;
+    Equation_2matrix<T > *p_EQUATION;
     /// Pointer to the residual defining the LHS BC
-    Residual_with_coords<_Type > *p_LEFT_RESIDUAL;
+    Residual_with_coords<T > *p_LEFT_RESIDUAL;
     /// Pointer to the residual defining the RHS BC
-    Residual_with_coords<_Type > *p_RIGHT_RESIDUAL;
+    Residual_with_coords<T > *p_RIGHT_RESIDUAL;
 
   }
   ; // end class
 
-  template <typename _Type>
-  inline OneD_node_mesh<_Type>& PDE_IBVP<_Type>::solution()
+  template <class T>
+  inline OneD_node_mesh<T>& PDE_IBVP<T>::solution()
   {
     return SOLN;
   }

@@ -17,8 +17,8 @@ namespace TSL
   /// 2 matrices (amongst other data). This inherits from the Equation_1matrix
   /// and adds the functionality for the additional matrix.
 
-  template < typename _Type, typename _Xtype = double >
-  class Equation_2matrix : public Equation_1matrix<_Type, _Xtype>
+  template < class T, class X = double >
+  class Equation_2matrix : public Equation_1matrix<T, X>
   {    
   public:
 
@@ -30,29 +30,22 @@ namespace TSL
     virtual ~Equation_2matrix();
 
     /// Update the Equation object for the current set of state variables
-    /// \param state The state vector at which to set the equation object
-    void update( const Vector<_Type> &state );
+    void update( const Vector<T> &state );
 
     /// Return a handle to the matrix member data
-    const Matrix<_Type>& matrix1() const;
+    const Matrix<T>& matrix1() const;
 
     /// Return the product of the Jacobian-of-the-matrix and a vector 'vec'
     /// when the equation has a given 'state'. The user should overload this
     /// if concerned about performance of the solver. If not overloaded, the
     /// default is to finite difference the Jacobian-of-the-matrix.
-    /// \param state The current state variables -- used for clarity when
-    /// overloaded by the user instead of expecting the user to access the member data.
-    /// \param vec The vector that will be multiplied by the Jacobian-of-the-matrix
-    /// \param h The resulting 2D matrix
-    virtual void get_jacobian_of_matrix1_mult_vector( const Vector<_Type> &state, 
-                              const Vector<_Type> &vec, Matrix<_Type> &h ) const;
+    virtual void get_jacobian_of_matrix1_mult_vector( const Vector<T> &state, 
+                              const Vector<T> &vec, Matrix<T> &h ) const;
 
   protected:
 
     /// Define the matrix in terms of the current state vector.
-    /// \param state The current state vector.
-    /// \param m The matrix.
-    virtual void matrix1( const Vector<_Type> &state, Matrix<_Type> &m ) const
+    virtual void matrix1( const Vector<T> &state, Matrix<T> &m ) const
     {
       std::string problem;
       problem = "The equation::matrix1 method has not been implemented.\n";
@@ -63,17 +56,17 @@ namespace TSL
   private:
 
     /// Matrix for the last state vector
-    Matrix<_Type> MATRIX1_AT_LAST_STATE;
+    Matrix<T> MATRIX1_AT_LAST_STATE;
 
   }
-  ; // end class
-
-  template <typename _Type, typename _Xtype>
-  inline const Matrix<_Type>& Equation_2matrix<_Type, _Xtype>::matrix1() const
+  ; // End of class Equation_2matrix
+ 
+  template <class T, class X>
+  inline const Matrix<T>& Equation_2matrix<T, X>::matrix1() const
   {
     return MATRIX1_AT_LAST_STATE;
   }
 
-} // end namespace
+} // End of namespace TSL
 
 #endif

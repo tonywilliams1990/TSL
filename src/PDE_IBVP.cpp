@@ -25,21 +25,21 @@
 namespace TSL
 {
 
-  template <typename _Type>
-  PDE_IBVP<_Type>::PDE_IBVP( Equation_2matrix<_Type >* ptr_to_equation,
+  template <class T>
+  PDE_IBVP<T>::PDE_IBVP( Equation_2matrix<T >* ptr_to_equation,
                              const Vector<double> &nodes,
-                             Residual_with_coords<_Type>* ptr_to_left_residual,
-                             Residual_with_coords<_Type>* ptr_to_right_residual ) :
+                             Residual_with_coords<T>* ptr_to_left_residual,
+                             Residual_with_coords<T>* ptr_to_right_residual ) :
       TOL( 1.e-8 ),
-      T( 0.0 ),
+      TIME( 0.0 ),
       MAX_ITERATIONS( 12 ),
       p_EQUATION( ptr_to_equation ),
       p_LEFT_RESIDUAL( ptr_to_left_residual ),
       p_RIGHT_RESIDUAL( ptr_to_right_residual )
   {
-    SOLN = OneD_node_mesh<_Type>( nodes, p_EQUATION -> get_order() );
+    SOLN = OneD_node_mesh<T>( nodes, p_EQUATION -> get_order() );
     PREV_SOLN = SOLN;
-    p_EQUATION -> coord( 1 ) = T;
+    p_EQUATION -> coord( 1 ) = TIME;
     if ( p_EQUATION -> get_order() - p_LEFT_RESIDUAL -> get_order() - p_RIGHT_RESIDUAL -> get_order() != 0 )
     {
       std::string problem( "\n The PDE_IBVP class has been constructed, but the order of the \n");
@@ -49,14 +49,14 @@ namespace TSL
 
   }
 
-  template <typename _Type>
-  PDE_IBVP<_Type>::~PDE_IBVP()
+  template <class T>
+  PDE_IBVP<T>::~PDE_IBVP()
   {
 
   }
 
-  template <typename _Type>
-  void PDE_IBVP<_Type>::step2( const double& dt )
+  template <class T>
+  void PDE_IBVP<T>::step2( const double& dt )
   {
     // the order of the problem
     unsigned order( p_EQUATION -> get_order() );
@@ -75,9 +75,9 @@ namespace TSL
     //
     // Banded LHS matrix - max obove diagonal band width is
     // from first variable at node i to last variable at node i+1
-    SparseMatrix<_Type> a( ny * order, ny * order );
+    SparseMatrix<T> a( ny * order, ny * order );
     // RHS
-    Vector<_Type> b( ny * order, 0.0 );
+    Vector<T> b( ny * order, 0.0 );
     // loop until converged or too many iterations
     do
     {
@@ -112,17 +112,14 @@ namespace TSL
       problem += "Solution has been restored to the previous accurate state.\n";
       throw Error( problem );
     }
-#ifdef DEBUG
-    std::cout << "[DEBUG] time-like variable = " << T << "\n";
-#endif
     // set the time to the updated level
-    T += dt;
+    TIME += dt;
   }
 
 
-  template <typename _Type>
-  void PDE_IBVP<_Type>::assemble_matrix_problem( SparseMatrix<_Type>& a, 
-                                                 Vector<_Type>& b, const double& dt )
+  template <class T>
+  void PDE_IBVP<T>::assemble_matrix_problem( SparseMatrix<T>& a, 
+                                                 Vector<T>& b, const double& dt )
   {
     // clear the Jacobian matrix
     a.clear( );
@@ -135,16 +132,16 @@ namespace TSL
     // row counter
     std::size_t row( 0 );
     // a matrix that is used in the Jacobian of the mass matrix terms
-    Matrix<_Type> h0( order, order, 0.0 );
-    Matrix<_Type> h1( order, order, 0.0 );
+    Matrix<T> h0( order, order, 0.0 );
+    Matrix<T> h1( order, order, 0.0 );
     // local state variable and functions
-    Vector<_Type> F_midpt( order, 0.0 );
-    Vector<_Type> O_midpt( order, 0.0 );
-    Vector<_Type> state( order, 0.0 );
-    Vector<_Type> state_dt( order, 0.0 );
-    Vector<_Type> state_dy( order, 0.0 );
+    Vector<T> F_midpt( order, 0.0 );
+    Vector<T> O_midpt( order, 0.0 );
+    Vector<T> state( order, 0.0 );
+    Vector<T> state_dt( order, 0.0 );
+    Vector<T> state_dy( order, 0.0 );
     // BCn equation is evaluated at the next time step
-    p_LEFT_RESIDUAL -> coord( 0 ) = T + dt;
+    p_LEFT_RESIDUAL -> coord( 0 ) = TIME + dt;
     // update the BC residuals for the current iteration
     p_LEFT_RESIDUAL -> update( SOLN.get_nodes_vars( 0 ) );
     // add the (linearised) LHS BCs to the matrix problem
@@ -168,8 +165,8 @@ namespace TSL
       // set the current solution at this node by 2nd order evaluation at mid point
       for ( unsigned var = 0; var < order; ++var )
       {
-        const _Type F_midpt = ( SOLN( l_node, var ) + SOLN( r_node, var ) ) / 2.;
-        const _Type O_midpt = ( PREV_SOLN( l_node, var ) + PREV_SOLN( r_node, var ) ) / 2.;
+        const T F_midpt = ( SOLN( l_node, var ) + SOLN( r_node, var ) ) / 2.;
+        const T O_midpt = ( PREV_SOLN( l_node, var ) + PREV_SOLN( r_node, var ) ) / 2.;
         state_dy[ var ] = ( SOLN( r_node, var ) - SOLN( l_node, var )
                             + PREV_SOLN( r_node, var ) - PREV_SOLN( l_node, var ) ) * inv_dy / 2.;
         state[ var ] = ( F_midpt + O_midpt ) / 2.;
@@ -179,7 +176,7 @@ namespace TSL
       // y
       p_EQUATION -> coord(0) = 0.5 * ( SOLN.coord( l_node ) + SOLN.coord( r_node ) );
       // t
-      p_EQUATION -> coord(1) = T + dt / 2;
+      p_EQUATION -> coord(1) = TIME + dt / 2;
       // Update the equation to the mid point position
       p_EQUATION -> update( state );
       // evaluate the Jacobian of mass contribution multiplied by state_dy
@@ -221,14 +218,14 @@ namespace TSL
         // RHS
         b[ row ] = p_EQUATION -> residual()[ var ];
 
-        Vector<_Type> mat0vec;
-        Matrix<_Type> mat0;
+        Vector<T> mat0vec;
+        Matrix<T> mat0;
         mat0 = p_EQUATION -> matrix0();
         mat0vec = mat0[ var ];
         b[ row ] -= Utility::dot( mat0vec, state_dy );
 
-        Vector<_Type> mat1vec;
-        Matrix<_Type> mat1;
+        Vector<T> mat1vec;
+        Matrix<T> mat1;
         mat1 = p_EQUATION -> matrix1();
         mat1vec = mat1[ var ];
         b[ row ] -= Utility::dot( mat1vec, state_dt );
@@ -240,7 +237,7 @@ namespace TSL
     }
     // BCn equation is evaluated at the next step time point as
     // they cannot depend on d/dt terms
-    p_RIGHT_RESIDUAL -> coord( 0 ) = T + dt;
+    p_RIGHT_RESIDUAL -> coord( 0 ) = TIME + dt;
     // update the BC residuals for the current iteration
     p_RIGHT_RESIDUAL -> update( SOLN.get_nodes_vars( ny - 1 ) );
     // add the (linearised) RHS BCs to the matrix problem
