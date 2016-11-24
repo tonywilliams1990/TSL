@@ -22,10 +22,10 @@ namespace TSL
     double A( 0.0 );                   // Displacement coefficient
     double zeta_hat_right( 16 );       // The size of the domain in the zeta_hat direction
     double eta_top( 128 );                 // The size of the domain in the eta direction
-    unsigned N( 100 );                     // Number of intervals in the zeta_hat direction
-    unsigned M( 100 );                     // Number of intervals in the eta direction
+    unsigned N( 200 );                     // Number of intervals in the zeta_hat direction
+    unsigned M( 200 );                     // Number of intervals in the eta direction
     unsigned Nvar( 4 );                    // Number of variables
-    std::string output_path("./DATA/BLOWING_Cw_2.5_101x101_16_128/"); // Data output path
+    std::string output_path("./DATA/BLOWING_Cw_2.5_201x201_16_128/"); // Data output path
     
     unsigned col( const unsigned& i, const unsigned& j, const unsigned& k )           
     {        
@@ -245,7 +245,7 @@ int main()
 {
   cout << "*** ---------- Blowing Code ---------- ***" << endl;
 
-  double zeta0( 4.0 );                                      // zeta0 is the gap size
+  double zeta0( 1.0 );                                      // zeta0 is the gap size
   
   // Original coordinates are zeta & eta, then we change to X=X(zeta) & Y=Y(eta)
   double zeta_hat_right = Example::zeta_hat_right; 
@@ -848,7 +848,7 @@ int main()
     cout << " zeta0 = " << zeta0 << ", A = " << Example::A << endl;
     zeta0 += 0.5; // 0.5 is best for blowing
 
-  }while(zeta0 < 4.5);
+  }while(zeta0 < 20.5);
 
 
   cout << " FINISHED SOLUTION \n";

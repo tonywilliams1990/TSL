@@ -4,8 +4,8 @@ import matplotlib.mlab as mlab
 import matplotlib.pyplot as plt
 
 zeta0 = 20
-beta = 0
-K = 2.5
+beta = 0.1
+K = 5
 
 data = np.loadtxt("./DATA/K_"+ str(K) + "_beta_"+ str(beta) + "_401x401_16_128/Qout_" + str(zeta0) + ".dat")
 
@@ -49,7 +49,7 @@ font_size = 22
 
 plt.xlabel(r'$\hat{\zeta}$', fontsize=font_size)
 plt.ylabel(r'$\eta$', rotation='horizontal', fontsize=font_size)
-plt.title(r'$\beta =' + str(beta) + ', \zeta_0=' + str(zeta0)  + '$', fontsize=font_size)
+plt.title(r'$\beta =' + str(beta) + ', \zeta_0=' + str(zeta0) + ', K=' + str(K) + '$', fontsize=font_size)
 
 
 axes = plt.gca()

@@ -76,6 +76,9 @@ int main()
   cout << "C.norm_p(3.0) = " << C.norm_p(3.0) << endl;// Test norm_p method
 
   cout << "C.determinant() = " << C.determinant() << endl; // Test determinant method
+  cout << "C.get_col( 1 ) = " << C.get_col( 1 ) << endl;   // Test get_col
+  cout << "C.get_row( 1 ) = " << C.get_row( 1 ) << endl;   // Test get_row
+  cout << "C[ 1 ] = " << C[ 1 ] << endl;
   
 	cout << "FINISHED" << endl;
 

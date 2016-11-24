@@ -26,3 +26,7 @@
 #include "Arclength.h"
 #include "TwoD_node_mesh.h"
 #include "TrackerFile.h"
+#include "Equation_1matrix.h"
+#include "Equation_2matrix.h"
+#include "PDE_IBVP.h"
+#include "Utility.h"

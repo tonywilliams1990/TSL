@@ -184,6 +184,12 @@ namespace TSL
         return *this; 
       }
 
+      /// Operator overloading for ROW access
+      Vector<T> operator[] ( const std::size_t& row )
+      { 
+        return this->get_row( row );
+      }
+
       /// Scalar multiplication assignment TODO
       
       /// Scalar division assignment TODO
@@ -206,6 +212,28 @@ namespace TSL
         {
             MATRIX( row, col ) = x[ row ];
         }
+      }
+
+      /// Get a column of the matrix
+      Vector<T> get_col( const std::size_t& j )
+      {
+        Vector<T> temp;
+        for ( std::size_t row = 0; row < ROWS; ++row )
+        {
+          temp.push_back( MATRIX( row, j ) );
+        }
+        return temp;
+      }
+
+      /// Get a row of the matrix
+      Vector<T> get_row( const std::size_t& i )
+      {
+        Vector<T> temp;
+        for ( std::size_t col = 0; col < COLS; ++col )
+        {
+          temp.push_back( MATRIX( i, col ) );
+        }
+        return temp;
       }
 
       /// Return the transpose of the matrix
