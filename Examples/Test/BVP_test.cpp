@@ -67,6 +67,8 @@ int main()
 
 	// Create boundary value problem
   ODE_BVP<double> ode( &equation, nodes, &left_BC, &right_BC ); 
+
+  ode.max_iterations() = 50;
 	
     /* ----- Set the initial guess ----- */
 	for (std::size_t j=0; j < N_nodes; ++j )

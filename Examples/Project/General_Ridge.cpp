@@ -456,7 +456,7 @@ int main()
 
   // Set the initial guess
 #ifdef BASE_2D
-  for (std::size_t j=0; j < Param::M; ++j )
+  for (std::size_t j=0; j < N_eta; ++j )
 	{
 		double eta = eta_nodes[ j ];				                      // eta value at node j
 		base.solution()( j, f )  	= eta + exp( -eta );
@@ -465,7 +465,7 @@ int main()
 	}
 #endif
 #ifdef BASE_3D
-  for (std::size_t j=0; j < Param::M; ++j )
+  for (std::size_t j=0; j < N_eta; ++j )
 	{
 		double eta = eta_nodes[ j ];					                   // eta value at node j
 		base.solution()( j, f )  	= eta + exp( -eta );
@@ -503,7 +503,7 @@ int main()
   // Store the solution in a mesh
   OneD_node_mesh<double> Base_soln( eta_nodes, 6 );
 #ifdef BASE_2D
-  for (std::size_t j=0; j < Param::M; ++j )
+  for (std::size_t j=0; j < N_eta; ++j )
 	{
 		Base_soln( j, UB )      =   base.solution()( j, fd );
     Base_soln( j, UBd )     =   base.solution()( j, fdd );
@@ -516,7 +516,7 @@ int main()
 	}
 #endif
 #ifdef BASE_3D
-  for (std::size_t j=0; j < Param::M; ++j )
+  for (std::size_t j=0; j < N_eta; ++j )
 	{
 		Base_soln( j, UB )      =   base.solution()( j, fd );
     Base_soln( j, UBd )     =   base.solution()( j, fdd );

@@ -4,7 +4,7 @@ import matplotlib.mlab as mlab
 import matplotlib.pyplot as plt
 
 # Load data
-data = np.loadtxt("./DATA/Base_soln.dat")
+data = np.loadtxt("./DATA/Parabolic_System/Base_soln.dat")
 eta  = data[:,0]
 UB   = data[:,1]
 UBd  = data[:,2]
