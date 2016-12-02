@@ -9,7 +9,7 @@ enum{ UB, UBd, PhiB, ThetaB, ThetaBd, PsiB };                 // Base ODE
 enum{ Phi, U, Ud, Psi, Theta, Thetad};                        // PDE enumeration
 
 // Either BASE_2D or BASE_3D for 2D or 3D base flows
-#define BASE_3D
+#define BASE_2D
 
 namespace TSL
 {
@@ -21,7 +21,7 @@ namespace TSL
     unsigned M( 1000 );					      // Number of intervals in the eta direction
     std::string output_path("./DATA/Parabolic_System/");        // Data output path
     double hzeta( hzeta_inf );        // Value of hzeta at the current step
-    double K( 0.6 );                  // Blowing intensity
+    double K( 0.87 );                  // Blowing intensity
     double beta( 0.0 );               // Hartree parameter
     double gamma( 20.0 );             // Steepness factor
 
@@ -141,7 +141,7 @@ namespace TSL
       /// Define the system of equations
       void residual_fn( const Vector<double>& z, Vector<double>& f ) const
       {
-        // The 6th order system for ( Phi, U, U' )
+        // The 3rd order system for ( Phi, U, U' )
         f[ 0 ] =  z[ U ];
         f[ 1 ] =  z[ Ud ];
         f[ 2 ] =  Example::beta * ( z[ U ] * z[ U ] - 1. ) - z[ Phi ] * z[ Ud ];
@@ -261,7 +261,7 @@ namespace TSL
       void residual_fn( const Vector<double>& z, Vector<double>& b ) const
       {
         b[ 0 ] = z[ U ] - 1.0;
-        b[ 1 ] = z[ Psi ] - 1.0;
+        b[ 1 ] = z[ Psi ] - ( 1.0 - Example::beta );
         b[ 2 ] = z[ Theta ];
       }
 #endif
@@ -497,6 +497,14 @@ int main()
       Q( Example::N - i, j, U )     = Parabolic.solution()( j, U );
       Q( Example::N - i, j, Ud )    = Parabolic.solution()( j, Ud );
 #endif 
+#ifdef BASE_3D
+      Q( Example::N - i, j, Phi )   = Parabolic.solution()( j, Phi );
+      Q( Example::N - i, j, U )     = Parabolic.solution()( j, U );
+      Q( Example::N - i, j, Ud )    = Parabolic.solution()( j, Ud );
+      Q( Example::N - i, j, Psi )   = Parabolic.solution()( j, Psi ); 
+      Q( Example::N - i, j, Theta ) = Parabolic.solution()( j, Theta );   
+      Q( Example::N - i, j, Theta ) = Parabolic.solution()( j, Theta );
+#endif
     } 
     cout << "hzeta = " << Parabolic.coord( ) << endl;
     hzeta_vals.push_back( Example::hzeta );

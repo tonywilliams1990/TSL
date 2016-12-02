@@ -4,9 +4,9 @@ import matplotlib.mlab as mlab
 import matplotlib.pyplot as plt
 
 #zeta0 = 20
-beta = 0
-K = 0.6
-base = "2D"
+beta = 0.1
+K = 0.5
+base = "3D"
 
 data = np.loadtxt("./DATA/Parabolic_System/Qout_K_"+ str(K) + "_beta_"+ str(beta) + "_" + base + ".dat")
 

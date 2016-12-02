@@ -28,12 +28,12 @@ namespace TSL
       const std::size_t N( 400 );       // Number of intervals in the zeta_hat direction
       const std::size_t M( 400 );       // Number of intervals in the eta direction
       const std::size_t Nvar( 4 );      // Number of variables
-      double beta( 0.1 );               // Hartree parameter
+      double beta( 0.0 );               // Hartree parameter
       double KB( 0.0 );                 // Base flow transpiration ( +ve = blowing )
       double zeta0( 1.0 );              // Ridge/transpiration width
       double zeta0_2 = zeta0 * zeta0;   // Square of the ridge/transpiration width
       double A( 0.0 );                  // Mass flux parameter
-      double K( 2.5 );                  // Transpiration parameter ( +ve = blowing )
+      double K( 0.87 );                  // Transpiration parameter ( +ve = blowing )
       double gamma( 20.0 );             // Steepness factor
 
     } // End of namespace Param
@@ -1142,11 +1142,22 @@ int main()
 
     metric.update();
 
+    // Get the wall shear values as a function of hzeta
+    OneD_node_mesh<double> wall_shear( hzeta_nodes, 1 );
+    for ( std::size_t i=0; i < Param::N + 1; ++i )
+    {
+      wall_shear( i, 0 ) = -( 3 * Q_output(i,0,U+4) - 4 * Q_output(i,1,U+4) 
+            + Q_output(i,2,U+4) ) * Mesh::Yd(0.0)/(2*dY);    
+    }
+
+    wall_shear.output( Example::output_path + "Wall_shear_zeta0_" + zeta0_str + ".dat" );
+
+
     cout << "  * zeta0 = " << Param::zeta0 << ", A = " << Param::A << endl;
     Param::zeta0 += 1.0; // 0.5 is best for blowing
     Param::zeta0_2 = Param::zeta0 * Param::zeta0;
 
-  }while( Param::zeta0 < 20.5 );
+  }while( Param::zeta0 < 40.5 );
 
 
   cout << "FINISHED" << endl;

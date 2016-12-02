@@ -3,9 +3,9 @@ import numpy as np
 import matplotlib.mlab as mlab
 import matplotlib.pyplot as plt
 
-K = 0.6
-beta = 0
-base = "2D"
+K = 0.5
+beta = 0.1
+base = "3D"
 
 # Load data
 data = np.loadtxt("./DATA/Parabolic_System/Wall_shear_K_" + str(K) + "_beta_" + str(beta) + "_" + base + ".dat")

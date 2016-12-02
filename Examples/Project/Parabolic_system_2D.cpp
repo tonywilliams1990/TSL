@@ -22,7 +22,7 @@ namespace TSL
     std::string output_path("./DATA/Parabolic_System/");        // Data output path
     double hzeta( hzeta_inf );        // Value of hzeta at the current step
     double K( 0.6 );                  // Blowing intensity
-    double beta( 0.0 );               // Hartree parameter
+    double beta( 0.1 );               // Hartree parameter
     double gamma( 20.0 );             // Steepness factor
 
     double Phi_w( const double& hzeta )
