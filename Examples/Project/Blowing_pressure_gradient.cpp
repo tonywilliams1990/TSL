@@ -17,7 +17,7 @@ enum{ Phi, Psi, U, Theta };                                   // PDE
 // Either UNIFORM or NONUNIFORM for uniform of non-uniform mesh
 #define NONUNIFORM
 // Either DIRICHLET or NEUMANN boundary conditions on Phi and Psi at eta=eta_inf
-#define NEUMANN
+#define DIRICHLET
 
 namespace TSL
 {
@@ -33,7 +33,7 @@ namespace TSL
       double zeta0( 1.0 );              // Ridge/transpiration width
       double zeta0_2 = zeta0 * zeta0;   // Square of the ridge/transpiration width
       double A( 0.0 );                  // Mass flux parameter
-      double K( 0.87 );                  // Transpiration parameter ( +ve = blowing )
+      double K( 0.5 );                  // Transpiration parameter ( +ve = blowing )
       double gamma( 20.0 );             // Steepness factor
 
     } // End of namespace Param

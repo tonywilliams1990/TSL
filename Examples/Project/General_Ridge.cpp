@@ -20,18 +20,22 @@ enum{ Phi, Psi, U, Theta };                                   // PDE
 // Either RIDGE or NORIDGE
 #define NORIDGE
 
+//TODO slow convergence for RIDGE code - must be a problem with matrix/equations
+//TODO try with DIRICHLET boundary conditions
+
 namespace TSL
 {
     namespace Param
     {
       double hzeta_right( 16.0 );       // Size of the domain in the zeta_hat direction
       double eta_top( 128.0 );          // Size of the domain in the eta direction
-      const std::size_t N( 100 );       // Number of intervals in the zeta_hat direction
-      const std::size_t M( 100 );       // Number of intervals in the eta direction
+      const std::size_t N( 200 );       // Number of intervals in the zeta_hat direction
+      const std::size_t M( 200 );       // Number of intervals in the eta direction
       const std::size_t Nvar( 4 );      // Number of variables
+      double alpha( 0.0 );              // Ridge amplitude
       double beta( 0.0 );               // Hartree parameter
       double KB( 0.0 );                 // Base flow transpiration ( +ve = blowing )
-      double zeta0( 4.0 );              // Ridge/transpiration width
+      double zeta0( 1.0 );              // Ridge/transpiration width
       double zeta0_2 = zeta0 * zeta0;   // Square of the ridge/transpiration width
       double A( 0.0 );                  // Mass flux parameter
       double K( 2.5 );                  // Transpiration parameter ( +ve = blowing )
@@ -65,8 +69,8 @@ namespace TSL
       double H( const double& hzeta )
       {
 #ifdef RIDGE 
-        //TODO return ridge profile as function of hzeta
-        return 0.0;
+        // Return ridge profile as function of hzeta
+        return Param::alpha * exp( - hzeta * hzeta );
 #endif
 #ifdef NORIDGE
         return 0.0;
@@ -76,8 +80,8 @@ namespace TSL
       double Hd( const double& hzeta )
       {
 #ifdef RIDGE
-        //TODO return derivative of ridge profile wrt hzeta
-        return 0.0;
+        // Return derivative of ridge profile wrt hzeta
+        return -2. * Param::alpha * hzeta * exp( - hzeta * hzeta );
 #endif
 #ifdef NORIDGE
         return 0.0;
@@ -87,8 +91,8 @@ namespace TSL
       double Hdd( const double& hzeta )
       {
 #ifdef RIDGE
-        //TODO return 2nd derivative of ridge profile wrt hzeta
-        return 0.0;
+        // Return 2nd derivative of ridge profile wrt hzeta
+        return 2. * Param::alpha * ( 2. * hzeta * hzeta - 1. ) * exp( - hzeta * hzeta );
 #endif
 #ifdef NORIDGE
         return 0.0;
@@ -362,10 +366,14 @@ int main()
   cout << "  * We are solving using a " << Param::N + 1 << " x " << Param::M + 1 
        << " mesh with zeta_hat_inf = " << Param::hzeta_right << " and eta_inf = " 
        << Param::eta_top << "." << endl;
+#ifdef NORIDGE
+        Param::alpha = 0.0;
+#endif
 
   /* ----- Make the output directory ----- */
   std::ostringstream ss;
-  ss << "./DATA/K_" << Param::K << "_" << "beta_" << Param::beta << "_" << Param::N + 1 
+  ss << "./DATA/K_" << Param::K << "_alpha_" << Param::alpha 
+     << "_beta_" << Param::beta << "_" << Param::N + 1 
      << "x" << Param::M + 1 << "_" << Param::hzeta_right << "_" << Param::eta_top << "/";
   Example::output_path = ss.str();               
   int status = mkdir( Example::output_path.c_str(), S_IRWXU );
@@ -576,6 +584,7 @@ int main()
   /* ----- Solve for the perturbation quantities ----- */
 
   cout << "*** Solving the perturbation equations ***" << endl;
+  cout << "  * Ridge amplitude alpha = " << Param::alpha << endl;
   cout << "  * Perturbation transpiration K = " << Param::K << endl;
   // Set the current guess states  
   TwoD_node_mesh<double> Q( X_nodes, Y_nodes, 4 );
@@ -1323,6 +1332,16 @@ int main()
               / ( Q_output(0,upper,U+4) - Q_output(0,lower,U+4)  ) + eta_nodes[lower];
 
     metric.update();
+
+    // Get the wall shear values as a function of hzeta
+    OneD_node_mesh<double> wall_shear( hzeta_nodes, 1 );
+    for ( std::size_t i=0; i < Param::N + 1; ++i )
+    {
+      wall_shear( i, 0 ) = -( 3 * Q_output(i,0,U+4) - 4 * Q_output(i,1,U+4) 
+            + Q_output(i,2,U+4) ) * Mesh::Yd(0.0)/(2*dY);    
+    }
+
+    wall_shear.output( Example::output_path + "Wall_shear_zeta0_" + zeta0_str + ".dat" );
 
     cout << " zeta0 = " << Param::zeta0 << ", A = " << Param::A << endl;
     Param::zeta0 += 0.5; // 0.5 is best for blowing

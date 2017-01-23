@@ -43,6 +43,43 @@ namespace TSL
             B[ 0 ] = z[ y ] - 1.0;
         }
     }; 
+
+    class test_equation_2 : public Equation<double>
+	{
+    
+		public:
+			// The test equation is 2nd order ( Airy equation y'' - sin(y) = 0 )
+			test_equation_2() : Equation<double> ( 2 ) {} 
+
+			// Define the equation
+			void residual_fn( const Vector<double>& u, Vector<double>& F  ) const
+			{   
+				F[ y ]   = u[ yd ];
+				F[ yd ]  = sin( u[ y ] );   
+			}
+	};
+
+    class zero_BC : public Residual<double>
+    {
+        public:
+            zero_BC() : Residual<double> ( 1, 2 ) {}
+
+        void residual_fn( const Vector<double> &z, Vector<double> &B ) const
+        {
+            B[ 0 ] = z[ y ];
+        }
+    };
+
+    class one_BC : public Residual<double>
+    {
+        public:
+            one_BC() : Residual<double> ( 1, 2 ) {}
+
+        void residual_fn( const Vector<double> &z, Vector<double> &B ) const
+        {
+            B[ 0 ] = z[ y ] - 3.14159;
+        }
+    }; 
 } 
 
 using namespace std;
@@ -86,6 +123,36 @@ int main()
   Vector<double> soln( ode.solution().get_interpolated_vars( x ) );
 
   cout << "y(x=8) = " << soln[ y ] << endl;
+
+  /* ------ y'' - sin(y) = 0 ----- */
+
+  size_t N( 200 );
+
+  nodes.linspace(0,1,N);
+  test_equation_2 equation_2;
+  zero_BC left_BC_2;
+  one_BC right_BC_2;
+
+  ODE_BVP<double> ode_2( &equation_2, nodes, &left_BC_2, &right_BC_2 );
+  ode_2.max_iterations() = 50;
+
+  for (std::size_t j=0; j < N; ++j )
+	{
+		double x = nodes[ j ];					// eta value at node j
+		ode_2.solution()( j , y )  		= x;
+    ode_2.solution()( j , yd ) 		= 1.; 
+	}
+
+  ode_2.solve_bvp();                        // Solve the system numerically
+
+  ode_2.solution().output( "./DATA/Solution_test.dat" ); 
+
+  double x_2 = 1;
+  Vector<double> soln_2( ode_2.solution().get_interpolated_vars( x_2 ) );
+
+  cout << "y(x=1) = " << soln_2[ y ] << endl;
+
+    
 
 	cout << "FINISHED" << endl;
 
