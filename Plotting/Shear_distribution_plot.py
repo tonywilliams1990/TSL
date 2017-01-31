@@ -3,8 +3,8 @@ import numpy as np
 import matplotlib.mlab as mlab
 import matplotlib.pyplot as plt
 
-K_val = [0.2, 0.6, 0.87]
-beta = 0
+K_val = [0.5, 1, 2]
+beta = 0.1
 M = 400
 N = 400
 hzeta_inf = 16
@@ -46,7 +46,7 @@ for i in range(0, len(K_val) ) :
 
 axes = plt.gca()
 axes.set_xlim([0.0,2.0])
-axes.set_ylim([0.0,0.5])
+axes.set_ylim([0.0,0.6])
 
 # Hide axis numbers
 axes.xaxis.set_ticklabels([])

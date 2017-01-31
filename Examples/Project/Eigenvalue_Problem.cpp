@@ -31,7 +31,7 @@ namespace TSL
 
     namespace Base_Flow
     {
-        double K( 0.0 );                                    // Transpiration parameter (+ve is blowing)                  
+        double K( 0.0 );   // Transpiration parameter (+ve is blowing)                  
 
 #ifdef Base_2D
 	    class equation : public Equation<double>
@@ -86,9 +86,9 @@ namespace TSL
 				    F[ f ]   = u[ fd ];
 				    F[ fd ]  = u[ fdd ];
 				    F[ fdd ] = - ( u[ f ] +  u[ g ] ) * u[ fdd ];
-                    F[ g ]   = u[ gd ];
-                    F[ gd ]  = u[ gdd ];
-                    F[ gdd ] = - ( u[ f ] + u[ g ] ) * u[ gdd ] - 2.0 * u[ gd ] * u[ fd ] + u[ gd ] * u[ gd ];     
+            F[ g ]   = u[ gd ];
+            F[ gd ]  = u[ gdd ];
+            F[ gdd ] = - ( u[ f ] + u[ g ] ) * u[ gdd ] - 2.0 * u[ gd ] * u[ fd ] + u[ gd ] * u[ gd ];     
 			    }
 	    };
 
@@ -130,8 +130,8 @@ int main()
     cout << "----- Eigenvalue problem -----" << endl;	
  	
 	// Define the domain
-	double Inf( 20.0 );											           // Infinite boundary 
-	size_t N_nodes( 300 );                             // Number of nodes
+	double Inf( 30.0 );											           // Infinite boundary 
+	size_t N_nodes( 200 );                             // Number of nodes
 	Vector<double> nodes;								               // Declare vector of nodes (uniform)
 	nodes.linspace(0,Inf,N_nodes); 
   const double delta = Inf / ( N_nodes - 1 );        // Mesh grid spacing
@@ -173,7 +173,7 @@ int main()
     bvp.solve_bvp();
 
     // Set the the transpiration value and solve again
-    Base_Flow::K = 0.5;
+    Base_Flow::K = 0.0;
     bvp.solve_bvp();
 
     cout << "*** K = " << Base_Flow::K << endl;
@@ -207,15 +207,15 @@ int main()
 	}
 #endif
 
-    Base_soln.output( "./DATA/Base_soln.dat" );                         // Output the solution
+    Base_soln.output( "./DATA/Base_soln.dat" );              // Output the solution
 
     cout << "*** Assembling the matrices for the eigenvalue problem." << endl;
 
     // Create the generalised eigenvalue problem A v = lambda B v
-    Matrix<double> A( 6*N_nodes, 6*N_nodes, 0.0 );                     // 6N*6N matrices as it is a 6th order system    
+    Matrix<double> A( 6*N_nodes, 6*N_nodes, 0.0 ); // 6N*6N -> 6th order system    
     Matrix<double> B( 6*N_nodes, 6*N_nodes, 0.0 );
 
-    unsigned row( 0 );                                                  // Row counter
+    unsigned row( 0 );                     // Row counter
 
     // Plate BCs
     unsigned i( 0 );

@@ -21,8 +21,8 @@ namespace TSL
     unsigned M( 1000 );					      // Number of intervals in the eta direction
     std::string output_path("./DATA/Parabolic_System/");        // Data output path
     double hzeta( hzeta_inf );        // Value of hzeta at the current step
-    double K( 0.5 );                  // Blowing intensity
-    double beta( 0.0 );               // Hartree parameter
+    double K( 2.0 );                  // Blowing intensity
+    double beta( 0.1 );               // Hartree parameter
     double gamma( 20.0 );             // Steepness factor
 
     double Phi_w( const double& hzeta )

@@ -1,4 +1,5 @@
 #include <sstream>
+#include <string>
 
 #include "Vector.h"
 
@@ -22,7 +23,7 @@ namespace TSL
     std::string stringify( const int &val );
 
     /// Return a double value as a string
-    std::string stringify( const double &val, int p );
+    std::string stringify( const double &val, int p, std::string str="" );
 
   } // End of namespace Utility
 } // End of namespace TSL

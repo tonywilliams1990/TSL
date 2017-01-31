@@ -15,7 +15,7 @@ plt.plot(KB, eta_half, color='k')
 
 plt.xlabel('KB')
 axes = plt.gca()
-axes.set_xlim([0,3])
+axes.set_xlim([0,5])
 axes.set_ylim([0,30])
 
 # Extract the numerical data
@@ -40,5 +40,7 @@ for i in range(0, len(K_num) ) :
 plt.plot( K_num, eta_half_zeta_0_5, 'ks--', clip_on=False )
 plt.plot( K_num, eta_half_zeta_0_10, 'k^:', clip_on=False )
 plt.plot( K_num, eta_half_zeta_0_20, 'ko-.', clip_on=False )
+
+plt.savefig("eta_half_vs_KB.eps", format='eps', dpi=1000)
 
 plt.show()

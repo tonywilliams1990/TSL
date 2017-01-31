@@ -6,6 +6,7 @@
 
 #include <iostream>
 #include <vector>
+#include <fstream>
 #include <Eigen/Dense>
 
 #include "Error.h"
@@ -280,6 +281,21 @@ namespace TSL
         if ( SIZE != w.SIZE )	{ throw Error( "Vector dot product: size error" );}
         T dp = VECTOR.adjoint()*w.VECTOR;
         return dp;
+      }
+
+      /// Output the vector to a file
+      void output( std::string filename, int precision )
+      {
+        std::ofstream dump;
+        dump.open( filename.c_str() );
+        dump.precision( precision );
+        dump.setf( std::ios::showpoint );
+        dump.setf( std::ios::showpos );
+        dump.setf( std::ios::scientific );
+        for ( std::size_t i = 0; i < SIZE; ++i )
+        {
+          dump << VECTOR( i, 0) << std::endl;
+        }
       }
       
       /* ----- Norms ----- */

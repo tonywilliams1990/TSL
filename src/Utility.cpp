@@ -17,11 +17,16 @@ namespace TSL
     }
 
     /// Return a double value as a string
-    std::string stringify( const double &val, int p )
+    std::string stringify( const double &val, int p, std::string str )
     {
       std::stringstream temp;
       temp.precision( p );
-      temp << val;
+      if ( str == "fixed" )
+      {
+        temp << std::fixed << val;
+      } else {
+        temp << val;
+      }
       return temp.str();
     }
 

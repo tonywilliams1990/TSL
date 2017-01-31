@@ -22,8 +22,8 @@ namespace TSL
       const std::size_t M( 400 );       // Number of intervals in the eta direction
       double beta( 0.1 );               // Hartree parameter
       double KB( 0.0 );                 // Base flow transpiration ( +ve = blowing )
-      double KB_max( 3.0 );             // Maximum value of the transpiration    
-      std::size_t KB_n( 100 );            // Number of KB values 
+      double KB_max( 5.0 );             // Maximum value of the transpiration    
+      std::size_t KB_n( 51 );            // Number of KB values 
 
     } // End of namespace Param
 
@@ -263,8 +263,8 @@ do{   // Iterate over values of K
 #endif
 
   // Output the solution to a file
-  //Base_soln.output( Example::output_path + "Base_soln_KB_" 
-  //                + Utility::stringify( abs( Param::KB ), 3 ) + ".dat" ); 
+  Base_soln.output( Example::output_path + "Base_soln_KB_" 
+                  + Utility::stringify( abs( Param::KB ), 3 ) + ".dat" ); 
   // Output data to the screen
 
   cout << fixed << setprecision(4) << "  * " << plate_BC.KB << ",\t";

@@ -28,12 +28,12 @@ namespace TSL
       const std::size_t N( 400 );       // Number of intervals in the zeta_hat direction
       const std::size_t M( 400 );       // Number of intervals in the eta direction
       const std::size_t Nvar( 4 );      // Number of variables
-      double beta( 0.0 );               // Hartree parameter
+      double beta( 0.1 );               // Hartree parameter
       double KB( 0.0 );                 // Base flow transpiration ( +ve = blowing )
       double zeta0( 1.0 );              // Ridge/transpiration width
       double zeta0_2 = zeta0 * zeta0;   // Square of the ridge/transpiration width
       double A( 0.0 );                  // Mass flux parameter
-      double K( 0.5 );                  // Transpiration parameter ( +ve = blowing )
+      double K( 2.0 );                  // Transpiration parameter ( +ve = blowing )
       double gamma( 20.0 );             // Steepness factor
 
     } // End of namespace Param
@@ -94,6 +94,7 @@ namespace TSL
       }
 #endif
 #ifdef NONUNIFORM
+
       const double a1( 0.1 );
       const double a2( 0.5 );   // X = (zeta + a1)^a2 
 
@@ -109,6 +110,31 @@ namespace TSL
       {
         return a2 * (a2 - 1) * std::pow(zeta + a1, a2 - 2);
       }
+
+/*
+    const double g0( 2 );// bigger => more points around zeta_hat=1
+    const double B0( 4 ); // bigger => more points near zeta=0 and (less for large zeta)
+    //
+    double X( const double& zeta )
+    {
+        return B0 * zeta * 0.5 * ( 1+tanh( g0 * (1-zeta) ) ) 
+              + (zeta + 2 * B0 ) * 0.5 * ( 1+tanh( g0 * (zeta-1) ) );
+    }
+    double Xd( const double& zeta )
+    {
+        return 0.5 * B0 * ( tanh( g0 * (1-zeta) ) + 1 ) 
+             - 0.5 * B0 * g0 * zeta * std::pow( cosh( g0 * (1-zeta) ), -2 )
+             + 0.5 * ( tanh( g0 * (zeta-1) ) + 1 ) 
+             + 0.5 * g0 * (zeta + 2 * B0 ) * std::pow( cosh( g0 * (1-zeta) ), -2 );
+    }
+    double Xdd( const double& zeta )
+    {
+      return - B0 * g0 * std::pow( cosh( g0 * (1-zeta) ), -2 ) 
+             + g0 * std::pow( cosh( g0 * (zeta-1) ),-2) 
+             - B0 * g0 * g0 * zeta * std::pow(cosh(g0*(1-zeta)),-2)*tanh(g0*(1 - zeta)) 
+             - g0 * g0 * (2*B0 + zeta)*std::pow(cosh(g0*(zeta-1)),-2)*tanh(g0*(zeta-1));
+    }
+*/
 
       const double b1( 0.3 );
       const double b2( 0.3 );   // Y = (eta_hat + b1)^b2

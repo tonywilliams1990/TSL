@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.mlab as mlab
 import matplotlib.pyplot as plt
 
-K = 0.6
+K = 2.5
 beta = 0
 M = 400
 N = 400

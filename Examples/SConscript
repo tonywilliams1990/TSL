@@ -27,12 +27,12 @@ env.Program( 'Project/Base_Flow_Transpiration.out' , ['Project/Base_Flow_Transpi
 env.Program( 'Project/Eigenvalue_Problem.out' , ['Project/Eigenvalue_Problem.cpp'] , OPTS = opts, LIBS = libs )
 env.Program( 'Project/General_Ridge.out' , ['Project/General_Ridge.cpp'] , OPTS = opts, LIBS = libs )
 env.Program( 'Project/General_Base_Flow.out' , ['Project/General_Base_Flow.cpp'] , OPTS = opts, LIBS = libs )
-env.Program( 'Project/Blowing.out' , ['Project/Blowing.cpp'] , OPTS = opts, LIBS = libs )
 env.Program( 'Project/Blowing_pressure_gradient.out' , ['Project/Blowing_pressure_gradient.cpp'] , OPTS = opts, LIBS = libs )
 env.Program( 'Project/Parabolic_system.out' , ['Project/Parabolic_system.cpp'] , OPTS = opts, LIBS = libs )
 env.Program( 'Project/Parabolic_system_2D.out' , ['Project/Parabolic_system_2D.cpp'] , OPTS = opts, LIBS = libs )
 env.Program( 'Project/Delta_transp_2D_base.out' , ['Project/Delta_transp_2D_base.cpp'] , OPTS = opts, LIBS = libs )
 env.Program( 'Project/Falkner_Skan_with_blowing.out' , ['Project/Falkner_Skan_with_blowing.cpp'] , OPTS = opts, LIBS = libs )
+env.Program( 'Project/Eigenvalue_Problem_pressure_gradient.out' , ['Project/Eigenvalue_Problem_pressure_gradient.cpp'] , OPTS = opts, LIBS = libs )
 
 # Example problem codes
 

@@ -28,20 +28,44 @@ namespace TSL
       std::string problem = "Eigensystem: Matrix must be square.";
       throw Error( problem );
     }
+    N = A.ROWS;
     // Create dynamically sized generalized Eigen solver
     Eigen::GeneralizedEigenSolver< Eigen::Matrix<T,-1,-1> > ges;
+    //ges.setMaxIterations( 1000 );
     // Compute the eigenvalues
-    ges.compute( A.MATRIX, B.MATRIX, true );
+    if ( compute_evecs )
+    {
+      ges.compute( A.MATRIX, B.MATRIX, true );
+    } 
+    else
+    {
+      ges.compute( A.MATRIX, B.MATRIX );
+    }
     EIGENVALUES_COMPUTED = true; 
+    
+    /*Eigen::RealQZ< Eigen::Matrix<T,-1,-1> > realQZ( N );
+    realQZ.compute( A.MATRIX, B.MATRIX );
+    std::cout << "iterations = " << realQZ.iterations() << std::endl;
+    if (realQZ.info() == Eigen::Success)
+    { std::cout << "Success" << std::endl;
+    } else { std::cout << "Fail" << std::endl; }*/
 
-    N = ges.eigenvalues().size();
-
+    
+    
     // Put the eigenvalues into the storage vector
     for ( std::size_t i=0; i<N; ++i )
-    {
-      EIGENVALUES.push_back( ges.eigenvalues()[i] );
+    { 
       ALPHAS.push_back( ges.alphas()[i] );
       BETAS.push_back( ges.betas()[i] );
+      // If beta[i] = 0 the eigenvalue is at infinity so set to very large number
+      if ( ges.betas()[i] == 0 )
+      {
+        EIGENVALUES.push_back( ges.alphas()[i] / 1e-100 );
+      }
+      else
+      {
+        EIGENVALUES.push_back( ges.eigenvalues()[i] );
+      } 
     }
 
     // Store eigenvectors if required
