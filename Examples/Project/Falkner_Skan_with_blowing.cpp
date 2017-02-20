@@ -8,7 +8,7 @@
 
 // Enumerations
 enum{ f, fd, fdd };                               // Base ODE
-enum{ UB, UBd, PhiB, ThetaB, ThetaBd, PsiB };                 // Base ODE 
+enum{ UB, UBd, PhiB, ThetaB, ThetaBd, PsiB };                 // Base ODE
 
 #define BASE_2D
 // Either UNIFORM or NONUNIFORM for uniform of non-uniform mesh
@@ -22,21 +22,21 @@ namespace TSL
       const std::size_t M( 400 );       // Number of intervals in the eta direction
       double beta( 0.1 );               // Hartree parameter
       double KB( 0.0 );                 // Base flow transpiration ( +ve = blowing )
-      double KB_max( 5.0 );             // Maximum value of the transpiration    
-      std::size_t KB_n( 51 );            // Number of KB values 
+      double KB_max( 4.0 );             // Maximum value of the transpiration
+      std::size_t KB_n( 2 );            // Number of KB values
 
     } // End of namespace Param
 
     namespace Example
     {
-      std::string output_path;          // Output path                                     
+      std::string output_path;          // Output path
 
     } // End of namespace Example
 
 
     namespace Mesh
     {
-#ifdef UNIFORM    
+#ifdef UNIFORM
       double Y( const double& eta )
       {
         return eta;
@@ -81,11 +81,11 @@ namespace TSL
           f[ 0 ] = Y( z[0] ) - Y0;
         }
       };
- 
+
     } // End of namespace Mesh
 
     namespace Base_Flow
-    {  
+    {
 #ifdef BASE_2D
       class equation : public Equation<double>
       {
@@ -98,7 +98,7 @@ namespace TSL
           {
             F[ f ]   = u[ fd ];
             F[ fd ]  = u[ fdd ];
-            F[ fdd ] = - u[ f ] * u[ fdd ] - beta * ( 1.0 - u[ fd ] * u[ fd ] ); 
+            F[ fdd ] = - u[ f ] * u[ fdd ] - beta * ( 1.0 - u[ fd ] * u[ fd ] );
           }
       }; // End Falkner-Skan equation class
 
@@ -127,25 +127,25 @@ namespace TSL
           }
       }; // End Falkner-Skan far_BC class
 #endif
-                 
+
     } // End of namespace Base_Flow
-   
+
 } // End of namespace TSL
 
 using namespace std;
 using namespace TSL;
 
 int main()
-{ 
+{
   cout << "*** ---------- Falkner-Skan with blowing ---------- ***" << endl;
-  cout << "  * We are solving using " << Param::M + 1 << " points in the mesh with " 
+  cout << "  * We are solving using " << Param::M + 1 << " points in the mesh with "
        << "eta_inf = " << Param::eta_top << "." << endl;
   /* ----- Make the output directory ----- */
   std::ostringstream ss;
   ss << "./DATA/Falkner_Skan_with_blowing" << "_beta_" << Param::beta << "/";
-  Example::output_path = ss.str();               
+  Example::output_path = ss.str();
   int status = mkdir( Example::output_path.c_str(), S_IRWXU );
-  cout << "  * Output directory " + Example::output_path + 
+  cout << "  * Output directory " + Example::output_path +
           " has been made successfully." << endl;
   cout << "  * Hartree parameter beta = " << Param::beta << endl;
 
@@ -155,7 +155,7 @@ int main()
   double bottom = Mesh::Y(0.0);
   double top    = Mesh::Y( Param::eta_top );
 
-  // number of points to solve for 
+  // number of points to solve for
   std::size_t N_eta = Param::M + 1;
   std::size_t N_Y( N_eta );
 
@@ -167,7 +167,7 @@ int main()
   Vector<double> eta_nodes;
   eta_nodes.linspace( 0.0, Param::eta_top, N_eta );
 
-  // to find eta=eta(Y) and zeta=zeta(X) we will use Newton iteration 
+  // to find eta=eta(Y) and zeta=zeta(X) we will use Newton iteration
   Mesh::invert_eta find_eta;
   Newton<double> newton_eta( &find_eta );
   for ( unsigned j = 0; j < N_Y; ++j )
@@ -186,7 +186,7 @@ int main()
     guess[ 0 ] = eta_nodes[ kmin ];
     newton_eta.iterate( guess );
     eta_nodes[j] = guess[ 0 ];
-  }  
+  }
   //
 
   // step sizes in the remapped domain : these should be constants
@@ -201,7 +201,7 @@ int main()
   equation.beta = 0.0;
   plate_BC.KB = 0.0;
   ODE_BVP<double> base( &equation, eta_nodes, &plate_BC, &far_BC );
-  
+
 
   Vector<double> KB_vals;
   KB_vals.linspace( Param::KB, Param::KB_max, Param::KB_n );
@@ -217,7 +217,7 @@ do{   // Iterate over values of K
 	{
 		double eta = eta_nodes[ j ];				                      // eta value at node j
 		base.solution()( j, f )  	= eta + exp( -eta );
-    base.solution()( j, fd ) 	= 1.0 - exp( -eta ); 
+    base.solution()( j, fd ) 	= 1.0 - exp( -eta );
 		base.solution()( j, fdd ) = exp( -eta );
 	}
 #endif
@@ -226,14 +226,14 @@ do{   // Iterate over values of K
   // Solve the system with KB = 0 then arc-length continue until KB = Param::KB
   double arc_step( 0.01 );
   double max_arc_step( 0.1 );
-  base.init_arc( &plate_BC.KB, arc_step, max_arc_step ); 
+  base.init_arc( &plate_BC.KB, arc_step, max_arc_step );
   do
   {
     arc_step = base.arclength_solve( arc_step );
   }while( plate_BC.KB < Param::KB );
   plate_BC.KB = Param::KB;
   base.solve_bvp();                               // Solve once more with KB = Param::KB
-  
+
   // Solve the system with beta = 0.1 then arc-length continue until beta = Param::beta
   arc_step = -0.01;
   if ( Param::beta >= 0.0 ) { arc_step = 0.01; }
@@ -241,7 +241,7 @@ do{   // Iterate over values of K
   base.init_arc( &equation.beta, arc_step, max_arc_step );
   do
   {
-    arc_step = base.arclength_solve( arc_step ); 
+    arc_step = base.arclength_solve( arc_step );
   }while( equation.beta < Param::beta );
   equation.beta = Param::beta;
   base.solve_bvp();
@@ -256,15 +256,15 @@ do{   // Iterate over values of K
     Base_soln( j, PhiB )    =   base.solution()( j, f );
     Base_soln( j, ThetaB )  =   ( 1.0 - Param::beta ) * base.solution()( j, fdd );
     Base_soln( j, ThetaBd ) =   ( 1.0 - Param::beta ) * ( - base.solution()( j, f ) *
-                                base.solution()( j, fdd ) - Param::beta * ( 1.0 -   
+                                base.solution()( j, fdd ) - Param::beta * ( 1.0 -
                                 base.solution()( j, fd ) * base.solution()( j, fd ) ) );
     Base_soln( j, PsiB )    =   ( 1.0 - Param::beta ) * base.solution()( j, fd );
 	}
 #endif
 
   // Output the solution to a file
-  Base_soln.output( Example::output_path + "Base_soln_KB_" 
-                  + Utility::stringify( abs( Param::KB ), 3 ) + ".dat" ); 
+  Base_soln.output( Example::output_path + "Base_soln_KB_"
+                  + Utility::stringify( Param::KB, 3 ) + ".dat" );
   // Output data to the screen
 
   cout << fixed << setprecision(4) << "  * " << plate_BC.KB << ",\t";
@@ -276,10 +276,10 @@ do{   // Iterate over values of K
   std::size_t upper = 1;
   for (std::size_t j=0; j < Param::M; ++j)
   {
-    if ( Base_soln(j,UB) < 0.5 && Base_soln(j+1,UB) > 0.5 ) { lower = j; upper=j+1; } 
+    if ( Base_soln(j,UB) < 0.5 && Base_soln(j+1,UB) > 0.5 ) { lower = j; upper=j+1; }
   }
   // linearly interpolate
-  eta_half =  ( 0.5 - Base_soln(lower,UB) ) * ( eta_nodes[upper] - eta_nodes[lower] ) 
+  eta_half =  ( 0.5 - Base_soln(lower,UB) ) * ( eta_nodes[upper] - eta_nodes[lower] )
             / ( Base_soln(upper,UB) - Base_soln(lower,UB)  ) + eta_nodes[lower];
   cout << eta_half << ", \t";
   eta_half_vals.push_back( eta_half );

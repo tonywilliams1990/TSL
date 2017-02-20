@@ -3,12 +3,12 @@ import numpy as np
 import matplotlib.mlab as mlab
 import matplotlib.pyplot as plt
 
-zeta0 = 4
-alpha = 1
-beta = 0
-K = 0
+zeta0 = 20
+alpha = 0
+beta = 0.1
+K = 2.5
 
-data = np.loadtxt("./DATA/K_"+ str(K) + "_alpha_" + str(alpha) + "_beta_"+ str(beta) + "_101x101_16_128/Qout_" + str(zeta0) + ".dat")
+data = np.loadtxt("./DATA/K_"+ str(K) + "_alpha_" + str(alpha) + "_beta_"+ str(beta) + "_401x401_16_128/Qout_" + str(zeta0) + ".dat")
 
 zeta_hat = data[:,0]
 eta = data[:,1]
@@ -44,7 +44,7 @@ CS = plt.contourf(xi, yi, Ui, 10,
 
 CB = plt.colorbar(CS, shrink=0.9)
 
-#plt.streamplot(xi, yi, Wi, Vi, arrowstyle='->', density=2.5, color='k')  
+#plt.streamplot(xi, yi, Wi, Vi, arrowstyle='->', density=2.5, color='k')
 
 font_size = 22
 

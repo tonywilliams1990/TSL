@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 
 zeta0 = 20
-beta = 0.1
+beta = 2
 K = 2.5
 # change the levels in the VW plot to see more detail (line 85)
 
@@ -78,7 +78,7 @@ axes = plt.gca()
 axes.set_xlim([0,2])
 axes.set_ylim([0,40])
 
-plt.savefig('U_contour_K_' + str(K) + ".eps", format='eps', dpi=1000)
+plt.savefig('U_contour_K_' + str(K) + "_beta_" + str(beta) +  ".eps", format='eps', dpi=1000)
 
 plt.figure()
 
@@ -104,6 +104,6 @@ axes = plt.gca()
 axes.set_xlim([0,2])
 axes.set_ylim([0,40])
 
-plt.savefig('VW_stream_K_' + str(K) + ".eps", format='eps', dpi=1000)
+plt.savefig('VW_stream_K_' + str(K) + "_beta_" + str(beta) + ".eps", format='eps', dpi=1000)
 
 plt.show()

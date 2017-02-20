@@ -21,20 +21,19 @@ enum{ u, ud, phi, theta, thetad, psi };
 #define NONUNIFORM
 
 //TODO K iteration is temperamental -> just use single values of K
-//TODO Need to increase eta_top and M to check convergence
 
 namespace TSL
 {
     namespace Param
     {
       double eta_top( 96.0 );             // Size of the domain in the eta direction
-      const std::size_t M( 300 );         // Number of intervals in the eta direction
-      double beta( 0.1 );                 // Hartree parameter
-      double K( 0.5 );                    // Transpiration parameter ( +ve = blowing )
-      double K_max( 0.5 );                // Maximum value of K
-      double K_min( -1.0 );               // Minimum value of K
+      const std::size_t M( 303 );         // Number of intervals in the eta direction
+      double beta( 0.0 );                 // Hartree parameter
+      double K( -2.0 );                    // Transpiration parameter ( +ve = blowing )
+      double K_max( 0.8 );                // Maximum value of K
+      double K_min( -2.0 );               // Minimum value of K
       double dK( 0.1 );                   // K increment
-      bool compute_eigenvectors( true );  // Compute the eigenvectors or not
+      bool compute_eigenvectors( false );  // Compute the eigenvectors or not
 
     } // End of namespace Param
 
@@ -361,20 +360,17 @@ do{
     for ( std::size_t i=0; i<N_eta-1; ++i)
     {
         // eta at mid-node location i + 1/2
-        double eta( (eta_nodes[ i + 1 ] + eta_nodes[ i ]) / 2 );
+        double eta( ( eta_nodes[ i + 1 ] + eta_nodes[ i ] ) / 2 );
         double Yd( Mesh::Yd( eta ) );
 
         // Base solution at the mid-node location i + 1/2
         double U_B      =   0.5 * ( Base_soln( i, UB ) + Base_soln( i + 1, UB )  );
-        double U_Bd     =   0.5 * ( Base_soln( i, UBd )
-                          + Base_soln( i + 1, UBd )  );
+        double U_Bd     =   0.5 * ( Base_soln( i, UBd ) + Base_soln( i + 1, UBd )  );
         double Phi_B    =   0.5 * ( Base_soln( i, PhiB ) + Base_soln( i + 1, PhiB )  );
-        double Theta_B  =   0.5 * ( Base_soln( i, ThetaB )
-                          + Base_soln( i + 1, ThetaB )  );
-        double Theta_Bd =   0.5 * ( Base_soln( i, ThetaBd )
-                          + Base_soln( i + 1, ThetaBd )  );
-        double Psi_B    =   0.5 * ( Base_soln( i, PsiB )
-                          + Base_soln( i + 1, PsiB )  );
+        double Theta_B  =   0.5 * ( Base_soln( i, ThetaB ) + Base_soln( i + 1, ThetaB )  );
+        double Theta_Bd =   0.5 * ( Base_soln( i, ThetaBd ) + Base_soln( i + 1, ThetaBd )  );
+        double Psi_B    =   0.5 * ( Base_soln( i, PsiB ) + Base_soln( i + 1, PsiB )  );
+
         // Equation 1
         A( row, col( i, u ) )           =  ( 2.0 - Param::beta ) / 2.0;
         A( row, col( i + 1, u ) )       =  ( 2.0 - Param::beta ) / 2.0;
@@ -508,7 +504,7 @@ do{
 
     Param::K += Param::dK;
 
-}while( Param::K < Param::K_max && Param::K > Param::K_min );
+}while( Param::K <= Param::K_max + 0.0001 && Param::K > Param::K_min );
 
     cout << "FINISHED" << endl;
 }
