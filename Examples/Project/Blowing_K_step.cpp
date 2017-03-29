@@ -28,12 +28,12 @@ namespace TSL
       const std::size_t N( 400 );       // Number of intervals in the zeta_hat direction
       const std::size_t M( 400 );       // Number of intervals in the eta direction
       const std::size_t Nvar( 4 );      // Number of variables
-      double beta( 0.0 );               // Hartree parameter
+      double beta( 0 );                 // Hartree parameter
       double KB( 0.0 );                 // Base flow transpiration ( +ve = blowing )
-      double zeta0( 1.0 );              // Ridge/transpiration width
+      double zeta0( 8 );                // Ridge/transpiration width
       double zeta0_2 = zeta0 * zeta0;   // Square of the ridge/transpiration width
       double A( 0.0 );                  // Mass flux parameter
-      double K( 2.5 );                  // Transpiration parameter ( +ve = blowing )
+      double K( 0.0 );                  // Transpiration parameter ( +ve = blowing )
       double gamma( 20.0 );             // Steepness factor
 
     } // End of namespace Param
@@ -50,21 +50,15 @@ namespace TSL
 
       double Phi_w( const double& hzeta )
       {
-        // Return the transpiration function (top-hat)
-        //return -Param::K * 0.5 * ( 1. - tanh(  Param::gamma * ( hzeta - 1. ) ) );
-        // Return the transpiration function (square wave)
-        return - Param::K * 0.5 * ( 1. - 2 * tanh( Param::gamma * ( hzeta - 0.5 ) ) 
-               + tanh( Param::gamma * ( hzeta - 1. ) ) );
+        // Return the transpiration function
+        return -Param::K * 0.5 * ( 1. - tanh( Param::gamma * ( hzeta - 1. ) ) );
       }
 
       double Phi_w_hzeta( const double& hzeta )
       {
-        // Return derivative of transpiration wrt hzeta (top-hat)
+        // Return derivative of transpiration wrt hzeta
         double sech_squared = pow( cosh( Param::gamma * ( hzeta - 1 ) ) , -2. );
-        //return Param::K * 0.5 * Param::gamma * sech_squared;
-        // Return derivative of transpiration wrt hzeta (square wave)
-        double sech_squared_half = pow( cosh( Param::gamma * ( hzeta - 0.5 ) ) , -2. );
-        return - Param::K * 0.5 * Param::gamma * ( -2*sech_squared_half + sech_squared );
+        return Param::K * 0.5 * Param::gamma * sech_squared;
       }
 
     } // End of namespace Example
@@ -363,8 +357,9 @@ int main()
 
   /* ----- Make the output directory ----- */
   std::ostringstream ss;
-  ss << "./DATA/K_" << Param::K << "_" << "beta_" << Param::beta << "_" << Param::N + 1
-     << "x" << Param::M + 1 << "_" << Param::hzeta_right << "_" << Param::eta_top << "/";
+  //ss << "./DATA/K_" << Param::K << "_" << "beta_" << Param::beta << "_" << Param::N + 1
+     //<< "x" << Param::M + 1 << "_" << Param::hzeta_right << "_" << Param::eta_top << "/";
+  ss << "./DATA/K_Step_beta_" << Param::beta << "_zeta0_" << Param::zeta0 << "/";
   Example::output_path = ss.str();
   int status = mkdir( Example::output_path.c_str(), S_IRWXU );
   cout << "  * Output directory " + Example::output_path +
@@ -583,6 +578,7 @@ int main()
   // output a measure of the solution
   TrackerFile metric( Example::output_path + "A_file.dat" );
   metric.push_ptr( &Param::zeta0, "zeta0" );
+  metric.push_ptr( &Param::K, "K");
   metric.push_ptr( &Param::A, "A" );
   double U_eta( 0.0 );
   double eta_half( 0.0 );
@@ -594,7 +590,7 @@ int main()
   // Vector for the RHS of the matrix problem
   Vector<double> B( 4 * N_eta * N_hzeta + 1, 0.0 );
 
-  do                                                    // Iterate over values of zeta_0
+  do                                                    // Iterate over values of K
   {
 
   /* Iterate to a solution */
@@ -1150,12 +1146,9 @@ int main()
                             + hzeta * Base_soln.get_interpolated_vars( eta )[ThetaB];
       }
     }
-    // Convert to string //TODO we need a utility function to do this
-    std::stringstream ss;
-    ss << Param::zeta0;
-    std::string zeta0_str = ss.str();
 
-    Q_output.dump_gnu( Example::output_path + "Qout_" + zeta0_str + ".dat" );
+    Q_output.dump_gnu( Example::output_path + "Qout_K_" + Utility::stringify( Param::K, 3 )
+                     + "_zeta0_" + Utility::stringify( Param::zeta0, 3 ) + ".dat" );
 
     Vector<double> Base( Base_soln.get_interpolated_vars( 0.0 ) );
     U_eta = -( 3 * Q_output(0,0,U+4) - 4 * Q_output(0,1,U+4)
@@ -1182,14 +1175,14 @@ int main()
             + Q_output(i,2,U+4) ) * Mesh::Yd(0.0)/(2*dY);
     }
 
-    wall_shear.output( Example::output_path + "Wall_shear_zeta0_" + zeta0_str + ".dat" );
+    wall_shear.output( Example::output_path + "Wall_shear_K_" + Utility::stringify( Param::K, 3 )
+                    + "_zeta0_" + Utility::stringify( Param::zeta0, 3 ) + ".dat" );
 
 
-    cout << "  * zeta0 = " << Param::zeta0 << ", A = " << Param::A << endl;
-    Param::zeta0 += 1.0; // 0.5 is best for blowing
-    Param::zeta0_2 = Param::zeta0 * Param::zeta0;
+    cout << "  * K = " << Param::K << ", A = " << Param::A << endl;
+    Param::K += 0.1;
 
-  }while( Param::zeta0 < 40.5 );
+  }while( Param::K < 1.25 );
 
 
   cout << "FINISHED" << endl;

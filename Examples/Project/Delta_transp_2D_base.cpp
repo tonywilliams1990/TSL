@@ -19,9 +19,9 @@ namespace TSL
     std::string output_path("./DATA/Parabolic_System/");        // Data output path
     double hzeta( hzeta_inf );        // Value of hzeta at the current step
     double K( 0.0 );                  // Blowing intensity (starting value)
-    double K_max( 3.0 );              // Blowing intensity (maximum value)
+    double K_max( 0.86 );              // Blowing intensity (maximum value)
     std::size_t K_n( 50 );            // Number of K values
-    double beta( 0.1 );               // Hartree parameter
+    double beta( 0.0 );               // Hartree parameter
     double gamma( 20.0 );             // Steepness factor
 
     double Phi_w( const double& hzeta )
@@ -33,7 +33,7 @@ namespace TSL
     /* ------------------------- Base-flow ODE (2D/3D) -------------------------*/
 
     namespace Base_Flow
-    {  
+    {
       class equation : public Equation<double>
       {
         public:
@@ -45,7 +45,7 @@ namespace TSL
           {
             F[ f ]   = u[ fd ];
             F[ fd ]  = u[ fdd ];
-            F[ fdd ] = - u[ f ] * u[ fdd ] - beta * ( 1.0 - u[ fd ] * u[ fd ] ); 
+            F[ fdd ] = - u[ f ] * u[ fdd ] - beta * ( 1.0 - u[ fd ] * u[ fd ] );
           }
       }; // End Falkner-Skan equation class
 
@@ -72,12 +72,12 @@ namespace TSL
           {
             B[ 0 ] = z[ fd ] - 1.0;
           }
-      }; // End Falkner-Skan far_BC class                 
+      }; // End Falkner-Skan far_BC class
     } // End of namespace Base_Flow
 
     /* -------------------- Governing PDE -------------------------*/
 
-    // Parabolic system 
+    // Parabolic system
     class Parabolic_equations : public Equation_2matrix<double>
     {
     public:
@@ -92,17 +92,17 @@ namespace TSL
         f[ 1 ] =  z[ Ud ];
         f[ 2 ] =  Example::beta * ( z[ U ] * z[ U ] - 1. ) - z[ Phi ] * z[ Ud ];
       }
-      
+
       void matrix0( const Vector<double>& z, Matrix<double>& m ) const
       {
         // identity matrix
         m( 0, 0 ) = 1.0;
         m( 1, 1 ) = 1.0;
-        m( 2, 2 ) = 1.0;      
+        m( 2, 2 ) = 1.0;
       }
 
-      void get_jacobian_of_matrix0_mult_vector( const Vector<double> &state, 
-                                                const Vector<double> &vec, 
+      void get_jacobian_of_matrix0_mult_vector( const Vector<double> &state,
+                                                const Vector<double> &vec,
                                                 Matrix<double> &h  ) const
       {
         // blank definition leads to a zero result
@@ -115,7 +115,7 @@ namespace TSL
         m( 2, 1 ) = ( 1. - Example::beta ) * Example::hzeta * z[ U ];
       }
     };
-    
+
     // Boundary conditions at eta = 0
     class Parabolic_bottom_BC : public Residual_with_coords<double>
     {
@@ -180,7 +180,7 @@ int main()
 	{
 		double eta = eta_nodes[ j ];				                      // eta value at node j
 		base.solution()( j, f )  	= eta + exp( -eta );
-    base.solution()( j, fd ) 	= 1.0 - exp( -eta ); 
+    base.solution()( j, fd ) 	= 1.0 - exp( -eta );
 		base.solution()( j, fdd ) = exp( -eta );
 	}
 
@@ -194,7 +194,7 @@ int main()
   base.init_arc( &base_equation.beta, arc_step, max_arc_step );
   do
   {
-    arc_step = base.arclength_solve( arc_step ); 
+    arc_step = base.arclength_solve( arc_step );
   }while( base_equation.beta < Example::beta );
   base_equation.beta = Example::beta;
   base.solve_bvp();
@@ -209,17 +209,17 @@ int main()
     Base_soln( j, PhiB )    =   base.solution()( j, f );
     Base_soln( j, ThetaB )  =   ( 1.0 - Example::beta ) * base.solution()( j, fdd );
     Base_soln( j, ThetaBd ) =   ( 1.0 - Example::beta ) * ( - base.solution()( j, f ) *
-                                base.solution()( j, fdd ) - Example::beta * ( 1.0 -   
+                                base.solution()( j, fdd ) - Example::beta * ( 1.0 -
                                 base.solution()( j, fd ) * base.solution()( j, fd ) ) );
     Base_soln( j, PsiB )    =   ( 1.0 - Example::beta ) * base.solution()( j, fd );
 	}
 
   // Output the solution to a file
-  Base_soln.output( Example::output_path + "Base_soln.dat" ); 
+  Base_soln.output( Example::output_path + "Base_soln.dat" );
   // Output the wall shear to the screen
-  cout << "  * Base flow: 2D Falkner-Skan with transpiration" << endl; 
-  cout << "  * This number should be zero for the 2D ODE solution and non-zero for the " 
-       << " 3D solution: " << ( 1. - Example::beta ) * Base_soln.integral2(UB) 
+  cout << "  * Base flow: 2D Falkner-Skan with transpiration" << endl;
+  cout << "  * This number should be zero for the 2D ODE solution and non-zero for the "
+       << " 3D solution: " << ( 1. - Example::beta ) * Base_soln.integral2(UB)
                                                    - Base_soln.integral2(PsiB) << endl;
   cout << "  * Hartree parameter beta = " << base_equation.beta << endl;
   cout << "  * UB'(eta=0) =" << base.solution()( 0, fdd ) << endl;
@@ -228,7 +228,7 @@ int main()
 
   /*----------------- Solve the parabolic system of PDEs ---------------------*/
 
-  cout << "  * Solving the parabolic PDE system using a " << N_zeta 
+  cout << "  * Solving the parabolic PDE system using a " << N_zeta
        << " x " << N_eta << " mesh." << endl;
 
   // Define the system and BCs
@@ -238,9 +238,9 @@ int main()
 
   // Define the domain
   double bottom( 0.0 );
-  double top( Example::eta_top );  
-   
-  // hzeta step 
+  double top( Example::eta_top );
+
+  // hzeta step
   double dhzeta = - ( Example::hzeta_inf ) / Example::N;
 
   // Construct our IBVP
@@ -253,12 +253,12 @@ int main()
   Vector<double> M_pi_vals;
   Vector<double> eta_half_vals;
 
-do{  // Iterate over values of K 
+do{  // Iterate over values of K
 
   // Initialise the solution using the ODE similarity solution
   for ( unsigned j = 0; j < N_eta; ++j )
   {
-    Parabolic.solution()( j, Phi )    = Base_soln( j, PhiB );  
+    Parabolic.solution()( j, Phi )    = Base_soln( j, PhiB );
     Parabolic.solution()( j, U )      = Base_soln( j, UB );
     Parabolic.solution()( j, Ud )     = Base_soln( j, UBd );
   }
@@ -269,14 +269,14 @@ do{  // Iterate over values of K
   Vector<double> delta_transp_vals;
   hzeta_vals.push_back( Example::hzeta );
   wall_shear_vals.push_back( Parabolic.solution()( 0, Ud ) );
-  delta_transp_vals.push_back( Parabolic.solution()( N_eta - 1, Phi ) 
+  delta_transp_vals.push_back( Parabolic.solution()( N_eta - 1, Phi )
                         - Base_soln( N_eta - 1, PhiB ) );
-  
+
 
   Example::hzeta = hzeta_nodes[ N_zeta - 1 ];
-  
+
   /* --- Step in hzeta --- */
-  
+
   for ( unsigned i=1; i < N_zeta; ++i )
   {
    // Take a hzeta step
@@ -293,22 +293,22 @@ do{  // Iterate over values of K
     //cout << "hzeta = " << Parabolic.coord( ) << endl;
     hzeta_vals.push_back( Example::hzeta );
     wall_shear_vals.push_back( Parabolic.solution()( 0, Ud ) );
-    delta_transp_vals.push_back( Parabolic.solution()( N_eta - 1, Phi ) 
+    delta_transp_vals.push_back( Parabolic.solution()( N_eta - 1, Phi )
                           - Base_soln( N_eta - 1, PhiB ) );
-    //cout << "delta_transp = " << Parabolic.solution()( N_eta - 1, Phi ) 
+    //cout << "delta_transp = " << Parabolic.solution()( N_eta - 1, Phi )
     //                    - Base_soln( N_eta - 1, PhiB ) << endl;
     // Update the value of hzeta
     //Example::hzeta += dhzeta;
     Example::hzeta = hzeta_nodes[ N_zeta - 1 - i ];
-  } 
+  }
 
   // cout << "U'(hzeta, eta=0) = " << Parabolic.solution()( 0, Ud ) << endl;
 
   // Wall shear
   OneD_node_mesh<double> Wall_shear( hzeta_vals, 1 );
   Wall_shear.set_vars_from_vector( wall_shear_vals );
-  Wall_shear.output( Example::output_path + "Wall_shear_K_" 
-                   + Utility::stringify( abs( Example::K ), 3 ) + "_beta_" 
+  Wall_shear.output( Example::output_path + "Wall_shear_K_"
+                   + Utility::stringify( abs( Example::K ), 3 ) + "_beta_"
                    + Utility::stringify( Example::beta , 3 )+ "_2D.dat" );
   // delta_transp
   OneD_node_mesh<double> delta_transp( hzeta_vals, 1 );
@@ -325,17 +325,17 @@ do{  // Iterate over values of K
   std::size_t upper = 1;
   for (std::size_t j=0; j < Example::M; ++j)
   {
-    if ( Parabolic.solution()(j,U) < 0.5 && Parabolic.solution()(j+1,U) > 0.5 ) { 
-        lower = j; upper=j+1; 
-    } 
+    if ( Parabolic.solution()(j,U) < 0.5 && Parabolic.solution()(j+1,U) > 0.5 ) {
+        lower = j; upper=j+1;
+    }
   }
   // linearly interpolate
-  eta_half =  ( 0.5 - Parabolic.solution()(lower,U) ) * ( eta_nodes[upper] 
-            - eta_nodes[lower] )  / ( Parabolic.solution()(upper,U) 
+  eta_half =  ( 0.5 - Parabolic.solution()(lower,U) ) * ( eta_nodes[upper]
+            - eta_nodes[lower] )  / ( Parabolic.solution()(upper,U)
             - Parabolic.solution()(lower,U)  ) + eta_nodes[lower];
   cout << "eta_half = " << eta_half << endl;
   eta_half_vals.push_back( eta_half );
-  
+
   Example::K += K_vals[ 1 ] - K_vals[ 0 ];
 
 }while( Example::K <= Example::K_max );

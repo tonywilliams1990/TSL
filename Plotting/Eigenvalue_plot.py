@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.mlab as mlab
 import matplotlib.pyplot as plt
 
-beta = 0.6
+beta = 0.2
 
 K_max = 3.0
 K_min = -2.0

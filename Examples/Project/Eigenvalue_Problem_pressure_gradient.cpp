@@ -18,7 +18,7 @@ enum{ u, ud, phi, theta, thetad, psi };
 
 // Either Base_2D or Base_3D for 2D or 3D base flows
 #define Base_2D
-#define NONUNIFORM
+#define UNIFORM
 
 //TODO K iteration is temperamental -> just use single values of K
 
@@ -27,13 +27,13 @@ namespace TSL
     namespace Param
     {
       double eta_top( 96.0 );             // Size of the domain in the eta direction
-      const std::size_t M( 303 );         // Number of intervals in the eta direction
-      double beta( 0.0 );                 // Hartree parameter
-      double K( -2.0 );                    // Transpiration parameter ( +ve = blowing )
-      double K_max( 0.8 );                // Maximum value of K
+      const std::size_t M( 203 );         // Number of intervals in the eta direction
+      double beta( 0.5 );                 // Hartree parameter
+      double K( 9.0 );                    // Transpiration parameter ( +ve = blowing )
+      double K_max( 3.0 );                // Maximum value of K
       double K_min( -2.0 );               // Minimum value of K
       double dK( 0.1 );                   // K increment
-      bool compute_eigenvectors( false );  // Compute the eigenvectors or not
+      bool compute_eigenvectors( true );  // Compute the eigenvectors or not
 
     } // End of namespace Param
 

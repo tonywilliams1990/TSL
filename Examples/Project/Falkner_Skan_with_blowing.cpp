@@ -20,10 +20,10 @@ namespace TSL
     {
       double eta_top( 128.0 );          // Size of the domain in the eta direction
       const std::size_t M( 400 );       // Number of intervals in the eta direction
-      double beta( 0.1 );               // Hartree parameter
+      double beta( 0.05 );               // Hartree parameter
       double KB( 0.0 );                 // Base flow transpiration ( +ve = blowing )
-      double KB_max( 4.0 );             // Maximum value of the transpiration
-      std::size_t KB_n( 2 );            // Number of KB values
+      double KB_max( 9.0 );             // Maximum value of the transpiration
+      std::size_t KB_n( 4 );            // Number of KB values
 
     } // End of namespace Param
 
