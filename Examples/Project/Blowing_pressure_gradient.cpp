@@ -33,8 +33,9 @@ namespace TSL
       double zeta0( 1.0 );              // Ridge/transpiration width
       double zeta0_2 = zeta0 * zeta0;   // Square of the ridge/transpiration width
       double A( 0.0 );                  // Mass flux parameter
-      double K( 2.5 );                  // Transpiration parameter ( +ve = blowing )
+      double K( 0.5 );                  // Transpiration parameter ( +ve = blowing )
       double gamma( 20.0 );             // Steepness factor
+      const std::size_t N_transp( 1 );  // Number of blowing and sucking regions (1 = standard blowing)
 
     } // End of namespace Param
 
@@ -50,21 +51,47 @@ namespace TSL
 
       double Phi_w( const double& hzeta )
       {
-        // Return the transpiration function (top-hat)
-        //return -Param::K * 0.5 * ( 1. - tanh(  Param::gamma * ( hzeta - 1. ) ) );
-        // Return the transpiration function (square wave)
-        return - Param::K * 0.5 * ( 1. - 2 * tanh( Param::gamma * ( hzeta - 0.5 ) ) 
-               + tanh( Param::gamma * ( hzeta - 1. ) ) );
+        // Return the transpiration function
+        if ( Param::N_transp < 1 )
+        {
+          return 0.0;
+        }
+        else
+        {
+          double sum( 0.0 );
+          int sign;
+          for (std::size_t i=1; i<Param::N_transp; ++i)
+          {
+            sign = i % 2 ? -1 : 1; // equivalent to (-1)^i
+            sum += sign * tanh( Param::gamma * ( hzeta - ((1.*i)/Param::N_transp) ) );
+          }
+          sign = Param::N_transp % 2 ? -1 : 1; // (-1)^N
+          return - Param::K * 0.5 *( 1 + 2 * sum + sign * tanh( Param::gamma * ( hzeta - 1. ) ) );
+        }
       }
 
       double Phi_w_hzeta( const double& hzeta )
       {
-        // Return derivative of transpiration wrt hzeta (top-hat)
-        double sech_squared = pow( cosh( Param::gamma * ( hzeta - 1 ) ) , -2. );
-        //return Param::K * 0.5 * Param::gamma * sech_squared;
-        // Return derivative of transpiration wrt hzeta (square wave)
-        double sech_squared_half = pow( cosh( Param::gamma * ( hzeta - 0.5 ) ) , -2. );
-        return - Param::K * 0.5 * Param::gamma * ( -2*sech_squared_half + sech_squared );
+        // Return derivative of transpiration wrt hzeta
+        if ( Param::N_transp < 1 )
+        {
+          return 0.0;
+        }
+        else
+        {
+          double sum( 0.0 );
+          double sech_squared;
+          int sign;
+          for (std::size_t i=1; i<Param::N_transp; ++i)
+          {
+            sign = i % 2 ? -1 : 1; // equivalent to (-1)^i
+            sech_squared = pow( cosh( Param::gamma * ( hzeta - ((1.*i)/Param::N_transp) ) ) , -2. );
+            sum += sign * sech_squared;
+          }
+          sign = Param::N_transp % 2 ? -1 : 1; // (-1)^N
+          sech_squared = pow( cosh( Param::gamma * ( hzeta - 1. ) ) , -2. );
+          return - Param::K * 0.5 * Param::gamma * ( 2 * sum + sign * sech_squared );
+        }
       }
 
     } // End of namespace Example
@@ -363,7 +390,7 @@ int main()
 
   /* ----- Make the output directory ----- */
   std::ostringstream ss;
-  ss << "./DATA/K_" << Param::K << "_" << "beta_" << Param::beta << "_" << Param::N + 1
+  ss << "./DATA/K_" << Param::K << "_beta_" << Param::beta << "_" << Param::N + 1
      << "x" << Param::M + 1 << "_" << Param::hzeta_right << "_" << Param::eta_top << "/";
   Example::output_path = ss.str();
   int status = mkdir( Example::output_path.c_str(), S_IRWXU );
@@ -1189,7 +1216,7 @@ int main()
     Param::zeta0 += 1.0; // 0.5 is best for blowing
     Param::zeta0_2 = Param::zeta0 * Param::zeta0;
 
-  }while( Param::zeta0 < 40.5 );
+  }while( Param::zeta0 < 20.5 );
 
 
   cout << "FINISHED" << endl;
