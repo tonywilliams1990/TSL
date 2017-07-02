@@ -34,7 +34,7 @@ namespace TSL
     /* ------------------------- Base-flow ODE (2D/3D) -------------------------*/
 
     namespace Base_Flow
-    {  
+    {
 #ifdef BASE_2D
       class equation : public Equation<double>
       {
@@ -47,7 +47,7 @@ namespace TSL
           {
             F[ f ]   = u[ fd ];
             F[ fd ]  = u[ fdd ];
-            F[ fdd ] = - u[ f ] * u[ fdd ] - beta * ( 1.0 - u[ fd ] * u[ fd ] ); 
+            F[ fdd ] = - u[ f ] * u[ fdd ] - beta * ( 1.0 - u[ fd ] * u[ fd ] );
           }
       }; // End Falkner-Skan equation class
 
@@ -75,12 +75,12 @@ namespace TSL
             B[ 0 ] = z[ fd ] - 1.0;
           }
       }; // End Falkner-Skan far_BC class
-#endif                  
+#endif
     } // End of namespace Base_Flow
 
     /* -------------------- Governing PDE -------------------------*/
 
-    // Parabolic system 
+    // Parabolic system
     class Parabolic_equations : public Equation_2matrix<double>
     {
     public:
@@ -96,17 +96,17 @@ namespace TSL
         f[ 1 ] =  z[ Ud ];
         f[ 2 ] =  Example::beta * ( z[ U ] * z[ U ] - 1. ) - z[ Phi ] * z[ Ud ];
       }
-      
+
       void matrix0( const Vector<double>& z, Matrix<double>& m ) const
       {
         // identity matrix
         m( 0, 0 ) = 1.0;
         m( 1, 1 ) = 1.0;
-        m( 2, 2 ) = 1.0;      
+        m( 2, 2 ) = 1.0;
       }
 
-      void get_jacobian_of_matrix0_mult_vector( const Vector<double> &state, 
-                                                const Vector<double> &vec, 
+      void get_jacobian_of_matrix0_mult_vector( const Vector<double> &state,
+                                                const Vector<double> &vec,
                                                 Matrix<double> &h  ) const
       {
         // blank definition leads to a zero result
@@ -120,7 +120,7 @@ namespace TSL
       }
 #endif
     };
-    
+
     // Boundary conditions at eta = 0
     class Parabolic_bottom_BC : public Residual_with_coords<double>
     {
@@ -189,7 +189,7 @@ int main()
 	{
 		double eta = eta_nodes[ j ];				                      // eta value at node j
 		base.solution()( j, f )  	= eta + exp( -eta );
-    base.solution()( j, fd ) 	= 1.0 - exp( -eta ); 
+    base.solution()( j, fd ) 	= 1.0 - exp( -eta );
 		base.solution()( j, fdd ) = exp( -eta );
 	}
 #endif
@@ -203,7 +203,7 @@ int main()
   base.init_arc( &base_equation.beta, arc_step, max_arc_step );
   do
   {
-    arc_step = base.arclength_solve( arc_step ); 
+    arc_step = base.arclength_solve( arc_step );
   }while( base_equation.beta < Example::beta );
   base_equation.beta = Example::beta;
   base.solve_bvp();
@@ -218,20 +218,20 @@ int main()
     Base_soln( j, PhiB )    =   base.solution()( j, f );
     Base_soln( j, ThetaB )  =   ( 1.0 - Example::beta ) * base.solution()( j, fdd );
     Base_soln( j, ThetaBd ) =   ( 1.0 - Example::beta ) * ( - base.solution()( j, f ) *
-                                base.solution()( j, fdd ) - Example::beta * ( 1.0 -   
+                                base.solution()( j, fdd ) - Example::beta * ( 1.0 -
                                 base.solution()( j, fd ) * base.solution()( j, fd ) ) );
     Base_soln( j, PsiB )    =   ( 1.0 - Example::beta ) * base.solution()( j, fd );
 	}
 #endif
   // Output the solution to a file
-  Base_soln.output( Example::output_path + "Base_soln.dat" ); 
+  Base_soln.output( Example::output_path + "Base_soln.dat" );
   // Output the wall shear to the screen
 #ifdef BASE_2D
-  cout << "  * Base flow: 2D Falkner-Skan with transpiration" << endl; 
-  
+  cout << "  * Base flow: 2D Falkner-Skan with transpiration" << endl;
+
 #endif
-  cout << "  * This number should be zero for the 2D ODE solution and non-zero for the " 
-       << " 3D solution: " << ( 1. - Example::beta ) * Base_soln.integral2(UB) 
+  cout << "  * This number should be zero for the 2D ODE solution and non-zero for the "
+       << " 3D solution: " << ( 1. - Example::beta ) * Base_soln.integral2(UB)
                                                    - Base_soln.integral2(PsiB) << endl;
   cout << "  * Hartree parameter beta = " << base_equation.beta << endl;
   cout << "  * UB'(eta=0) =" << base.solution()( 0, fdd ) << endl;
@@ -240,7 +240,7 @@ int main()
 
   /*----------------- Solve the parabolic system of PDEs ---------------------*/
 
-  cout << "  * Solving the parabolic PDE system using a " << N_zeta 
+  cout << "  * Solving the parabolic PDE system using a " << N_zeta
        << " x " << N_eta << " mesh." << endl;
 
   // Define the system and BCs
@@ -249,10 +249,10 @@ int main()
   Example::Parabolic_top_BC BC_top;
 
   // Define the domain
-  double bottom( 0.0 );
-  double top( Example::eta_top );  
-   
-  // hzeta step 
+  //double bottom( 0.0 );
+  //double top( Example::eta_top );  
+
+  // hzeta step
   double dhzeta = - ( Example::hzeta_inf ) / Example::N;
   cout << "  * dhzeta = " << dhzeta << endl;
 
@@ -264,13 +264,13 @@ int main()
 #ifdef BASE_2D
   for ( unsigned j = 0; j < N_eta; ++j )
   {
-    Parabolic.solution()( j, Phi )    = Base_soln( j, PhiB );  
+    Parabolic.solution()( j, Phi )    = Base_soln( j, PhiB );
     Parabolic.solution()( j, U )      = Base_soln( j, UB );
     Parabolic.solution()( j, Ud )     = Base_soln( j, UBd );
   }
 
   // Output mesh
-  TwoD_node_mesh<double> Q( hzeta_nodes, eta_nodes, 3 ); 
+  TwoD_node_mesh<double> Q( hzeta_nodes, eta_nodes, 3 );
 #endif
 
   // Wall shear values
@@ -278,23 +278,23 @@ int main()
   Vector<double> wall_shear_vals;
   hzeta_vals.push_back( Example::hzeta );
   wall_shear_vals.push_back( Parabolic.solution()( 0, Ud ) );
-  
+
 #ifdef BASE_2D
   // Put the solution at hzeta_inf into the output mesh
   for ( unsigned j = 0; j <= Example::M; ++j )
   {
     Q( Example::N, j, Phi )   = Parabolic.solution()( j, Phi );
     Q( Example::N, j, U )     = Parabolic.solution()( j, U );
-    Q( Example::N, j, Ud )    = Parabolic.solution()( j, Ud ); 
+    Q( Example::N, j, Ud )    = Parabolic.solution()( j, Ud );
   }
-#endif 
+#endif
 
   //Example::hzeta += dhzeta;
   Example::hzeta = hzeta_nodes[ N_zeta - 1 ];
   cout << "hzeta = " << Parabolic.coord( ) << endl;
-  
+
   /* --- Step in hzeta --- */
-  
+
   for ( unsigned i=1; i < N_zeta; ++i )
   {
    // Take a hzeta step
@@ -315,29 +315,29 @@ int main()
       Q( Example::N - i, j, Phi )   = Parabolic.solution()( j, Phi );
       Q( Example::N - i, j, U )     = Parabolic.solution()( j, U );
       Q( Example::N - i, j, Ud )    = Parabolic.solution()( j, Ud );
-#endif 
-    } 
+#endif
+    }
     cout << "hzeta = " << Parabolic.coord( ) << endl;
     hzeta_vals.push_back( Example::hzeta );
     wall_shear_vals.push_back( Parabolic.solution()( 0, Ud ) );
-    
+
     // Update the value of hzeta
     //Example::hzeta += dhzeta;
     Example::hzeta = hzeta_nodes[ N_zeta - 1 - i ];
-  } 
+  }
 
   cout << "U'(hzeta, eta=0) = " << Parabolic.solution()( 0, Ud ) << endl;
 
 #ifdef BASE_2D
   // Output the data mesh to a file
-  Q.dump_gnu( Example::output_path + "Qout_K_" 
-            + Utility::stringify( abs(Example::K), 3 ) + "_beta_" 
+  Q.dump_gnu( Example::output_path + "Qout_K_"
+            + Utility::stringify( abs(Example::K), 3 ) + "_beta_"
             + Utility::stringify( Example::beta , 3 )+ "_2D.dat" );
 
   OneD_node_mesh<double> Wall_shear( hzeta_vals, 1 );
   Wall_shear.set_vars_from_vector( wall_shear_vals );
-  Wall_shear.output( Example::output_path + "Wall_shear_K_" 
-                   + Utility::stringify( abs( Example::K ), 3 ) + "_beta_" 
+  Wall_shear.output( Example::output_path + "Wall_shear_K_"
+                   + Utility::stringify( abs( Example::K ), 3 ) + "_beta_"
                    + Utility::stringify( Example::beta , 3 )+ "_2D.dat" );
 #endif
 

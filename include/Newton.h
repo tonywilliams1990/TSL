@@ -37,9 +37,9 @@ namespace TSL
       /// Constructor
       Newton( Residual<T>* ptr_residual, std::size_t max_iter = 20, 
               double tolerance = 1.0e-8, double delta_step = 1.0e-8 ) :
-      TOL( tolerance ),
-      MAX_ITER( max_iter ),
-      ptr_RESIDUAL( ptr_residual )
+      ptr_RESIDUAL( ptr_residual ),
+      MAX_ITER( max_iter ), 
+      TOL( tolerance )
       {
         ptr_RESIDUAL -> delta() = delta_step;
         DELTA = delta_step;
@@ -97,7 +97,7 @@ namespace TSL
         // Backup the state / parameter in case we fail
         Vector<T> backup_state( x );
         T backup_parameter( *(this->ptr_PARAM) );
-        int det_sign( 1 );                                // Sign of the determinant
+        //int det_sign( 1 );                                // Sign of the determinant
         bool step_succeeded( false );                     // Check for success
         std::size_t itn( 0 );                             // Iteration counter
         // Guess the next solution

@@ -16,8 +16,6 @@ enum{ Phi, Psi, U, Theta };                                   // PDE
 #define BASE_2D
 // Either UNIFORM or NONUNIFORM for uniform of non-uniform mesh
 #define NONUNIFORM
-// Either DIRICHLET or NEUMANN boundary conditions on Phi and Psi at eta=eta_inf
-#define DIRICHLET
 
 namespace TSL
 {
@@ -33,7 +31,7 @@ namespace TSL
       double zeta0( 1.0 );              // Ridge/transpiration width
       double zeta0_2 = zeta0 * zeta0;   // Square of the ridge/transpiration width
       double A( 0.0 );                  // Mass flux parameter
-      double K( 0.5 );                  // Transpiration parameter ( +ve = blowing )
+      double K( 2.0 );                  // Transpiration parameter ( +ve = blowing )
       double gamma( 20.0 );             // Steepness factor
       const std::size_t N_transp( 1 );  // Number of blowing and sucking regions (1 = standard blowing)
 
@@ -68,6 +66,10 @@ namespace TSL
           sign = Param::N_transp % 2 ? -1 : 1; // (-1)^N
           return - Param::K * 0.5 *( 1 + 2 * sum + sign * tanh( Param::gamma * ( hzeta - 1. ) ) );
         }
+
+        /*return - Param::K * 0.5 * ( tanh( Param::gamma * ( hzeta - 1. ) )
+               - tanh( Param::gamma * ( hzeta - 2. ) ) );
+        */
       }
 
       double Phi_w_hzeta( const double& hzeta )
@@ -92,6 +94,10 @@ namespace TSL
           sech_squared = pow( cosh( Param::gamma * ( hzeta - 1. ) ) , -2. );
           return - Param::K * 0.5 * Param::gamma * ( 2 * sum + sign * sech_squared );
         }
+
+        /*double sech_squared = pow( cosh( Param::gamma * ( hzeta - 1. ) ) , -2. );
+        double sech_squared_2 = pow( cosh( Param::gamma * ( hzeta - 2. ) ) , -2. );
+        return - Param::K * 0.5 * Param::gamma * ( sech_squared - sech_squared_2  );*/
       }
 
     } // End of namespace Example
@@ -310,72 +316,6 @@ namespace TSL
       }; // End 3D alternative far_BC class
 #endif
     } // End of namespace Base_Flow
-
-    namespace Far_ODE
-    {
-      class far_equation : public Equation<double>
-      {
-        public:
-          double beta;
-
-          OneD_node_mesh<double> Base_soln;
-          // The far-field equation is 6th order
-          far_equation() : Equation<double> ( 6 ) {}
-          // Define the equation
-          void residual_fn( const Vector<double>& u, Vector<double>& F  ) const
-          {
-            double eta( coord( 0 ) );
-            Vector<double> Base( Base_soln.get_interpolated_vars( eta ) );
-
-            F[ Phibar ]     =   ( 2. - beta ) * u[ Ubar ] + u[ Psibar ];
-            F[ Psibar ]     =   u[ Thetabar ];
-            F[ Ubar ]       =   u[ Ubard ];
-            F[ Ubard ]      =   2. * beta * Base[ UB ] * u[ Ubar ]
-                              - Base[ UBd ] * u[ Phibar ] - Base[ PhiB ] * u[ Ubard ]
-                              + 2. * Base[ PsiB ] * u[ Ubar ];
-            F[ Thetabar ]   =   u[ Thetabard ];
-            F[ Thetabard ]  =   2. * ( 1. - beta ) * ( Base[ UB ] * u[ Ubard ]
-                              + u[ Ubar ] * Base[ UBd ] )
-                              - Base[ PhiB ] * u[ Thetabard ]
-                              - Base[ ThetaBd ] * u[ Phibar ]
-                              + Base[ PsiB ] * u[ Thetabar ]
-                              - u[ Psibar ] * Base[ ThetaB ]
-                              - ( 2. - beta ) * ( Base[ UB ] * u[ Thetabar ]
-                              + Base[ ThetaB ] * u[ Ubar ] ) ;
-          }
-      }; // End of far-field ODE class
-
-      class far_plate_BC : public Residual<double>
-      {
-        public:
-
-          far_plate_BC() : Residual<double> ( 3, 6 ) {}
-
-          void residual_fn( const Vector<double> &z, Vector<double> &B ) const
-          {
-            B[ 0 ] = z[ Ubar ];
-            B[ 1 ] = z[ Phibar ];
-            B[ 2 ] = z[ Psibar ];
-          }
-      }; // End of far-field plate BC class
-
-      class far_far_BC : public Residual<double>
-      {
-        public:
-
-          far_far_BC() : Residual<double> ( 3, 6 ) {}
-
-          void residual_fn( const Vector<double> &z, Vector<double> &B ) const
-          {
-            B[ 0 ] = z[ Ubar ];
-            B[ 1 ] = z[ Thetabar ];
-            B[ 2 ] = z[ Psibar ] - 1.0;
-          }
-      }; // End of far-field far BC class
-
-
-    }
-
 } // End of namespace TSL
 
 using namespace std;
@@ -394,8 +334,11 @@ int main()
      << "x" << Param::M + 1 << "_" << Param::hzeta_right << "_" << Param::eta_top << "/";
   Example::output_path = ss.str();
   int status = mkdir( Example::output_path.c_str(), S_IRWXU );
+  if ( status == 0 ) {
   cout << "  * Output directory " + Example::output_path +
           " has been made successfully." << endl;
+  }
+
 
   /* ----- Setup the mesh ----- */
 
@@ -582,22 +525,6 @@ int main()
   cout << "  * We have solved the ODE problem, it is output to " + Example::output_path +
           "Base_soln.dat" << endl;
 
-  /* ----- Solve the far-field ODE ----- */
-
-  // Setup the far-field ODE problem
-  Far_ODE::far_equation far_equation;
-  Far_ODE::far_plate_BC far_plate_BC;
-  Far_ODE::far_far_BC   far_far_BC;
-  far_equation.beta = Param::beta;
-  far_equation.Base_soln = Base_soln;
-
-  // Create boundary value problem
-  ODE_BVP<double> far_ode( &far_equation, eta_nodes, &far_plate_BC, &far_far_BC );
-
-  // Solve the system
-  far_ode.solve_bvp();
-  //cout << "Thetabar(0) = " << far_ode.solution()( 0, Thetabar ) << endl;
-
   /* ----- Solve for the perturbation quantities ----- */
 
   cout << "*** Solving the perturbation equations ***" << endl;
@@ -619,7 +546,7 @@ int main()
 
 
   // Vector for the RHS of the matrix problem
-  Vector<double> B( 4 * N_eta * N_hzeta + 1, 0.0 );
+  Vector<double> B( 4 * N_eta * N_hzeta, 0.0 );
 
   do                                                    // Iterate over values of zeta_0
   {
@@ -632,7 +559,7 @@ int main()
   do
   {
     // N_eta x N_hzeta mesh with 4 unknowns at each node + 1 for mass flux parameter A
-    SparseMatrix<double> A( 4 * N_eta * N_hzeta + 1, 4 * N_eta * N_hzeta + 1 );
+    SparseMatrix<double> A( 4 * N_eta * N_hzeta, 4 * N_eta * N_hzeta );
     //Sparse_matrix<double> A( 4 * N_eta * N_hzeta + 1, 4 * N_eta * N_hzeta + 1 );
     cout << "  * Assembling sparse matrix problem" << endl;
 
@@ -650,10 +577,10 @@ int main()
           double hzeta( hzeta_nodes[ 0 ] );
           double Xd( Mesh::Xd(hzeta) );
           double eta( eta_nodes[ j ] );
-          double Yd( Mesh::Yd( eta ) );
+          //double Yd( Mesh::Yd( eta ) );
           Vector<double> Base( Base_soln.get_interpolated_vars( eta ) );
           // PhiB' = (2-beta)*UB - PsiB
-          double PhiBd( ( 2.0 - Param::beta ) * Base[ UB ] - Base[ PsiB ] );
+          //double PhiBd( ( 2.0 - Param::beta ) * Base[ UB ] - Base[ PsiB ] );
           //double UBd( Base[ UBd ] );      // TODO do we need this
 
 
@@ -737,20 +664,20 @@ int main()
         // Base solution
         Vector<double> Base( Base_soln.get_interpolated_vars( eta ) );
         // PhiB' = (2-beta)*UB - PsiB
-        double PhiBd( ( 2.0 - Param::beta )*Base[ UB ] - Base[ PsiB ] );
+        //double PhiBd( ( 2.0 - Param::beta )*Base[ UB ] - Base[ PsiB ] );
         // PhiB'' = (2-beta)*UB' - PsiB' = (2-beta)*UB' - ThetaB
-        double PhiBdd( ( 2.0 - Param::beta )*Base[ UBd ] -  Base[ ThetaB ] );
+        ///double PhiBdd( ( 2.0 - Param::beta )*Base[ UBd ] -  Base[ ThetaB ] );
         // PsiB' = Theta_B
-        double PsiBd( Base[ ThetaB ] );
+        ///double PsiBd( Base[ ThetaB ] );
         // PsiB'' = ThetaB'
-        double PsiBdd( Base[ ThetaBd ] );
+        //double PsiBdd( Base[ ThetaBd ] );
         // UB'' = beta * [ UB^2 - 1] - PhiB * UB'
-        double UBdd(  Param::beta * ( Base[ UB ] * Base[ UB ]  - 1. )
-                    - Base[ PhiB ] * Base[ UBd ] );
+        //double UBdd(  Param::beta * ( Base[ UB ] * Base[ UB ]  - 1. )
+        //            - Base[ PhiB ] * Base[ UBd ] );
         // ThetaB'' = 2(1-beta)*UB*UB' - PhiB*ThetaB' - PsiB*ThetaB - (2-beta)*UB*ThetaB
-        double ThetaBdd( 2. * ( 1. - Param::beta ) * Base[ UB ] * Base[ UBd ]
-                        - Base[ PhiB ] * Base[ ThetaBd ] - Base[ PsiB ] * Base[ ThetaB ]
-                        - ( 2. - Param::beta ) * Base[ UB ] * Base[ ThetaB ] );
+        //double ThetaBdd( 2. * ( 1. - Param::beta ) * Base[ UB ] * Base[ UBd ]
+        //                - Base[ PhiB ] * Base[ ThetaBd ] - Base[ PsiB ] * Base[ ThetaB ]
+        //                - ( 2. - Param::beta ) * Base[ UB ] * Base[ ThetaB ] );
 
         // Laplacian coefficients for finite-differencing
 
@@ -964,67 +891,37 @@ int main()
         eta = eta_nodes[ j ];
         Yd = Mesh::Yd( eta );
 
-#ifdef DIRICHLET
-        // Phi = A*(...)
-        A( row, col( i, j, Phi ) )        =   1.0;
-        A( row, 4 * N_hzeta * N_eta )     = - eta / ( eta * eta
-                                            + Param::zeta0_2 * hzeta
-                                            * hzeta );
+        // Phi_eta*( eta^2 + zeta_0^2*hzeta^2) + [ 2*eta - (eta^2 + zeta_0^2*hzeta^2)/eta ]*Phi = 0
+        A( row, col( i, j, Phi ) )        =   3.0 * Yd * ( eta * eta
+                                            + Param::zeta0_2 * hzeta * hzeta) / (2*dY);
+        A( row, col( i, j - 1, Phi ) )    = - 4.0 * Yd * ( eta * eta
+                                            + Param::zeta0_2 * hzeta * hzeta) / (2*dY);
+        A( row, col( i, j - 2, Phi ) )    =   1.0 * Yd * ( eta * eta
+                                            + Param::zeta0_2 * hzeta * hzeta) / (2*dY);
+        A( row, col( i, j, Phi ) )       +=   2.0 * eta - ((eta * eta
+                                            + Param::zeta0_2 * hzeta * hzeta) / eta );
 
-        B[ row ]        = - Q( i, j, Phi )
-                          + eta * Param::A / ( eta * eta
-                          + Param::zeta0_2 * hzeta * hzeta );
-
+        B[ row ]                          = - ( 3 * Q( i, j, Phi ) - 4 * Q( i, j-1, Phi )
+                                            + Q( i, j-2, Phi ) ) * Yd * (eta * eta
+                                            + Param::zeta0_2 * hzeta * hzeta) / ( 2 * dY )
+                                            + (((eta * eta + Param::zeta0_2 * hzeta * hzeta) / eta )
+                                            - 2.0 * eta) * Q( i, j, Phi );
         ++row;
 
-        // Psi = A*(...)
-        A( row, col( i, j, Psi ) )        =   1.0;
-        A( row, 4 * N_hzeta * N_eta )     = - hzeta / ( eta * eta
-                                            + Param::zeta0_2 * hzeta
-                                            * hzeta );
+        // Psi_eta*( eta^2 + zeta_0^2*hzeta^2) + 2 * eta * Psi = 0
+        A( row, col( i, j, Psi ) )        =   3.0 * Yd * ( eta * eta
+                                            + Param::zeta0_2 * hzeta * hzeta) / (2*dY);
+        A( row, col( i, j - 1, Psi ) )    = - 4.0 * Yd * ( eta * eta
+                                            + Param::zeta0_2 * hzeta * hzeta) / (2*dY);
+        A( row, col( i, j - 2, Psi ) )    =   1.0 * Yd * ( eta * eta
+                                            + Param::zeta0_2 * hzeta * hzeta) / (2*dY);
+        A( row, col( i, j, Psi ) )       +=   2 * eta;
 
-        B[ row ]        = - Q( i, j, Psi ) + hzeta * Param::A
-                          / ( eta * eta
-                          + Param::zeta0_2 * hzeta * hzeta );
-
+        B[ row ]                          =  - (( 3 * Q( i, j, Psi ) - 4 * Q( i, j-1, Psi )
+                                             + Q( i, j-2, Psi ) ) * Yd * (eta * eta
+                                             + Param::zeta0_2 * hzeta * hzeta) / ( 2 * dY ))
+                                             - 2 * eta * Q( i, j, Psi );
         ++row;
-#endif
-#ifdef NEUMANN
-        // Phi_eta = A*(...) - derivative condition
-        A( row, col( i, j, Phi ) )        =   3.0 *Yd/ (2*dY);
-        A( row, col( i, j - 1, Phi ) )    = - 4.0 *Yd/ (2*dY);
-        A( row, col( i, j - 2, Phi ) )    =   1.0 *Yd/ (2*dY);
-        A( row, 4 * N_hzeta * N_eta )     = - ( Param::zeta0_2
-                                            * hzeta * hzeta
-                                            - eta * eta )
-                                            / pow( ( Param::zeta0_2
-                                            * hzeta * hzeta
-                                            + eta * eta ), 2);
-
-        B[ row ]        = - ( 3 * Q( i, j, Phi ) - 4 * Q( i, j-1, Phi )
-                          + Q( i, j-2, Phi ) ) * Yd / ( 2 * dY )
-                          + Param::A * ( Param::zeta0_2 * hzeta * hzeta
-                          - eta * eta )
-                          / pow( ( Param::zeta0_2 * hzeta * hzeta
-                          + eta * eta ), 2);
-        ++row;
-
-        // Psi_eta = A*(...)
-        A( row, col( i, j, Psi ) )        =   3.0 *Yd/ (2*dY);
-        A( row, col( i, j - 1, Psi ) )    = - 4.0 *Yd/ (2*dY);
-        A( row, col( i, j - 2, Psi ) )    =   1.0 *Yd/ (2*dY);
-        A( row, 4 * N_hzeta * N_eta )     =   2. * hzeta * eta
-                                            / pow( ( Param::zeta0_2
-                                            * hzeta * hzeta
-                                            + eta * eta ) , 2 );
-
-        B[ row ]        = - ( 3 * Q( i, j, Psi ) - 4 * Q( i, j-1, Psi )
-                          + Q( i, j-2, Psi ) ) * Yd / ( 2 * dY )
-                          - Param::A * 2. * hzeta * eta
-                          / pow( ( Param::zeta0_2 * hzeta * hzeta
-                          + eta * eta ) , 2 );
-        ++row;
-#endif
 
         // U = 0
         A( row, col( i, j, U ) )            =   1;
@@ -1033,7 +930,7 @@ int main()
 
         // Theta = 0
         A( row, col( i, j, Theta ) )        =   1;
-        B[ row ]                            = - ( Q(i,j,Theta) );
+        B[ row ]                            = - ( Q( i, j, Theta ) );
         ++row;
 
     } // End of for loop over interior nodes
@@ -1051,37 +948,35 @@ int main()
 
       Vector<double> Base( base.solution().get_interpolated_vars( eta ) );
 
-      // hzeta * Phi_hzeta + 2 * Phi = A*(...)
-      A( row, col( i, j, Phi ) )          =   hzeta * 3. * Xd / ( 2 * dX ) + 2.;
-      A( row, col( i - 1, j, Phi ) )      = - hzeta * 4. * Xd / ( 2 * dX );
-      A( row, col( i - 2, j, Phi ) )      =   hzeta * 1. * Xd / ( 2 * dX );
-      A( row, 4 * N_hzeta * N_eta )       = - 2 * pow( eta, 3 )
-                                            / pow( Param::zeta0_2
-                                            * hzeta * hzeta
-                                            + eta * eta, 2 );
+      // (eta^2 + zeta_0^2 * hzeta^2) * Phi_hzeta + 2 * zeta_0^2 * hzeta * Phi = 0
+      A( row, col( i, j, Phi ) )          =   (eta*eta + Param::zeta0_2*hzeta*hzeta) * 3. * Xd
+                                            / ( 2 * dX );
+      A( row, col( i - 1, j, Phi ) )      = - (eta*eta + Param::zeta0_2*hzeta*hzeta) * 4. * Xd
+                                            / ( 2 * dX );
+      A( row, col( i - 2, j, Phi ) )      =   (eta*eta + Param::zeta0_2*hzeta*hzeta) * 1. * Xd
+                                            / ( 2 * dX );
+      A( row, col( i, j, Phi ) )         +=   2 * Param::zeta0_2 * hzeta;
 
-      B[ row ]        = - hzeta * ( 3 * Q( i, j, Phi) - 4 * Q( i - 1, j, Phi)
-                        + Q( i - 2, j, Phi) ) * Xd / ( 2 * dX )
-                        - 2 * Q( i, j, Phi )
-                        + 2 * Param::A * pow( eta, 3. )
-                        / pow( Param::zeta0_2 * hzeta * hzeta
-                        + eta * eta, 2 );
+      B[ row ]        = - (eta*eta + Param::zeta0_2*hzeta*hzeta) * ( 3 * Q( i, j, Phi)
+                        - 4 * Q( i - 1, j, Phi) + Q( i - 2, j, Phi) ) * Xd / ( 2 * dX )
+                        - 2 * Param::zeta0_2 * hzeta * Q( i, j, Phi );
       ++row;
 
-      // hzeta * Psi_hzeta + Psi = A*(...)
-      A( row, col( i, j, Psi ) )          =   hzeta * 3. * Xd / ( 2 * dX ) + 1.;
-      A( row, col( i - 1, j, Psi ) )      = - hzeta * 4. * Xd / ( 2 * dX );
-      A( row, col( i - 2, j, Psi ) )      =   hzeta * 1. * Xd / ( 2 * dX );
-      A( row, 4 * N_hzeta * N_eta )       = - 2. * hzeta * pow( eta, 2. )
-                                            / pow( Param::zeta0_2
-                                            * hzeta * hzeta + eta * eta, 2 );
+      // (eta^2 + zeta_0^2 * hzeta^2)*Psi_hzeta + (2*zeta_0^2*hzeta-(eta^2 + zeta_0^2*hzeta^2)/hzeta)*Psi = 0
+      A( row, col( i, j, Psi ) )          =   (eta*eta + Param::zeta0_2*hzeta*hzeta) * 3. * Xd
+                                            / ( 2 * dX );
+      A( row, col( i - 1, j, Psi ) )      = - (eta*eta + Param::zeta0_2*hzeta*hzeta) * 4. * Xd
+                                            / ( 2 * dX );
+      A( row, col( i - 2, j, Psi ) )      =   (eta*eta + Param::zeta0_2*hzeta*hzeta) * 1. * Xd
+                                            / ( 2 * dX );
+      A( row, col( i, j, Psi ) )         +=   2 * Param::zeta0_2 * hzeta
+                                            - ((eta*eta + Param::zeta0_2*hzeta*hzeta) / hzeta);
 
-      B[ row ]        = - hzeta * ( 3 * Q( i, j, Psi ) - 4 * Q( i - 1, j, Psi )
-                        + Q( i - 2, j, Psi) ) * Xd / ( 2 * dX )
-                        - Q( i, j, Psi)
-                        + 2. * Param::A * hzeta * pow( eta, 2. )
-                        / pow( Param::zeta0_2 * hzeta * hzeta
-                        + eta * eta, 2 ) ;
+
+      B[ row ]        = - ((eta*eta + Param::zeta0_2*hzeta*hzeta) * ( 3 * Q( i, j, Psi )
+                        - 4 * Q( i - 1, j, Psi ) + Q( i - 2, j, Psi) ) * Xd / ( 2 * dX ))
+                        - 2 * Param::zeta0_2 * hzeta  * Q( i, j, Psi)
+                        + ((eta*eta + Param::zeta0_2*hzeta*hzeta) / hzeta)  * Q( i, j, Psi);
       ++row;
 
       // hzeta * U_hzeta + 2 * U = 0
@@ -1105,17 +1000,6 @@ int main()
       ++row;
 
     }
-
-    double hzeta( hzeta_nodes[ Param::N ] );    // hzeta = hzeta_inf
-    //double zeta0( Param::zeta0 );
-    /* A coefficient condition */
-    // zeta0^2 * hzeta_max theta( zeta=zeta_max, eta=0 ) = A*otheta(0)
-    Vector<double> Base( base.solution().get_interpolated_vars( 0.0 ) );
-    A( 4 * N_eta * N_hzeta, 4 * N_eta * N_hzeta ) = - far_ode.solution()( 0, Thetabar );
-    A( 4 * N_eta * N_hzeta, 4 * N_eta * (N_hzeta - 1) + 3 ) =   Param::zeta0_2 * hzeta;
-    // RHS
-    B[ row ] = - Q( N_hzeta-1, 0, Theta ) * Param::zeta0_2 * hzeta
-               + Param::A * far_ode.solution()( 0, Thetabar ) ;
 
     max_residual = B.norm_inf();
     cout << "***                                              Maximum residual = "
@@ -1141,10 +1025,9 @@ int main()
         Q( i, j, Theta )  += B[ col( i, j, Theta ) ];
       }
     }
-    Param::A += B[ 4 * ( Param::N + 1 ) * ( Param::M + 1 ) ];
 
     cout << "***    Iteration = " << iteration
-           << "    Maximum correction = " << B.norm_inf() << endl;
+         << "    Maximum correction = " << B.norm_inf() << endl;
 
     ++iteration;
   }while( ( max_residual > 1.e-8 ) && ( iteration < max_iterations ) ); // End iteration
@@ -1161,7 +1044,7 @@ int main()
       for ( std::size_t j = 0; j < N_eta; ++j )
       {
         double eta=eta_nodes[j];
-        // first 4 values output are the without the underlying 2D base flow
+        // first 4 values output are the without the underlying base flow
         Q_output( i, j, 0 ) = Q( i, j, Phi);
         Q_output( i, j, 1 ) = Q( i, j, Psi);
         Q_output( i, j, 2 ) = Q( i, j, U);
@@ -1199,6 +1082,10 @@ int main()
     eta_half =  ( 0.5 - Q_output(0,lower,U+4) ) * ( eta_nodes[upper] - eta_nodes[lower] )
               / ( Q_output(0,upper,U+4) - Q_output(0,lower,U+4)  ) + eta_nodes[lower];
 
+    Param::A = Q_output( 0, Param::M, Phi ) * Param::eta_top;
+    //Param::A =    Param::zeta0_2 * Param::hzeta_right * Q_output( Param::N, 0, Theta )
+    //            / far_ode.solution()( 0, Thetabar ) ;
+
     metric.update();
 
     // Get the wall shear values as a function of hzeta
@@ -1210,7 +1097,6 @@ int main()
     }
 
     wall_shear.output( Example::output_path + "Wall_shear_zeta0_" + zeta0_str + ".dat" );
-
 
     cout << "  * zeta0 = " << Param::zeta0 << ", A = " << Param::A << endl;
     Param::zeta0 += 1.0; // 0.5 is best for blowing

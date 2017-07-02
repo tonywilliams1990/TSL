@@ -38,3 +38,4 @@ env.Program( 'Project/Blowing_K_step.out' , ['Project/Blowing_K_step.cpp'] , OPT
 # Example problem codes
 
 env.Program( 'Problems/Heat_diffusion.out' , ['Problems/Heat_diffusion.cpp'] , OPTS = opts, LIBS = libs)  #IBVP
+env.Program( 'Problems/Falkner_Skan_marching.out' , ['Problems/Falkner_Skan_marching.cpp'] , OPTS = opts, LIBS = libs)  #IBVP

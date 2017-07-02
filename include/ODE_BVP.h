@@ -27,15 +27,15 @@ namespace TSL
 	
 	class ODE_BVP : public Arclength<T>
 	{
-    private:	
+    private:
+      std::size_t MAX_ITER;			        // Maximum number of iterations
+      double TOL;						            // Tolerance for convergence	
 			Equation<T, X> *ptr_EQUATION; 	  // Pointer to ODE equation
+      Vector<X> NODES;                  // Vector of nodes ( defines the domain ) 
+      double DELTA;                     // Perturbation step for computation of the Jacobian
       Residual<T> *ptr_LEFT_RESIDUAL;   // Pointer to the left residual
       Residual<T> *ptr_RIGHT_RESIDUAL;  // Pointer to the right residual
       OneD_node_mesh<T, X> SOLUTION;    // Solution mesh
-      std::size_t MAX_ITER;			        // Maximum number of iterations
-      double TOL;						            // Tolerance for convergence
-      Vector<X> NODES;                  // Vector of nodes ( defines the domain ) 
-      double DELTA;                     // Perturbation step for computation of the Jacobian
     
       /// Solve the system for an initial guess by Newton iteration. This method is 
       //  inherited from Arclength and points to solve_bvp

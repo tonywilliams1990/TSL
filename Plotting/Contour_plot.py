@@ -5,11 +5,13 @@ import matplotlib.pyplot as plt
 
 
 zeta0 = 20
-beta = 0
-K = 2.5
+beta = 0.1
+K = 0.5
+N = 1
 # change the levels in the VW plot to see more detail (line 85)
 
 data = np.loadtxt("./DATA/K_"+ str(K) + "_beta_"+ str(beta) + "_401x401_16_128/Qout_" + str(zeta0) + ".dat")
+#data = np.loadtxt("./DATA/K_Step_beta_"+ str(beta) + "_zeta0_" + str(zeta0) + "_N_" + str(N) + "/Qout_K_" + str(K) + "_zeta0_" + str(zeta0) + ".dat")
 
 zeta_hat = data[:,0]
 eta = data[:,1]
@@ -18,15 +20,16 @@ Psi_pert = data[:,3]
 U_pert = data[:,4]
 Theta_pert = data[:,5]
 Phi = data[:,6]
-Psi = data[:,7]
+Psi = data[:,7] # Psi / zeta0
 U = data[:,8]
-Theta = data[:,9]
+Theta = data[:,9] # Theta / zeta0
 
 zeta = zeta0 * zeta_hat
 eta_hat = eta / zeta0
 
 V = (1 - beta)*eta*U - Phi
-W = (1 - beta)*zeta_hat*U - Psi
+W = (1 - beta)*zeta_hat*U - Psi # effectively W / zeta0
+
 
 U[U > 1.0] = 1.0
 
@@ -35,7 +38,7 @@ min_x = np.min(zeta_hat)
 max_x = 2
 min_y = np.min(eta)
 #max_y = np.max(eta)
-max_y = 40
+max_y = max_x * zeta0
 
 npts = 500
 
@@ -73,12 +76,12 @@ font_size = 22
 #plt.ylabel(r'$\eta$', rotation='horizontal', fontsize=font_size)
 #plt.title(r'$\beta =' + str(beta) + ', \zeta_0=' + str(zeta0) + ', K=' + str(K) + '$', fontsize=font_size)
 
-
 axes = plt.gca()
-axes.set_xlim([0,2])
+axes.set_xlim([0,max_x])
+plt.xticks(np.arange(0, max_x + 0.5, 0.5))
 axes.set_ylim([0,40])
 
-plt.savefig('U_contour_K_' + str(K) + "_beta_" + str(beta) + "_zeta0_" + str(zeta0) +  ".eps", format='eps', dpi=1000)
+plt.savefig('U_contour_K_' + str(K) + "_beta_" + str(beta) + "_zeta0_" + str(zeta0) + "_N_" + str(N) + ".eps", format='eps', dpi=1000)
 
 plt.figure()
 
@@ -94,16 +97,22 @@ CS = plt.contourf(xi, yi, Vorticity_perturbation, levels,
 CB = plt.colorbar(CS, shrink=1)
 CB.set_ticks(levels)
 
-plt.streamplot(xi, yi, Wi, Vi, arrowstyle='->', density=1, color='k')
+#speed = np.sqrt( Vi*Vi + Wi*Wi)
+#lw = 5 * speed / speed.max()
+lw = 1
+# set linewidth = lw if you want linewidth varying with speed
+
+plt.streamplot(xi, yi, Wi, Vi, arrowstyle='->', density=1, color='k', linewidth=lw)
 
 #plt.xlabel(r'$\hat{\zeta}$', fontsize=font_size)
 #plt.ylabel(r'$\eta$', rotation='horizontal', fontsize=font_size)
 #plt.title(r'$\beta =' + str(beta) + ', \zeta_0=' + str(zeta0) + ', K=' + str(K) + '$', fontsize=font_size)
 
 axes = plt.gca()
-axes.set_xlim([0,2])
+axes.set_xlim([0,max_x])
+plt.xticks(np.arange(0, max_x + 0.5, 0.5))
 axes.set_ylim([0,40])
 
-plt.savefig('VW_stream_K_' + str(K) + "_beta_" + str(beta) + "_zeta0_" + str(zeta0) + ".eps", format='eps', dpi=1000)
+plt.savefig('VW_stream_K_' + str(K) + "_beta_" + str(beta) + "_zeta0_" + str(zeta0) + "_N_" + str(N) + ".eps", format='eps', dpi=1000)
 
 plt.show()

@@ -145,8 +145,10 @@ int main()
   ss << "./DATA/Falkner_Skan_with_blowing" << "_beta_" << Param::beta << "/";
   Example::output_path = ss.str();
   int status = mkdir( Example::output_path.c_str(), S_IRWXU );
+  if ( status == 0 ) {
   cout << "  * Output directory " + Example::output_path +
           " has been made successfully." << endl;
+  }
   cout << "  * Hartree parameter beta = " << Param::beta << endl;
 
   /* ----- Setup the mesh ----- */
@@ -190,7 +192,7 @@ int main()
   //
 
   // step sizes in the remapped domain : these should be constants
-  const double dY( Y_nodes[ 1 ] - Y_nodes[ 0 ] );
+  //const double dY( Y_nodes[ 1 ] - Y_nodes[ 0 ] );
 
   cout << "*** Solving the ODE ***" << endl;
 

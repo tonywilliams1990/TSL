@@ -54,8 +54,13 @@ namespace TSL
   /// Push pointer to a std::complex<double> for tracking
   void TrackerFile::push_ptr( std::complex<double>* scalar, std::string desc )
   {
-    ptr_DOUBLES.push_back( &( scalar -> real() ) );
-    ptr_DOUBLES.push_back( &( scalar -> imag() ) );
+    double * r = &reinterpret_cast<double(&)[2]>( scalar[0] )[0];
+    double * i = &reinterpret_cast<double(&)[2]>( scalar[0] )[1];
+    ptr_DOUBLES.push_back( r );
+    ptr_DOUBLES.push_back( i );
+    // Old implementation worked with some compilers but not correct C++
+    //ptr_DOUBLES.push_back( &( scalar -> real() ) );
+    //ptr_DOUBLES.push_back( &( scalar -> imag() ) );
     DOUBLE_DESC.push_back( desc + " (real)" );
     DOUBLE_DESC.push_back( desc + " (imag)" );
   }

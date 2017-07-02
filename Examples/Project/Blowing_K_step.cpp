@@ -30,11 +30,12 @@ namespace TSL
       const std::size_t Nvar( 4 );      // Number of variables
       double beta( 0 );                 // Hartree parameter
       double KB( 0.0 );                 // Base flow transpiration ( +ve = blowing )
-      double zeta0( 8 );                // Ridge/transpiration width
+      double zeta0( 20 );               // Ridge/transpiration width
       double zeta0_2 = zeta0 * zeta0;   // Square of the ridge/transpiration width
       double A( 0.0 );                  // Mass flux parameter
       double K( 0.0 );                  // Transpiration parameter ( +ve = blowing )
       double gamma( 20.0 );             // Steepness factor
+      const std::size_t N_transp( 1 );  // Number of blowing and sucking regions (1 = standard blowing)
 
     } // End of namespace Param
 
@@ -51,14 +52,54 @@ namespace TSL
       double Phi_w( const double& hzeta )
       {
         // Return the transpiration function
-        return -Param::K * 0.5 * ( 1. - tanh( Param::gamma * ( hzeta - 1. ) ) );
+        if ( Param::N_transp < 1 )
+        {
+          return 0.0;
+        }
+        else
+        {
+          double sum( 0.0 );
+          int sign;
+          for (std::size_t i=1; i<Param::N_transp; ++i)
+          {
+            sign = i % 2 ? -1 : 1; // equivalent to (-1)^i
+            sum += sign * tanh( Param::gamma * ( hzeta - ((1.*i)/Param::N_transp) ) );
+          }
+          sign = Param::N_transp % 2 ? -1 : 1; // (-1)^N
+          return - Param::K * 0.5 *( 1 + 2 * sum + sign * tanh( Param::gamma * ( hzeta - 1. ) ) );
+        }
+
+        /*return - Param::K * 0.5 * ( tanh( Param::gamma * ( hzeta - 1. ) )
+               - tanh( Param::gamma * ( hzeta - 2. ) ) );
+        */
       }
 
       double Phi_w_hzeta( const double& hzeta )
       {
         // Return derivative of transpiration wrt hzeta
-        double sech_squared = pow( cosh( Param::gamma * ( hzeta - 1 ) ) , -2. );
-        return Param::K * 0.5 * Param::gamma * sech_squared;
+        if ( Param::N_transp < 1 )
+        {
+          return 0.0;
+        }
+        else
+        {
+          double sum( 0.0 );
+          double sech_squared;
+          int sign;
+          for (std::size_t i=1; i<Param::N_transp; ++i)
+          {
+            sign = i % 2 ? -1 : 1; // equivalent to (-1)^i
+            sech_squared = pow( cosh( Param::gamma * ( hzeta - ((1.*i)/Param::N_transp) ) ) , -2. );
+            sum += sign * sech_squared;
+          }
+          sign = Param::N_transp % 2 ? -1 : 1; // (-1)^N
+          sech_squared = pow( cosh( Param::gamma * ( hzeta - 1. ) ) , -2. );
+          return - Param::K * 0.5 * Param::gamma * ( 2 * sum + sign * sech_squared );
+        }
+
+        /*double sech_squared = pow( cosh( Param::gamma * ( hzeta - 1. ) ) , -2. );
+        double sech_squared_2 = pow( cosh( Param::gamma * ( hzeta - 2. ) ) , -2. );
+        return - Param::K * 0.5 * Param::gamma * ( sech_squared - sech_squared_2  );*/
       }
 
     } // End of namespace Example
@@ -362,8 +403,10 @@ int main()
   ss << "./DATA/K_Step_beta_" << Param::beta << "_zeta0_" << Param::zeta0 << "/";
   Example::output_path = ss.str();
   int status = mkdir( Example::output_path.c_str(), S_IRWXU );
+  if ( status == 0 ) {
   cout << "  * Output directory " + Example::output_path +
           " has been made successfully." << endl;
+  }
 
   /* ----- Setup the mesh ----- */
 
@@ -619,10 +662,10 @@ int main()
           double hzeta( hzeta_nodes[ 0 ] );
           double Xd( Mesh::Xd(hzeta) );
           double eta( eta_nodes[ j ] );
-          double Yd( Mesh::Yd( eta ) );
+          //double Yd( Mesh::Yd( eta ) );
           Vector<double> Base( Base_soln.get_interpolated_vars( eta ) );
           // PhiB' = (2-beta)*UB - PsiB
-          double PhiBd( ( 2.0 - Param::beta ) * Base[ UB ] - Base[ PsiB ] );
+          //double PhiBd( ( 2.0 - Param::beta ) * Base[ UB ] - Base[ PsiB ] );
           //double UBd( Base[ UBd ] );      // TODO do we need this
 
 
@@ -706,20 +749,20 @@ int main()
         // Base solution
         Vector<double> Base( Base_soln.get_interpolated_vars( eta ) );
         // PhiB' = (2-beta)*UB - PsiB
-        double PhiBd( ( 2.0 - Param::beta )*Base[ UB ] - Base[ PsiB ] );
+        //double PhiBd( ( 2.0 - Param::beta )*Base[ UB ] - Base[ PsiB ] );
         // PhiB'' = (2-beta)*UB' - PsiB' = (2-beta)*UB' - ThetaB
-        double PhiBdd( ( 2.0 - Param::beta )*Base[ UBd ] -  Base[ ThetaB ] );
+        //double PhiBdd( ( 2.0 - Param::beta )*Base[ UBd ] -  Base[ ThetaB ] );
         // PsiB' = Theta_B
-        double PsiBd( Base[ ThetaB ] );
+        //double PsiBd( Base[ ThetaB ] );
         // PsiB'' = ThetaB'
-        double PsiBdd( Base[ ThetaBd ] );
+        //double PsiBdd( Base[ ThetaBd ] );
         // UB'' = beta * [ UB^2 - 1] - PhiB * UB'
-        double UBdd(  Param::beta * ( Base[ UB ] * Base[ UB ]  - 1. )
-                    - Base[ PhiB ] * Base[ UBd ] );
+        //double UBdd(  Param::beta * ( Base[ UB ] * Base[ UB ]  - 1. )
+        //            - Base[ PhiB ] * Base[ UBd ] );
         // ThetaB'' = 2(1-beta)*UB*UB' - PhiB*ThetaB' - PsiB*ThetaB - (2-beta)*UB*ThetaB
-        double ThetaBdd( 2. * ( 1. - Param::beta ) * Base[ UB ] * Base[ UBd ]
-                        - Base[ PhiB ] * Base[ ThetaBd ] - Base[ PsiB ] * Base[ ThetaB ]
-                        - ( 2. - Param::beta ) * Base[ UB ] * Base[ ThetaB ] );
+        //double ThetaBdd( 2. * ( 1. - Param::beta ) * Base[ UB ] * Base[ UBd ]
+        //                - Base[ PhiB ] * Base[ ThetaBd ] - Base[ PsiB ] * Base[ ThetaB ]
+        //                - ( 2. - Param::beta ) * Base[ UB ] * Base[ ThetaB ] );
 
         // Laplacian coefficients for finite-differencing
 
@@ -1180,9 +1223,9 @@ int main()
 
 
     cout << "  * K = " << Param::K << ", A = " << Param::A << endl;
-    Param::K += 0.1;
+    Param::K += 0.01;
 
-  }while( Param::K < 1.25 );
+  }while( Param::K < 3.01 );
 
 
   cout << "FINISHED" << endl;

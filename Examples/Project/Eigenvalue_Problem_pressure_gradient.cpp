@@ -206,8 +206,10 @@ int main()
   ss << "./DATA/Eigenvalue_problem_beta_" << Param::beta << "/";
   Example::output_path = ss.str();
   int status = mkdir( Example::output_path.c_str(), S_IRWXU );
+  if ( status == 0 ) {
   cout << "  * Output directory " + Example::output_path +
           " has been made successfully." << endl;
+  }
 
   /* ----- Setup the mesh ----- */
 

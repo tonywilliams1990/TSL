@@ -377,8 +377,10 @@ int main()
      << "x" << Param::M + 1 << "_" << Param::hzeta_right << "_" << Param::eta_top << "/";
   Example::output_path = ss.str();
   int status = mkdir( Example::output_path.c_str(), S_IRWXU );
+  if ( status == 0 ) {
   cout << "  * Output directory " + Example::output_path +
           " has been made successfully." << endl;
+  }
 
   /* ----- Setup the mesh ----- */
 
@@ -638,8 +640,6 @@ int main()
           Vector<double> Base( Base_soln.get_interpolated_vars( eta ) );
           // PhiB' = (2-beta)*UB - PsiB
           double PhiBd( ( 2.0 - Param::beta ) * Base[ UB ] - Base[ PsiB ] );
-          double UBd( Base[ UBd ] );      // TODO do we need this
-
 
           // Phi_hzeta - H'( PhiB' + Phi_eta ) = 0
           if( j == 0 ) // eta = 0 ( bottom left corner )

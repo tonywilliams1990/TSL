@@ -3,11 +3,13 @@ import numpy as np
 import matplotlib.mlab as mlab
 import matplotlib.pyplot as plt
 
-beta = 0.2
+beta = 0
 
-K_max = 3.0
-K_min = -2.0
-K_vals = np.linspace(K_min,K_max,51)
+K_max = 0.8
+K_min = -1.0
+K_vals = np.linspace(K_min,K_max,19)
+K_vals[10] = 0.0
+#print K_vals
 
 for i in range( 0, len( K_vals ) ):
   # Load data
@@ -26,8 +28,8 @@ axes.set_xlim([K_min,K_max])
 axes.set_ylim([-1,3])
 
 # Hide axis numbers
-#axes.xaxis.set_ticklabels([])
-#axes.yaxis.set_ticklabels([])
+axes.xaxis.set_ticklabels([])
+axes.yaxis.set_ticklabels([])
 
 plt.savefig("Real_eigenvalue_beta_" + str(beta) + ".eps", format='eps', dpi=1000)
 

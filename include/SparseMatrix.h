@@ -198,7 +198,7 @@ namespace TSL
   
   }; // End of class SparseMatrix
 
-  /// Indexing operator (read only)
+  /* Indexing operator (read only)
   template <class T>
   inline const T SparseMatrix<T>::operator() ( const std::size_t& i, 
                                                const std::size_t& j ) const
@@ -207,7 +207,7 @@ namespace TSL
     if ( i<0 || ROWS<=i )	{ throw Error( "Matrix range error: dimension 1" );}
     if ( j<0 || COLS<=j )	{ throw Error( "Matrix range error: dimension 2" );}
     return CONTAINER[ i ][ j ];
-  }
+  }*/
 
   /// Indexing operator (read/write)
   template <class T>

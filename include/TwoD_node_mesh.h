@@ -40,9 +40,12 @@ namespace TSL
 
       /// Constructor (given nodal distribution)
       TwoD_node_mesh( const Vector<double>& x_nodes, const Vector<double>& y_nodes,
-                      const std::size_t& nvars ) : 
-          NV( nvars ), X_NODES( x_nodes ), Y_NODES( y_nodes ), NX( x_nodes.size() ),
-          NY( y_nodes.size() ) 
+                      const std::size_t& nvars ) :
+          NX( x_nodes.size() ),
+          NY( y_nodes.size() ),
+          NV( nvars ), 
+          X_NODES( x_nodes ), 
+          Y_NODES( y_nodes )     
       {
         // set the contents to zero
         VARS = Vector<T>( NV * NX * NY, T(0.0) );

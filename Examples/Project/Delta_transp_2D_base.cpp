@@ -237,8 +237,8 @@ int main()
   Example::Parabolic_top_BC BC_top;
 
   // Define the domain
-  double bottom( 0.0 );
-  double top( Example::eta_top );
+  //double bottom( 0.0 );
+  //double top( Example::eta_top );
 
   // hzeta step
   double dhzeta = - ( Example::hzeta_inf ) / Example::N;
