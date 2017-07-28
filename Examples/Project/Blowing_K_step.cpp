@@ -904,12 +904,12 @@ int main()
                                                  * ( hzeta )
                                                  * Yd / ( 2 * dY );
 
-        // -2 * (1-beta) * (UB + UG) * ( hzeta ) * U
+        // -2 * (1-beta) * (UB' + UG) * ( hzeta ) * U
         A( row, col( i, j, U ) )             = - 2. * ( 1. - Param::beta )
                                                  * ( Base[ UBd ] + Guess_eta[ U ] )
                                                  * ( hzeta );
 
-        // (2 * (1-beta) * (eta + H) * UG_hzeta / (zeta0^2)) * U
+        // (2 * (1-beta) * eta * UG_hzeta / (zeta0^2)) * U
         A( row, col( i, j, U ) )            +=  2. * ( 1. - Param::beta )
                                                 * eta * Guess_hzeta[ U ]
                                                 / ( Param::zeta0_2 );
