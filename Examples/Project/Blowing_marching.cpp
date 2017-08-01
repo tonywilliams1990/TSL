@@ -21,10 +21,10 @@ namespace TSL
 {
     namespace Param
     {
-      double hzeta_right( 8.0 );        // Size of the domain in the zeta_hat direction
-      double eta_top( 64.0 );           // Size of the domain in the eta direction
-      const std::size_t N( 200 );       // Number of intervals in the zeta_hat direction
-      const std::size_t M( 200 );       // Number of intervals in the eta direction
+      double hzeta_right( 16.0 );        // Size of the domain in the zeta_hat direction
+      double eta_top( 128.0 );           // Size of the domain in the eta direction
+      const std::size_t N( 400 );       // Number of intervals in the zeta_hat direction
+      const std::size_t M( 400 );       // Number of intervals in the eta direction
       const std::size_t Nvar( 4 );      // Number of variables
       double beta( 0.0 );               // Hartree parameter
       double KB( 0.0 );                 // Base flow transpiration ( +ve = blowing )
@@ -33,11 +33,12 @@ namespace TSL
       double A( 0.0 );                  // Mass flux parameter
       double K( 2.0 );                  // Transpiration parameter ( +ve = blowing )
       double gamma( 20.0 );             // Steepness factor
-      double x_step( 0.05 );            // Size of the downstream grid spacing
-      const std::size_t N_x( 200 );     // Number of intervals in the downstream x direction
+      double x_step( 0.01 );            // Size of the downstream grid spacing
+      const std::size_t N_x( 2000 );    // Number of intervals in the downstream x direction
       //=> x_max = x_step * N_x
       double x_max( x_step * N_x );     // Maximum downstream location
       double x( 0.0 );                  // Current downstream x location
+      double x_d( 5.0 );                // Downstream location of the injection
 
     } // End of namespace Param
 
@@ -53,15 +54,16 @@ namespace TSL
 
       double Phi_w( const double& hzeta, const double& x )
       {
-        //return - Param::K * 0.5 * ( tanh( Param::gamma * ( hzeta - 1. ) ) );
-        return - Param::K * sqrt( 2 * x ) * exp( - 2 * x * hzeta * hzeta -( x - 5 ) * ( x - 5 ) );
+        double x_pow = pow( x, 2. * ( 1. - Param::beta ) / ( 2. - Param::beta ) );
+        double e_x = exp( - ( x - Param::x_d ) * ( x - Param::x_d ) );
+        double e_z = exp( - ( 2. - Param::beta ) * x_pow * Param::zeta0_2 * hzeta * hzeta );
+        return - Param::K * sqrt( ( 2. - Param::beta ) * x_pow ) * e_x * e_z;
       }
 
       double Phi_w_hzeta( const double& hzeta, const double& x )
       {
-        //double sech_squared = pow( cosh( Param::gamma * ( hzeta - 1. ) ) , -2. );
-        //return - Param::K * 0.5 * Param::gamma * sech_squared;
-        return - 4 * x * hzeta * Example::Phi_w( hzeta, x );
+        double x_pow = pow( x, 2. * ( 1. - Param::beta ) / ( 2. - Param::beta ) );
+        return - 2 * ( 2. - Param::beta ) * x_pow * Param::zeta0_2 * hzeta * Example::Phi_w( hzeta, x );
       }
 
     } // End of namespace Example
@@ -506,6 +508,7 @@ int main()
   TrackerFile metric( Example::output_path + "A_file.dat" );
   metric.push_ptr( &Param::zeta0, "zeta0" );
   metric.push_ptr( &Param::A, "A" );
+  metric.push_ptr( &Param::x, "x" );
   double U_eta( 0.0 );
   double eta_half( 0.0 );
   metric.push_ptr( &U_eta, "U_eta(0,0)");
@@ -1146,7 +1149,8 @@ int main()
     }
     // Output data
     Q_output.dump_gnu( Example::output_path + "Qout_"
-                     + Utility::stringify( Param::zeta0, 3 ) + ".dat" );
+                     + Utility::stringify( Param::zeta0, 3 ) + "_x_"
+                     + Utility::stringify( Param::x, 3 ) + ".dat" );
 
     Vector<double> Base( Base_soln.get_interpolated_vars( 0.0 ) );
     U_eta = -( 3 * Q_output(0,0,U+4) - 4 * Q_output(0,1,U+4)
@@ -1175,7 +1179,8 @@ int main()
     }
 
     wall_shear.output( Example::output_path + "Wall_shear_zeta0_"
-                     + Utility::stringify( Param::zeta0, 3 ) + ".dat" );
+                     + Utility::stringify( Param::zeta0, 3 ) + "_x_"
+                     + Utility::stringify( Param::x, 3 ) + ".dat" );
 
     // Put the current solution into Q_old for next iteration
     for ( std::size_t i = 0; i < N_hzeta; ++i )
