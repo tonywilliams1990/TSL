@@ -7,7 +7,7 @@
 namespace TSL
 {
   template <class T>
-  void TwoD_node_mesh<T>::set_nodes_vars( const std::size_t nodex, const std::size_t nodey, 
+  void TwoD_node_mesh<T>::set_nodes_vars( const std::size_t nodex, const std::size_t nodey,
                                           const Vector<T>& U )
   {
     if ( U.size() > NV )
@@ -24,9 +24,9 @@ namespace TSL
       VARS[ offset++ ] = U[ var ];
     }
   }
-  
+
 	template <class T>
-  Vector<T> TwoD_node_mesh<T>::get_nodes_vars( const std::size_t nodex, 
+  Vector<T> TwoD_node_mesh<T>::get_nodes_vars( const std::size_t nodex,
                                                const std::size_t nodey ) const
   {
     if ( nodex > NX - 1 || nodey > NY - 1 )
@@ -36,7 +36,7 @@ namespace TSL
       problem += " access a nodal point that is not in the mesh. \n";
       throw Error( problem );
     }
-    //Construct a vector with NV elements 
+    //Construct a vector with NV elements
     Vector<T> nodes_vars;
     for ( std::size_t var = 0; var < NV; ++var )
     {
@@ -98,12 +98,12 @@ namespace TSL
       }
     }
     return temp;
-  }  
-  
+  }
+
   template<class T>
   void TwoD_node_mesh<T>::remesh1( const Vector<double>& newX, const Vector<double>& newY )
   {
-    // check start & end 
+    // check start & end
     if ( std::abs( X_NODES[ 0 ] - newX[ 0 ] ) > 1.e-10 ||
          std::abs( X_NODES[ X_NODES.size() - 1 ] - newX[ newX.size() - 1 ] ) > 1.e-10 )
     {
@@ -171,9 +171,9 @@ namespace TSL
             deltaY = newY[ ynode ] - Y_NODES[ j ];
           }
         }
-        Vector<T> dvarsdY = ( get_nodes_vars( left_i, below_j + 1 ) 
+        Vector<T> dvarsdY = ( get_nodes_vars( left_i, below_j + 1 )
                               - get_nodes_vars( left_i, below_j ) )
-                           / ( coord( left_i, below_j + 1 ).second 
+                           / ( coord( left_i, below_j + 1 ).second
                               - coord( left_i, below_j ).second );
         Vector<T> interpolated_vars = get_nodes_vars( left_i, below_j ) + dvarsdY * deltaY;
         for ( std::size_t var = 0; var < NV; ++var )
@@ -184,7 +184,7 @@ namespace TSL
       // top left corner copy
       for ( std::size_t var = 0; var < NV; ++var )
       {
-        newvars[ ( xnode * newY.size() + newY.size() - 1 ) * NV + var ] = 
+        newvars[ ( xnode * newY.size() + newY.size() - 1 ) * NV + var ] =
         get_nodes_vars( 0, NY - 1 )[ var ];
       }
     }
@@ -194,7 +194,7 @@ namespace TSL
       // bottom right corner copy
       for ( std::size_t var = 0; var < NV; ++var )
       {
-        newvars[ ( xnode * newY.size() + 0 ) * NV + var ] = 
+        newvars[ ( xnode * newY.size() + 0 ) * NV + var ] =
         get_nodes_vars( NX - 1, 0 )[ var ];
       }
       for ( std::size_t ynode = 1; ynode < newY.size() - 1; ++ynode )
@@ -211,9 +211,9 @@ namespace TSL
             deltaY = newY[ ynode ] - Y_NODES[ j ];
           }
         }
-        Vector<T> dvarsdY = ( get_nodes_vars( left_i, below_j + 1 ) 
+        Vector<T> dvarsdY = ( get_nodes_vars( left_i, below_j + 1 )
                               - get_nodes_vars( left_i, below_j ) )
-                           / ( coord( left_i, below_j + 1 ).second 
+                           / ( coord( left_i, below_j + 1 ).second
                               - coord( left_i, below_j ).second );
         Vector<T> interpolated_vars = get_nodes_vars( left_i, below_j ) + dvarsdY * deltaY;
         for ( std::size_t var = 0; var < NV; ++var )
@@ -224,7 +224,7 @@ namespace TSL
       // bottom right corner copy
       for ( std::size_t var = 0; var < NV; ++var )
       {
-        newvars[ ( xnode * newY.size() + newY.size() - 1 ) * NV + var ] = 
+        newvars[ ( xnode * newY.size() + newY.size() - 1 ) * NV + var ] =
         get_nodes_vars( NX - 1, NY - 1 )[ var ];
       }
     }
@@ -245,9 +245,9 @@ namespace TSL
             deltaX = newX[ xnode ] - X_NODES[ i ];
           }
         }
-        Vector<T> dvarsdX = ( get_nodes_vars( left_i + 1, below_j ) 
+        Vector<T> dvarsdX = ( get_nodes_vars( left_i + 1, below_j )
                               - get_nodes_vars( left_i, below_j ) )
-                           / ( coord( left_i + 1, below_j ).first 
+                           / ( coord( left_i + 1, below_j ).first
                               - coord( left_i, below_j ).first );
         Vector<T> interpolated_vars = get_nodes_vars( left_i, below_j ) + dvarsdX * deltaX;
         for ( std::size_t var = 0; var < NV; ++var )
@@ -273,9 +273,9 @@ namespace TSL
             deltaX = newX[ xnode ] - X_NODES[ i ];
           }
         }
-        Vector<T> dvarsdX = ( get_nodes_vars( left_i + 1, below_j ) 
+        Vector<T> dvarsdX = ( get_nodes_vars( left_i + 1, below_j )
                               - get_nodes_vars( left_i, below_j ) )
-                           / ( coord( left_i + 1, below_j ).first 
+                           / ( coord( left_i + 1, below_j ).first
                               - coord( left_i, below_j ).first );
         Vector<T> interpolated_vars = get_nodes_vars( left_i, below_j ) + dvarsdX * deltaX;
         for ( std::size_t var = 0; var < NV; ++var )
@@ -307,30 +307,30 @@ namespace TSL
             below_j = j;
           }
         }
-        Vector<T> dvarsdX = ( get_nodes_vars( left_i + 1, below_j ) 
+        Vector<T> dvarsdX = ( get_nodes_vars( left_i + 1, below_j )
                               - get_nodes_vars( left_i, below_j ) )
-                           / ( coord( left_i + 1, below_j ).first 
+                           / ( coord( left_i + 1, below_j ).first
                               - coord( left_i, below_j ).first );
-        Vector<T> dvarsdY = ( get_nodes_vars( left_i, below_j + 1 ) 
+        Vector<T> dvarsdY = ( get_nodes_vars( left_i, below_j + 1 )
                               - get_nodes_vars( left_i, below_j ) )
-                           / ( coord( left_i, below_j + 1 ).second 
+                           / ( coord( left_i, below_j + 1 ).second
                               - coord( left_i, below_j ).second );
 
         Vector<T> interpolated_vars_bottom =
-          ( get_nodes_vars( left_i, below_j ) * ( coord( left_i + 1, below_j ).first 
+          ( get_nodes_vars( left_i, below_j ) * ( coord( left_i + 1, below_j ).first
             - newX[ xnode ] ) + get_nodes_vars( left_i + 1, below_j ) * ( newX[ xnode ] -
-           coord( left_i, below_j ).first ) ) / ( coord( left_i + 1, below_j ).first 
+           coord( left_i, below_j ).first ) ) / ( coord( left_i + 1, below_j ).first
           - coord( left_i, below_j ).first );
 
         Vector<T> interpolated_vars_top =
-          ( get_nodes_vars( left_i, below_j + 1 ) * ( coord( left_i + 1, below_j 
-          + 1 ).first - newX[ xnode ] ) + get_nodes_vars( left_i + 1, below_j + 1 ) 
+          ( get_nodes_vars( left_i, below_j + 1 ) * ( coord( left_i + 1, below_j
+          + 1 ).first - newX[ xnode ] ) + get_nodes_vars( left_i + 1, below_j + 1 )
           * ( newX[ xnode ] - coord( left_i, below_j + 1 ).first ) ) /
           ( coord( left_i + 1, below_j + 1 ).first - coord( left_i, below_j + 1 ).first );
 
         Vector<T> interpolated_vars =
-          (  interpolated_vars_bottom * ( coord( left_i, below_j + 1 ).second 
-          - newY[ ynode ] ) +  interpolated_vars_top 
+          (  interpolated_vars_bottom * ( coord( left_i, below_j + 1 ).second
+          - newY[ ynode ] ) +  interpolated_vars_top
           * ( newY[ ynode ] - coord( left_i, below_j ).second ) ) /
           ( coord( left_i, below_j + 1 ).second - coord( left_i, below_j ).second );
 
@@ -349,7 +349,7 @@ namespace TSL
   }
 
   template<class T>
-  OneD_node_mesh<T> TwoD_node_mesh<T>::get_xsection_at_xnode( 
+  OneD_node_mesh<T> TwoD_node_mesh<T>::get_xsection_at_xnode(
                                                           const std::size_t nodex ) const
   {
     OneD_node_mesh<T> xsection( Y_NODES, NV );
@@ -361,7 +361,7 @@ namespace TSL
   }
 
   template<class T>
-  OneD_node_mesh<T> TwoD_node_mesh<T>::get_xsection_at_ynode( 
+  OneD_node_mesh<T> TwoD_node_mesh<T>::get_xsection_at_ynode(
                                                           const std::size_t nodey ) const
   {
     OneD_node_mesh<T> xsection( X_NODES, NV );
@@ -493,13 +493,13 @@ namespace TSL
         if ( reset != true )
         {
           // if not reseting the mesh we should check the node positions
-          if ( ( std::abs( x - X_NODES[ i ] ) > 1.e-6 ) || 
+          if ( ( std::abs( x - X_NODES[ i ] ) > 1.e-6 ) ||
                ( std::abs( y - Y_NODES[ j ] ) > 1.e-6 ) )
           {
-            std::cout << " Read x = " << x << " Expected x = " << X_NODES[ i ] 
+            std::cout << " Read x = " << x << " Expected x = " << X_NODES[ i ]
                       << "; Read y = " << y << " Expected y = " << Y_NODES[ j ] << " \n";
-            std::cout << " Absolute differences are " << abs( x - X_NODES[i] ) << " and " 
-                      << abs( y - Y_NODES[j] ) << "\n";              
+            std::cout << " Absolute differences are " << abs( x - X_NODES[i] ) << " and "
+                      << abs( y - Y_NODES[j] ) << "\n";
             std::string problem;
             problem = " The TwoD_node_mesh.read method is trying to read a \n";
             problem += " file whose nodal points are in a different position. \n";
@@ -515,12 +515,57 @@ namespace TSL
     }
   }
 
+  template<class T>
+  T TwoD_node_mesh<T>::integral2D( std::size_t var ) const
+  {
+    T sum( 0.0 );
+    double dx( 0.0 );
+    double dy( 0.0 );
+    // Sum over the elements
+    for ( std::size_t i=0; i < NX - 1; ++i )
+    {
+      dx = X_NODES[ i + 1 ] - X_NODES[ i ];
+      for ( std::size_t j=0; j < NY - 1; ++j )
+      {
+        dy = Y_NODES[ j + 1 ] - Y_NODES[ j ];
+        sum += 0.25 * dx * dy * ( VARS[ ( i * NY + j ) * NV + var ]
+            + VARS[ ( ( i + 1 ) * NY + j ) * NV + var ]
+            + VARS[ ( i * NY + j + 1 ) * NV + var ]
+            + VARS[ ( ( i + 1 ) * NY + j + 1 ) * NV + var ] );
+      }
+    }
+    return sum;
+  }
+
+  template<class T>
+  T TwoD_node_mesh<T>::square_integral2D( std::size_t var ) const
+  {
+    T sum( 0.0 );
+    double dx( 0.0 );
+    double dy( 0.0 );
+    // Sum over the elements
+    for ( std::size_t i=0; i < NX - 1; ++i )
+    {
+      dx = X_NODES[ i + 1 ] - X_NODES[ i ];
+      for ( std::size_t j=0; j < NY - 1; ++j )
+      {
+        dy = Y_NODES[ j + 1 ] - Y_NODES[ j ];
+        sum += 0.25 * dx * dy * (
+            std::pow( std::abs( VARS[ ( i * NY + j ) * NV + var ] ), 2 )
+          + std::pow( std::abs( VARS[ ( ( i + 1 ) * NY + j ) * NV + var ] ), 2 )
+          + std::pow( std::abs( VARS[ ( i * NY + j + 1 ) * NV + var ] ), 2 )
+          + std::pow( std::abs( VARS[ ( ( i + 1 ) * NY + j + 1 ) * NV + var ] ), 2 ) );
+      }
+    }
+    return sum;
+  }
+
 
   //the templated versions we require are:
   template class TwoD_node_mesh<double>
   ;
   template class TwoD_node_mesh< std::complex<double> >
   ;
-  
+
 
 } // End of namespace TSL

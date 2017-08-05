@@ -15,30 +15,31 @@ enum{ Phi, Psi, U, Theta };                                   // PDE
 // Either BASE_2D or BASE_3D for 2D or 3D base flows
 #define BASE_2D
 // Either UNIFORM or NONUNIFORM for uniform of non-uniform mesh
-#define NONUNIFORM
+#define UNIFORM
 
 namespace TSL
 {
     namespace Param
     {
-      double hzeta_right( 16.0 );        // Size of the domain in the zeta_hat direction
-      double eta_top( 128.0 );           // Size of the domain in the eta direction
-      const std::size_t N( 400 );       // Number of intervals in the zeta_hat direction
-      const std::size_t M( 400 );       // Number of intervals in the eta direction
+      double hzeta_right( 30.0 );        // Size of the domain in the zeta_hat direction
+      double eta_top( 30.0 );           // Size of the domain in the eta direction
+      const std::size_t N( 200 );       // Number of intervals in the zeta_hat direction
+      const std::size_t M( 200 );       // Number of intervals in the eta direction
       const std::size_t Nvar( 4 );      // Number of variables
       double beta( 0.0 );               // Hartree parameter
       double KB( 0.0 );                 // Base flow transpiration ( +ve = blowing )
       double zeta0( 1.0 );              // Ridge/transpiration width
       double zeta0_2 = zeta0 * zeta0;   // Square of the ridge/transpiration width
       double A( 0.0 );                  // Mass flux parameter
-      double K( 2.0 );                  // Transpiration parameter ( +ve = blowing )
+      double K( 1.0 );                  // Transpiration parameter ( +ve = blowing )
       double gamma( 20.0 );             // Steepness factor
       double x_step( 0.01 );            // Size of the downstream grid spacing
-      const std::size_t N_x( 2000 );    // Number of intervals in the downstream x direction
+      const std::size_t N_x( 3000 );    // Number of intervals in the downstream x direction
       //=> x_max = x_step * N_x
       double x_max( x_step * N_x );     // Maximum downstream location
       double x( 0.0 );                  // Current downstream x location
       double x_d( 5.0 );                // Downstream location of the injection
+      //TODO change the output description at the start + include more info
 
     } // End of namespace Param
 
@@ -54,16 +55,20 @@ namespace TSL
 
       double Phi_w( const double& hzeta, const double& x )
       {
-        double x_pow = pow( x, 2. * ( 1. - Param::beta ) / ( 2. - Param::beta ) );
+        /*double x_pow = pow( x, 2. * ( 1. - Param::beta ) / ( 2. - Param::beta ) );
         double e_x = exp( - ( x - Param::x_d ) * ( x - Param::x_d ) );
         double e_z = exp( - ( 2. - Param::beta ) * x_pow * Param::zeta0_2 * hzeta * hzeta );
-        return - Param::K * sqrt( ( 2. - Param::beta ) * x_pow ) * e_x * e_z;
+        return - Param::K * sqrt( ( 2. - Param::beta ) * x_pow ) * e_x * e_z;*/
+        return - Param::K * sqrt( 2 * x )
+              * exp( - 2 * x * Param::zeta0_2 * hzeta * hzeta )
+              * exp( - ( x - Param::x_d ) * ( x - Param::x_d ) );
       }
 
       double Phi_w_hzeta( const double& hzeta, const double& x )
       {
-        double x_pow = pow( x, 2. * ( 1. - Param::beta ) / ( 2. - Param::beta ) );
-        return - 2 * ( 2. - Param::beta ) * x_pow * Param::zeta0_2 * hzeta * Example::Phi_w( hzeta, x );
+        /*double x_pow = pow( x, 2. * ( 1. - Param::beta ) / ( 2. - Param::beta ) );
+        return - 2 * ( 2. - Param::beta ) * x_pow * Param::zeta0_2 * hzeta * Example::Phi_w( hzeta, x );*/
+        return - 4 * x * Param::zeta0_2 * hzeta * Example::Phi_w( hzeta, x );
       }
 
     } // End of namespace Example
@@ -115,31 +120,6 @@ namespace TSL
       {
         return a2 * (a2 - 1) * std::pow(zeta + a1, a2 - 2);
       }
-
-/*
-    const double g0( 2 );// bigger => more points around zeta_hat=1
-    const double B0( 4 ); // bigger => more points near zeta=0 and (less for large zeta)
-    //
-    double X( const double& zeta )
-    {
-        return B0 * zeta * 0.5 * ( 1+tanh( g0 * (1-zeta) ) )
-              + (zeta + 2 * B0 ) * 0.5 * ( 1+tanh( g0 * (zeta-1) ) );
-    }
-    double Xd( const double& zeta )
-    {
-        return 0.5 * B0 * ( tanh( g0 * (1-zeta) ) + 1 )
-             - 0.5 * B0 * g0 * zeta * std::pow( cosh( g0 * (1-zeta) ), -2 )
-             + 0.5 * ( tanh( g0 * (zeta-1) ) + 1 )
-             + 0.5 * g0 * (zeta + 2 * B0 ) * std::pow( cosh( g0 * (1-zeta) ), -2 );
-    }
-    double Xdd( const double& zeta )
-    {
-      return - B0 * g0 * std::pow( cosh( g0 * (1-zeta) ), -2 )
-             + g0 * std::pow( cosh( g0 * (zeta-1) ),-2)
-             - B0 * g0 * g0 * zeta * std::pow(cosh(g0*(1-zeta)),-2)*tanh(g0*(1 - zeta))
-             - g0 * g0 * (2*B0 + zeta)*std::pow(cosh(g0*(zeta-1)),-2)*tanh(g0*(zeta-1));
-    }
-*/
 
       const double b1( 0.3 );
       const double b2( 0.3 );   // Y = (eta + b1)^b2
@@ -289,7 +269,7 @@ using namespace TSL;
 
 int main()
 {
-  cout << "*** ---------- Blowing with pressure gradient ---------- ***" << endl;
+  cout << "*** ---------- Blowing downstream marching ---------- ***" << endl;
   cout << "  * We are solving using a " << Param::N + 1 << " x " << Param::M + 1
        << " mesh with zeta_hat_inf = " << Param::hzeta_right << " and eta_inf = "
        << Param::eta_top << "." << endl;
@@ -511,8 +491,10 @@ int main()
   metric.push_ptr( &Param::x, "x" );
   double U_eta( 0.0 );
   double eta_half( 0.0 );
+  double integral_U2( 0.0 );
   metric.push_ptr( &U_eta, "U_eta(0,0)");
   metric.push_ptr( &eta_half, "eta at which U=1/2 on zeta=0" );
+  metric.push_ptr( &integral_U2, "integral U^2 over the cross-section" );
   metric.header();
 
   // Vector for the RHS of the matrix problem
@@ -524,9 +506,6 @@ int main()
   double max_residual( 0.0 );                           // Maximum residual
   std::size_t max_iterations( 20 );                     // Maximum number of iterations
   std::size_t iteration( 0 );                           // Initialise iteration counter
-
-  // Set current guess equal to the solution at the previous step
-  Q = Q_old; //TODO do we need to do this or will Q already = Q_old after iteration
 
   do
   {
@@ -548,7 +527,7 @@ int main()
           double Xd( Mesh::Xd(hzeta) );
           double eta( eta_nodes[ j ] );
           Vector<double> Base( Base_soln.get_interpolated_vars( eta ) );
-
+          /*
           // Phi_hzeta = 0
           A( row, col( i, j, Phi ) )      = -3.*Xd/(2*dX);
           A( row, col( i + 1, j, Phi ) )  =  4.*Xd/(2*dX);
@@ -572,15 +551,43 @@ int main()
           A( row, col( i + 2, j, U ) )    = -1.*Xd/(2*dX);
 
           B[ row ]                        = -( Xd*( -3*Q(i,j,U) + 4*Q(i+1,j,U)
-                                            -Q(i+2,j,U) )/(2*dX) )
+                                            -Q(i+2,j,U) ) / (2*dX) )
                                             -( Xd*( -3*Q_old(i,j,U) + 4*Q_old(i+1,j,U)
-                                            -Q_old(i+2,j,U) )/(2*dX) );
+                                            -Q_old(i+2,j,U) ) / (2*dX) );
           ++row;
 
           // Theta = 0
           A( row, col( i, j, Theta ) )    =   1;
           B[ row ]                        = - Q( i, j, Theta )
                                             - Q_old( i, j, Theta );
+          ++row;*/
+
+          // Phi_hzeta = 0
+          A( row, col( i, j, Phi ) )      = -3.*Xd/(2*dX);
+          A( row, col( i + 1, j, Phi ) )  =  4.*Xd/(2*dX);
+          A( row, col( i + 2, j, Phi ) )  = -1.*Xd/(2*dX);
+
+          B[ row ]                        = -( Xd*( -3*Q(i,j,Phi) + 4*Q(i+1,j,Phi)
+                                            -Q(i+2,j,Phi) )/(2*dX) );
+          ++row;
+
+          // Psi = 0
+          A( row, col( i, j, Psi ) )      =   1;
+          B[ row ]                        = - ( Q( i, j, Psi ) );
+          ++row;
+
+          // U_hzeta = 0
+          A( row, col( i, j, U ) )        = -3.*Xd/(2*dX);
+          A( row, col( i + 1, j, U ) )    =  4.*Xd/(2*dX);
+          A( row, col( i + 2, j, U ) )    = -1.*Xd/(2*dX);
+
+          B[ row ]                        = -( Xd*( -3*Q(i,j,U) + 4*Q(i+1,j,U)
+                                             -Q(i+2,j,U) )/(2*dX) );
+          ++row;
+
+          // Theta = 0
+          A( row, col( i, j, Theta ) )    =   1;
+          B[ row ]                        = - Q( i, j, Theta );
           ++row;
 
       } // end for loop over LHS eta nodes
@@ -592,17 +599,20 @@ int main()
       double hzeta( hzeta_nodes[ i ] );
       double Xd( Mesh::Xd( hzeta ) );
       double Xdd( Mesh::Xdd( hzeta ) );
-      // Wall transpiration TODO -> add in x variation
-      double Phi_w( Example::Phi_w( hzeta, Param::x + Param::x_step ) );
+      // Wall transpiration
+      /*double Phi_w( Example::Phi_w( hzeta, Param::x + Param::x_step ) );
       double Phi_w_hzeta( Example::Phi_w_hzeta( hzeta, Param::x + Param::x_step ) );
       double Phi_w_old( Example::Phi_w( hzeta, Param::x ) );
-      double Phi_w_old_hzeta( Example::Phi_w_hzeta( hzeta, Param::x ) );
+      double Phi_w_old_hzeta( Example::Phi_w_hzeta( hzeta, Param::x ) );*/
+      double Phi_w( Example::Phi_w( hzeta, Param::x ) );
+      double Phi_w_hzeta( Example::Phi_w_hzeta( hzeta, Param::x ) );
 
       /* eta = 0 boundary ( bottom boundary ) */
       std::size_t j( 0 );
       double eta( eta_nodes[ j ] );
       double Yd( Mesh::Yd(eta) );
 
+      /*
       // Phi = Phi_w
       A( row, col( i, j, Phi ) )        =   1;
       B[ row ]                          = - Q( i, j, Phi ) - Q_old( i, j, Phi )
@@ -629,6 +639,29 @@ int main()
                         / ( 2 * dY )
                         - ( 1. / ( Param::zeta0_2 ) ) * Phi_w_hzeta
                         - ( 1. / ( Param::zeta0_2 ) ) * Phi_w_old_hzeta;
+      ++row;*/
+
+      // Phi = Phi_w
+      A( row, col( i, j, Phi ) )        =  1.;
+      B[ row ]                          = -Q( i, j, Phi ) + Phi_w;
+      ++row;
+      // Psi = 0
+      A( row, col( i, j, Psi ) )        =  1.;
+      B[ row ]                          = -Q( i, j, Psi );
+      ++row;
+      // U = 0
+      A( row, col( i, j, U ) )          =  1.;
+      B[ row ]                          = -Q( i, j, U );
+      ++row;
+      // Theta - Psi_eta = -( 1 / ( zeta0^2 ) ) * Phi_w_hzeta
+      A( row, col( i, j, Theta ) )      =  1.;
+      A( row, col( i, j, Psi ) )        =  3.*Yd / ( 2 * dY );
+      A( row, col( i, j + 1, Psi ) )    = -4.*Yd / ( 2 * dY );
+      A( row, col( i, j + 2, Psi ) )    =  1.*Yd / ( 2 * dY );
+      B[ row ]                          = -Q(i,j,Theta) + Yd*( -3*Q(i,j,Psi)
+                                          + 4*Q(i,j+1,Psi) - Q(i,j+2,Psi) ) / (2*dY)
+                                          - ( 1. / ( Param::zeta0_2 ) )
+                                          * Phi_w_hzeta;
       ++row;
 
 
@@ -739,6 +772,7 @@ int main()
                                               * Yd / ( 2 * dY * Param::zeta0_2 );
         A( row, col( i - 1, j, U ) )       +=   ( 4 * Param::x / Param::x_step )
                                               * Yd / ( 2 * dY * Param::zeta0_2 );
+
         // Residual
         B[ row ]      = - Guess_laplace[ Psi ] + ( 2. - Param::beta )
                         * ( Guess_hzeta[ U ] ) / ( Param::zeta0_2 )
@@ -746,8 +780,8 @@ int main()
                         - Old_laplace[ Psi ] + ( 2. - Param::beta )
                         * ( Old_hzeta[ U ] ) / ( Param::zeta0_2 )
                         + Old_eta[ Theta ]
-                        + ( 4 * Param::x / ( Param::x_step * Param::zeta0_2 ) )
-                        * ( Guess_hzeta[ U ] - Old_hzeta[ U ] );
+                        + ( 4 * Param::x / Param::x_step ) * ( Guess_hzeta[ U ]
+                        - Old_hzeta[ U ] ) / Param::zeta0_2;
         ++row;
 
         ////////////////
@@ -783,9 +817,6 @@ int main()
         // 0.5 * ( Uold_hzeta + UG_hzeta ) * Psi
         A( row, col( i, j, Psi ) )          =   0.5 * ( Old_hzeta[ U ]
                                               + Guess_hzeta[ U ] );
-
-
-
         // 0.5 * ( Uold_eta + UG_eta + 2 * UB' ) * Phi
         A( row, col( i, j, Phi ) )          =   0.5 * ( Old_eta[ U ]
                                               + Guess_eta[ U ] + 2 * Base[ UBd ] );
@@ -876,8 +907,6 @@ int main()
                                                  * ( 2 * hzeta * Base[ Theta ]
                                                  + Old[ Theta ]+ Guess[ Theta ] );
 
-        //TODO add in terms involving x here
-
         // -(2x/dx) * ( 2 * UBd + Uold_eta + UG_eta ) * Psi
         A( row, col( i, j, Psi ) )          += - ( 2 * Param::x / Param::x_step )
                                                  * ( 2 * Base[ UBd ]
@@ -885,10 +914,10 @@ int main()
                                                  + Guess_eta[ U ] );
         // -(2x/dx) * ( PsiG - Psiold ) * U_eta
         A( row, col( i, j + 1, U ) )        += - ( 2 * Param::x / Param::x_step )
-                                                 * ( Guess[ Psi ] + Old[ Psi ] )
+                                                 * ( Guess[ Psi ] - Old[ Psi ] )
                                                  * Yd / ( 2 * dY );
         A( row, col( i, j - 1, U ) )        +=   ( 2 * Param::x / Param::x_step )
-                                                 * ( Guess[ Psi ] + Old[ Psi ] )
+                                                 * ( Guess[ Psi ] - Old[ Psi ] )
                                                  * Yd / ( 2 * dY );
         // ( (2x/dx) * ( Uold_hzeta + UG_hzeta ) / zeta0^2 ) * Phi
         A( row, col( i, j, Phi ) )          +=   ( 2 * Param::x / Param::x_step )
@@ -953,7 +982,6 @@ int main()
                         * ( Old[ U ] + Guess[ U ] ) );
         ++row;
 
-
       }
 
       /* eta = eta_inf boundary ( top boundary ) */
@@ -961,6 +989,7 @@ int main()
         eta = eta_nodes[ j ];
         Yd = Mesh::Yd( eta );
 
+        /*
         // Phi_eta*( eta^2 + zeta_0^2*hzeta^2) + [ 2*eta - (eta^2 + zeta_0^2*hzeta^2)/eta ]*Phi = 0
         A( row, col( i, j, Phi ) )        =   3.0 * Yd * ( eta * eta
                                             + Param::zeta0_2 * hzeta * hzeta) / (2*dY);
@@ -1011,6 +1040,48 @@ int main()
         A( row, col( i, j, Theta ) )        =   1;
         B[ row ]                            = - Q( i, j, Theta )
                                               - Q_old( i, j, Theta );
+        ++row;*/
+
+        // Phi_eta*( eta^2 + zeta_0^2*hzeta^2) + [ 2*eta - (eta^2 + zeta_0^2*hzeta^2)/eta ]*Phi = 0
+        A( row, col( i, j, Phi ) )        =   3.0 * Yd * ( eta * eta
+                                            + Param::zeta0_2 * hzeta * hzeta) / (2*dY);
+        A( row, col( i, j - 1, Phi ) )    = - 4.0 * Yd * ( eta * eta
+                                            + Param::zeta0_2 * hzeta * hzeta) / (2*dY);
+        A( row, col( i, j - 2, Phi ) )    =   1.0 * Yd * ( eta * eta
+                                            + Param::zeta0_2 * hzeta * hzeta) / (2*dY);
+        A( row, col( i, j, Phi ) )       +=   2.0 * eta - ((eta * eta
+                                            + Param::zeta0_2 * hzeta * hzeta) / eta );
+
+        B[ row ]                          = - ( 3 * Q( i, j, Phi ) - 4 * Q( i, j-1, Phi )
+                                            + Q( i, j-2, Phi ) ) * Yd * (eta * eta
+                                            + Param::zeta0_2 * hzeta * hzeta) / ( 2 * dY )
+                                            + (((eta * eta + Param::zeta0_2 * hzeta * hzeta) / eta )
+                                            - 2.0 * eta) * Q( i, j, Phi );
+        ++row;
+
+        // Psi_eta*( eta^2 + zeta_0^2*hzeta^2) + 2 * eta * Psi = 0
+        A( row, col( i, j, Psi ) )        =   3.0 * Yd * ( eta * eta
+                                            + Param::zeta0_2 * hzeta * hzeta) / (2*dY);
+        A( row, col( i, j - 1, Psi ) )    = - 4.0 * Yd * ( eta * eta
+                                            + Param::zeta0_2 * hzeta * hzeta) / (2*dY);
+        A( row, col( i, j - 2, Psi ) )    =   1.0 * Yd * ( eta * eta
+                                            + Param::zeta0_2 * hzeta * hzeta) / (2*dY);
+        A( row, col( i, j, Psi ) )       +=   2 * eta;
+
+        B[ row ]                          =  - (( 3 * Q( i, j, Psi ) - 4 * Q( i, j-1, Psi )
+                                             + Q( i, j-2, Psi ) ) * Yd * (eta * eta
+                                             + Param::zeta0_2 * hzeta * hzeta) / ( 2 * dY ))
+                                             - 2 * eta * Q( i, j, Psi );
+        ++row;
+
+        // U = 0
+        A( row, col( i, j, U ) )            =   1;
+        B[ row ]                            = - ( Q( i, j, U ) );
+        ++row;
+
+        // Theta = 0
+        A( row, col( i, j, Theta ) )        =   1;
+        B[ row ]                            = - ( Q( i, j, Theta ) );
         ++row;
 
     } // End of for loop over interior nodes
@@ -1027,7 +1098,7 @@ int main()
 
 
       Vector<double> Base( base.solution().get_interpolated_vars( eta ) );
-
+      /*
       // (eta^2 + zeta_0^2 * hzeta^2) * Phi_hzeta + 2 * zeta_0^2 * hzeta * Phi = 0
       A( row, col( i, j, Phi ) )          =   (eta*eta + Param::zeta0_2*hzeta*hzeta) * 3. * Xd
                                             / ( 2 * dX );
@@ -1087,6 +1158,57 @@ int main()
                         + Q( i - 2, j, Theta ) ) * Xd / ( 2 * dX ) - Q( i, j, Theta )
                         - hzeta * ( 3 * Q_old( i, j, Theta ) - 4 * Q_old( i - 1, j, Theta )
                         + Q_old( i - 2, j, Theta ) ) * Xd / ( 2 * dX ) - Q_old( i, j, Theta );
+      ++row;*/
+
+      // (eta^2 + zeta_0^2 * hzeta^2) * Phi_hzeta + 2 * zeta_0^2 * hzeta * Phi = 0
+      A( row, col( i, j, Phi ) )          =   (eta*eta + Param::zeta0_2*hzeta*hzeta) * 3. * Xd
+                                            / ( 2 * dX );
+      A( row, col( i - 1, j, Phi ) )      = - (eta*eta + Param::zeta0_2*hzeta*hzeta) * 4. * Xd
+                                            / ( 2 * dX );
+      A( row, col( i - 2, j, Phi ) )      =   (eta*eta + Param::zeta0_2*hzeta*hzeta) * 1. * Xd
+                                            / ( 2 * dX );
+      A( row, col( i, j, Phi ) )         +=   2 * Param::zeta0_2 * hzeta;
+
+      B[ row ]        = - (eta*eta + Param::zeta0_2*hzeta*hzeta) * ( 3 * Q( i, j, Phi)
+                        - 4 * Q( i - 1, j, Phi) + Q( i - 2, j, Phi) ) * Xd / ( 2 * dX )
+                        - 2 * Param::zeta0_2 * hzeta * Q( i, j, Phi );
+      ++row;
+
+      // (eta^2 + zeta_0^2 * hzeta^2)*Psi_hzeta + (2*zeta_0^2*hzeta-(eta^2 + zeta_0^2*hzeta^2)/hzeta)*Psi = 0
+      A( row, col( i, j, Psi ) )          =   (eta*eta + Param::zeta0_2*hzeta*hzeta) * 3. * Xd
+                                            / ( 2 * dX );
+      A( row, col( i - 1, j, Psi ) )      = - (eta*eta + Param::zeta0_2*hzeta*hzeta) * 4. * Xd
+                                            / ( 2 * dX );
+      A( row, col( i - 2, j, Psi ) )      =   (eta*eta + Param::zeta0_2*hzeta*hzeta) * 1. * Xd
+                                            / ( 2 * dX );
+      A( row, col( i, j, Psi ) )         +=   2 * Param::zeta0_2 * hzeta
+                                            - ((eta*eta + Param::zeta0_2*hzeta*hzeta) / hzeta);
+
+
+      B[ row ]        = - ((eta*eta + Param::zeta0_2*hzeta*hzeta) * ( 3 * Q( i, j, Psi )
+                        - 4 * Q( i - 1, j, Psi ) + Q( i - 2, j, Psi) ) * Xd / ( 2 * dX ))
+                        - 2 * Param::zeta0_2 * hzeta  * Q( i, j, Psi)
+                        + ((eta*eta + Param::zeta0_2*hzeta*hzeta) / hzeta)  * Q( i, j, Psi);
+      ++row;
+
+      // hzeta * U_hzeta + 2 * U = 0
+      A( row, col( i, j, U ) )            =   hzeta * 3. * Xd / ( 2 * dX ) + 2.;
+      A( row, col( i - 1, j, U ) )        = - hzeta * 4. * Xd / ( 2 * dX );
+      A( row, col( i - 2, j, U ) )        =   hzeta * 1. * Xd / ( 2 * dX );
+
+      B[ row  ]       = - hzeta * ( 3 * Q( i, j, U ) - 4 * Q( i - 1, j, U )
+                        + Q( i - 2, j, U) ) * Xd / ( 2 * dX ) - 2 * Q( i, j, U );
+
+      ++row;
+
+      // hzeta * Theta_hzeta + Theta = 0
+      A( row, col( i, j, Theta )  )       =   hzeta * 3. * Xd / ( 2 * dX ) + 1.;
+      A( row, col( i - 1, j, Theta ) )    = - hzeta * 4. * Xd / ( 2 * dX );
+      A( row, col( i - 2, j, Theta ) )    =   hzeta * 1. * Xd / ( 2 * dX );
+
+      B[ row ]        = - hzeta * ( 3 * Q( i, j, Theta ) - 4 * Q( i - 1, j, Theta )
+                        + Q( i - 2, j, Theta ) ) * Xd / ( 2 * dX ) - Q( i, j, Theta ) ;
+
       ++row;
 
     }
@@ -1122,6 +1244,7 @@ int main()
   if ( iteration >= max_iterations )
   {
     cout << "STOPPED AFTER TOO MANY ITERATIONS" << endl;
+    //TODO need to make it so it actually stops!!! break?
   }
 
   /* push the data back into the unmapped domain */
@@ -1168,6 +1291,10 @@ int main()
               / ( Q_output(0,upper,U+4) - Q_output(0,lower,U+4)  ) + eta_nodes[lower];
 
     Param::A = Q_output( 0, Param::M, Phi ) * Param::eta_top;
+
+    // Integral of U^2 over the cross-section
+    integral_U2 = Q_output.square_integral2D( U );
+
     metric.update();
 
     // Get the wall shear values as a function of hzeta

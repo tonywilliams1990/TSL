@@ -18,11 +18,11 @@
 
 namespace TSL
 {
-  
+
 
 	/// A templated class
 	template <class T>
-	
+
 	class TwoD_node_mesh
 	{
 
@@ -43,47 +43,47 @@ namespace TSL
                       const std::size_t& nvars ) :
           NX( x_nodes.size() ),
           NY( y_nodes.size() ),
-          NV( nvars ), 
-          X_NODES( x_nodes ), 
-          Y_NODES( y_nodes )     
+          NV( nvars ),
+          X_NODES( x_nodes ),
+          Y_NODES( y_nodes )
       {
         // set the contents to zero
         VARS = Vector<T>( NV * NX * NY, T(0.0) );
-      } 
+      }
 
       //TODO constructor from a file
-    
+
       /// Destructor
       virtual ~TwoD_node_mesh() {}
 
       /* ----- Operator overloading ----- */
-    
+
       /// Access operator for a nodal point/variable in the mesh
-      T& operator()( const std::size_t nodex, const std::size_t nodey, 
+      T& operator()( const std::size_t nodex, const std::size_t nodey,
                      const std::size_t var );
 
       /// Const access operator for a nodal point/variable in the mesh
-      const T& operator()( const std::size_t nodex, const std::size_t nodey, 
+      const T& operator()( const std::size_t nodex, const std::size_t nodey,
                            const std::size_t var ) const;
 
       /* ----- Methods ----- */
 
-      /// Return the spatial position of a given given node as a pair  
-      std::pair<double, double> coord( const std::size_t nodex, 
+      /// Return the spatial position of a given given node as a pair
+      std::pair<double, double> coord( const std::size_t nodex,
                                        const std::size_t nodey ) const;
 
       /// Set the variables stored at a specified node
-      void set_nodes_vars( const std::size_t nodex, const std::size_t nodey, 
+      void set_nodes_vars( const std::size_t nodex, const std::size_t nodey,
                            const Vector<T>& U );
 
       /// Get the variables stored at a specified node
       Vector<T> get_nodes_vars( const std::size_t nodex, const std::size_t nodey ) const;
-           
+
       /// Get a cross section of the 2D mesh at a specified (constant) x node
       OneD_node_mesh<T> get_xsection_at_xnode( const std::size_t nodex ) const;
 
       /// Get a cross section of the 2D mesh at a specified (constant) y node
-      OneD_node_mesh<T> get_xsection_at_ynode( const std::size_t nodey ) const; 
+      OneD_node_mesh<T> get_xsection_at_ynode( const std::size_t nodey ) const;
 
       /// Assign an element to all entries in the mesh
       void assign( const T elt );
@@ -113,11 +113,11 @@ namespace TSL
 
       /// A simple method for dumping data to a file
       void dump( std::string filename ) const;
-      
+
       /// A simple method for dumping a single variable to a file with no nodal information
       void dump_var( std::string filename, const std::size_t var ) const;
 
-      /// A simple method for reading data from a file 
+      /// A simple method for reading data from a file
       void read( std::string filename, const bool reset = false );
 
       /// A simple method for dumping data to a file for gnuplot surface plotting
@@ -165,22 +165,26 @@ namespace TSL
         //
         OneD_node_mesh<T> bottom_row = get_xsection_at_ynode( bottom_j );
         OneD_node_mesh<T> top_row = get_xsection_at_ynode( bottom_j+1 );
-        const double y1 = Y_NODES[ bottom_j ]; 
+        const double y1 = Y_NODES[ bottom_j ];
         const double y2 = Y_NODES[ bottom_j+1 ];
         Vector<T> result = top_row.get_interpolated_vars(x)*( y2-y )/( y2-y1 )
           + bottom_row.get_interpolated_vars(x)*( y-y1 )/( y2-y1 );
-        std::cout << "x,y,interp: " << x << " " << y << " " << result[0] << "\n"; 
-        return result; 
-      }
+        std::cout << "x,y,interp: " << x << " " << y << " " << result[0] << "\n";
+        return result;
+        }
 
+        /// Integrate a given variable over the domain
+        T integral2D( std::size_t var=0 ) const;
 
+        /// Integrate the square of the absolute value over the domain
+        T square_integral2D( std::size_t var=0 ) const;
 
 
 
 	}; // End of class TwoD_node_mesh
 
   template <class T>
-  inline T& TwoD_node_mesh<T>::operator()( const std::size_t nodex, 
+  inline T& TwoD_node_mesh<T>::operator()( const std::size_t nodex,
                                            const std::size_t nodey, const std::size_t var )
   {
     if ( nodex > NX - 1 || nodey > NY - 1 )
@@ -202,7 +206,7 @@ namespace TSL
   }
 
   template <class T>
-  inline const T& TwoD_node_mesh<T>::operator()( const std::size_t nodex, 
+  inline const T& TwoD_node_mesh<T>::operator()( const std::size_t nodex,
                                   const std::size_t nodey, const std::size_t var ) const
   {
     if ( nodex > NX - 1 || nodey > NY - 1 )
@@ -223,7 +227,7 @@ namespace TSL
   }
 
   template <class T>
-  inline std::pair<double, double> TwoD_node_mesh<T>::coord( const std::size_t nodex, 
+  inline std::pair<double, double> TwoD_node_mesh<T>::coord( const std::size_t nodex,
                                                         const std::size_t nodey ) const
   {
     if ( nodex > NX - 1 || nodey > NY - 1 )
