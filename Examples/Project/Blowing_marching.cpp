@@ -15,7 +15,7 @@ enum{ Phi, Psi, U, Theta };                                   // PDE
 // Either BASE_2D or BASE_3D for 2D or 3D base flows
 #define BASE_2D
 // Either UNIFORM or NONUNIFORM for uniform of non-uniform mesh
-#define UNIFORM
+#define NONUNIFORM
 
 namespace TSL
 {
@@ -34,7 +34,7 @@ namespace TSL
       double K( 1.0 );                  // Transpiration parameter ( +ve = blowing )
       double gamma( 20.0 );             // Steepness factor
       double x_step( 0.01 );            // Size of the downstream grid spacing
-      const std::size_t N_x( 3000 );    // Number of intervals in the downstream x direction
+      const std::size_t N_x( 2000 );    // Number of intervals in the downstream x direction
       //=> x_max = x_step * N_x
       double x_max( x_step * N_x );     // Maximum downstream location
       double x( 0.0 );                  // Current downstream x location
@@ -106,9 +106,10 @@ namespace TSL
 #ifdef NONUNIFORM
 
       const double a1( 0.1 );
-      const double a2( 0.5 );   // X = (zeta + a1)^a2
+      const double a2( 1.0 );
 
-      double X( const double& zeta )
+      // X = (zeta + a1)^a2
+      /*double X( const double& zeta )
       {
         return std::pow(zeta + a1, a2);
       }
@@ -119,12 +120,27 @@ namespace TSL
       double Xdd( const double& zeta )
       {
         return a2 * (a2 - 1) * std::pow(zeta + a1, a2 - 2);
+      }*/
+
+      // X = a1 + zeta - a1 * exp( -zeta / a2 )
+      double X( const double& zeta )
+      {
+        return a1 + zeta - a1 * std::exp( - zeta / a2 );
+      }
+      double Xd( const double& zeta )
+      {
+        return 1 + ( a1 / a2 ) * std::exp( - zeta / a2 );
+      }
+      double Xdd( const double& zeta )
+      {
+        return - ( a1 / ( a2 * a2 ) ) * std::exp( - zeta / a2 );
       }
 
-      const double b1( 0.3 );
-      const double b2( 0.3 );   // Y = (eta + b1)^b2
+      const double b1( 0.1 );
+      const double b2( 1.0 );
 
-      double Y( const double& eta )
+      // Y = (eta + b1)^b2
+      /*double Y( const double& eta )
       {
         return std::pow(eta + b1, b2) - pow(b1,b2);
       }
@@ -135,7 +151,22 @@ namespace TSL
       double Ydd( const double& eta )
       {
         return b2 * (b2 - 1) * std::pow(eta + b1, b2 - 2);
+      }*/
+
+      // Y = b1 + zeta - b1 * exp( -zeta / b2 )
+      double Y( const double& eta )
+      {
+        return b1 + eta - b1 * std::exp( - eta / b2 );
       }
+      double Yd( const double& eta )
+      {
+        return 1 + ( b1 / b2 ) * std::exp( - eta / b2 );
+      }
+      double Ydd( const double& eta )
+      {
+        return - ( b1 / ( b2 * b2 ) ) * std::exp( - eta / b2 );
+      }
+
 #endif
 
       class invert_eta : public Residual<double>
