@@ -35,7 +35,7 @@ namespace TSL
       double A( 0.0 );                  // Mass flux parameter
       double K( 0.0 );                  // Transpiration parameter ( +ve = blowing )
       double gamma( 20.0 );             // Steepness factor
-      const std::size_t N_transp( 1 );  // Number of blowing and sucking regions (1 = standard blowing)
+      const std::size_t N_transp( 2 );  // Number of blowing and sucking regions (1 = standard blowing)
 
     } // End of namespace Param
 

@@ -105,22 +105,8 @@ namespace TSL
 #endif
 #ifdef NONUNIFORM
 
-      const double a1( 0.1 );
-      const double a2( 1.0 );
-
-      // X = (zeta + a1)^a2
-      /*double X( const double& zeta )
-      {
-        return std::pow(zeta + a1, a2);
-      }
-      double Xd( const double& zeta )
-      {
-        return a2 * std::pow(zeta + a1, a2 - 1);
-      }
-      double Xdd( const double& zeta )
-      {
-        return a2 * (a2 - 1) * std::pow(zeta + a1, a2 - 2);
-      }*/
+      const double a1( 10.0 );
+      const double a2( 4.0 );
 
       // X = a1 + zeta - a1 * exp( -zeta / a2 )
       double X( const double& zeta )
@@ -136,22 +122,8 @@ namespace TSL
         return - ( a1 / ( a2 * a2 ) ) * std::exp( - zeta / a2 );
       }
 
-      const double b1( 0.1 );
-      const double b2( 1.0 );
-
-      // Y = (eta + b1)^b2
-      /*double Y( const double& eta )
-      {
-        return std::pow(eta + b1, b2) - pow(b1,b2);
-      }
-      double Yd( const double& eta )
-      {
-        return b2 * std::pow(eta + b1, b2 - 1);
-      }
-      double Ydd( const double& eta )
-      {
-        return b2 * (b2 - 1) * std::pow(eta + b1, b2 - 2);
-      }*/
+      const double b1( 10.0 );
+      const double b2( 4.0 );
 
       // Y = b1 + zeta - b1 * exp( -zeta / b2 )
       double Y( const double& eta )
@@ -708,7 +680,7 @@ int main()
 
         // Laplacian coefficients for finite-differencing
         // X(i,j-1)
-        double laplace_1 =  ( Yd*Yd/(dY*dY) - Ydd/ (2.*dY) ) ;
+        double laplace_1 =  Yd*Yd/(dY*dY) - Ydd/(2.*dY);
         // X(i-1,j)
         double laplace_3 = ( Xd*Xd/(dX*dX) - Xdd/(2.*dX) ) / ( Param::zeta0_2 );
         // X(i,j)
@@ -717,7 +689,7 @@ int main()
         // X(i+1,j)
         double laplace_5 = ( Xdd/(2.*dX) + Xd*Xd/(dX*dX) ) / ( Param::zeta0_2 );
         // X(i,j+1)
-        double laplace_7 = ( Yd*Yd/(dY*dY) + Ydd/ (2.*dY) );
+        double laplace_7 =  Yd*Yd/(dY*dY) + Ydd/(2.*dY);
 
         // Guessed/known components and various derivative values
         Vector<double> Guess( Q.get_nodes_vars( i, j ) );
@@ -800,9 +772,9 @@ int main()
         A( row, col( i, j - 1, Theta ) )    =   Yd / ( 2 * dY );
         // -(4x/dx) * U_hzeta / zeta0^2
         A( row, col( i + 1, j, U ) )       += - ( 4 * Param::x / Param::x_step )
-                                              * Yd / ( 2 * dY * Param::zeta0_2 );
+                                              * Xd / ( 2 * dX * Param::zeta0_2 );
         A( row, col( i - 1, j, U ) )       +=   ( 4 * Param::x / Param::x_step )
-                                              * Yd / ( 2 * dY * Param::zeta0_2 );
+                                              * Xd / ( 2 * dX * Param::zeta0_2 );
 
         // Residual
         B[ row ]      = - Guess_laplace[ Psi ] + ( 2. - Param::beta )
