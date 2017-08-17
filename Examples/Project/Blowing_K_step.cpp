@@ -135,7 +135,7 @@ namespace TSL
       }
 #endif
 #ifdef NONUNIFORM
-
+/*
       const double a1( 0.1 );
       const double a2( 0.5 );   // X = (zeta + a1)^a2
 
@@ -150,6 +150,23 @@ namespace TSL
       double Xdd( const double& zeta )
       {
         return a2 * (a2 - 1) * std::pow(zeta + a1, a2 - 2);
+      }
+*/
+      const double a1( 10.0 );
+      const double a2( 4.0 );
+
+      // X = a1 + zeta - a1 * exp( -zeta / a2 )
+      double X( const double& zeta )
+      {
+        return a1 + zeta - a1 * std::exp( - zeta / a2 );
+      }
+      double Xd( const double& zeta )
+      {
+        return 1 + ( a1 / a2 ) * std::exp( - zeta / a2 );
+      }
+      double Xdd( const double& zeta )
+      {
+        return - ( a1 / ( a2 * a2 ) ) * std::exp( - zeta / a2 );
       }
 
 /*
@@ -176,7 +193,7 @@ namespace TSL
              - g0 * g0 * (2*B0 + zeta)*std::pow(cosh(g0*(zeta-1)),-2)*tanh(g0*(zeta-1));
     }
 */
-
+/*
       const double b1( 0.3 );
       const double b2( 0.3 );   // Y = (eta + b1)^b2
 
@@ -192,6 +209,24 @@ namespace TSL
       {
         return b2 * (b2 - 1) * std::pow(eta + b1, b2 - 2);
       }
+*/
+      const double b1( 10.0 );
+      const double b2( 4.0 );
+
+      // Y = b1 + zeta - b1 * exp( -zeta / b2 )
+      double Y( const double& eta )
+      {
+        return b1 + eta - b1 * std::exp( - eta / b2 );
+      }
+      double Yd( const double& eta )
+      {
+        return 1 + ( b1 / b2 ) * std::exp( - eta / b2 );
+      }
+      double Ydd( const double& eta )
+      {
+        return - ( b1 / ( b2 * b2 ) ) * std::exp( - eta / b2 );
+      }
+
 #endif
 
       class invert_eta : public Residual<double>
@@ -400,7 +435,8 @@ int main()
   std::ostringstream ss;
   //ss << "./DATA/K_" << Param::K << "_" << "beta_" << Param::beta << "_" << Param::N + 1
      //<< "x" << Param::M + 1 << "_" << Param::hzeta_right << "_" << Param::eta_top << "/";
-  ss << "./DATA/K_Step_beta_" << Param::beta << "_zeta0_" << Param::zeta0 << "/";
+  ss << "./DATA/K_Step_beta_" << Param::beta << "_zeta0_" << Param::zeta0
+     << "_N_" << Param::N_transp << "/";
   Example::output_path = ss.str();
   int status = mkdir( Example::output_path.c_str(), S_IRWXU );
   if ( status == 0 ) {

@@ -59,16 +59,19 @@ namespace TSL
         double e_x = exp( - ( x - Param::x_d ) * ( x - Param::x_d ) );
         double e_z = exp( - ( 2. - Param::beta ) * x_pow * Param::zeta0_2 * hzeta * hzeta );
         return - Param::K * sqrt( ( 2. - Param::beta ) * x_pow ) * e_x * e_z;*/
-        return - Param::K * sqrt( 2 * x )
+        /*return - Param::K * sqrt( 2 * x )
               * exp( - 2 * x * Param::zeta0_2 * hzeta * hzeta )
-              * exp( - ( x - Param::x_d ) * ( x - Param::x_d ) );
+              * exp( - ( x - Param::x_d ) * ( x - Param::x_d ) );*/
+        return - Param::K * ( 1.0 - exp( - x * x ) )
+                          * exp( - Param::zeta0_2 * hzeta * hzeta );
       }
 
       double Phi_w_hzeta( const double& hzeta, const double& x )
       {
         /*double x_pow = pow( x, 2. * ( 1. - Param::beta ) / ( 2. - Param::beta ) );
         return - 2 * ( 2. - Param::beta ) * x_pow * Param::zeta0_2 * hzeta * Example::Phi_w( hzeta, x );*/
-        return - 4 * x * Param::zeta0_2 * hzeta * Example::Phi_w( hzeta, x );
+        /*return - 4 * x * Param::zeta0_2 * hzeta * Example::Phi_w( hzeta, x );*/
+        return - 2 * Param::zeta0_2 * hzeta * Example::Phi_w( hzeta, x );
       }
 
     } // End of namespace Example
