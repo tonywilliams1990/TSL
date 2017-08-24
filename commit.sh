@@ -2,6 +2,8 @@
 # Script for commiting TSL to GitHub
 echo "Commit script"
 
+make clean
+
 # Move unnecessary files
 mv ./figs ~/Desktop/figs_temp
 mv ./DATA ~/Desktop/DATA_temp

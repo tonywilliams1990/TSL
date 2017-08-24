@@ -16,6 +16,8 @@ enum{ Phi, Psi, U, Theta };                                   // PDE
 #define BASE_2D
 // Either UNIFORM or NONUNIFORM for uniform of non-uniform mesh
 #define NONUNIFORM
+// Either NO_SPEED_UP or SPEED_UP for normal or reusing the factorised matrix
+#define SPEED_UP
 
 namespace TSL
 {
@@ -510,9 +512,15 @@ int main()
   {
   /* Iterate to a solution */
   double max_residual( 0.0 );                           // Maximum residual
+#ifdef NO_SPEED_UP
   std::size_t max_iterations( 20 );                     // Maximum number of iterations
+#endif
   std::size_t iteration( 0 );                           // Initialise iteration counter
-
+#ifdef SPEED_UP
+  std::size_t max_iterations( 200 );                    // Maximum number of iterations
+  Eigen::SparseMatrix<double, Eigen::ColMajor, long long> A_Eigen( 4 * N_eta * N_hzeta, 4 * N_eta * N_hzeta );
+  Eigen::SparseLU< Eigen::SparseMatrix<double, Eigen::ColMajor, long long> > solver;
+#endif
   do
   {
     SparseMatrix<double> A( 4 * N_eta * N_hzeta, 4 * N_eta * N_hzeta );
@@ -1224,8 +1232,27 @@ int main()
          << B.norm_inf() << endl;
 
     Vector<double> x;
+#ifdef SPEED_UP
+    // Convert things to Eigen to see if we can get some speed benefits
+    // Only decompose the matrix on the first iteration as it can be reused after
+    // This means more iterations but they should be quicker
+    if ( iteration == 0 )
+    {
+      A_Eigen = A.convert_to_Eigen();
+      solver.compute( A_Eigen );
+    }
+
+    Eigen::Matrix<double, -1, 1> B_Eigen( 4 * N_eta * N_hzeta );
+    B_Eigen = B.convert_to_Eigen_Matrix();
+
+    Eigen::Matrix<double, -1, 1> x_Eigen( 4 * N_eta * N_hzeta );
+    x_Eigen = solver.solve( B_Eigen );
+    x = x.convert_to_Vector( x_Eigen );
+#endif
+#ifdef NO_SPEED_UP
     x = A.solve( B );
-    B = x;
+#endif
+    B = x; //TODO do we need to do this - could just use x to update Q(i,j,Var) and max correction
     timer.print();
     timer.stop();
 

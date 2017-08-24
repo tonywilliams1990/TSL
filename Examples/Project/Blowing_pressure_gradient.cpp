@@ -16,6 +16,8 @@ enum{ Phi, Psi, U, Theta };                                   // PDE
 #define BASE_2D
 // Either UNIFORM or NONUNIFORM for uniform of non-uniform mesh
 #define NONUNIFORM
+// Either NO_SPEED_UP or SPEED_UP for normal or reusing the factorised matrix
+#define SPEED_UP
 
 namespace TSL
 {
@@ -23,8 +25,8 @@ namespace TSL
     {
       double hzeta_right( 16.0 );       // Size of the domain in the zeta_hat direction
       double eta_top( 128.0 );          // Size of the domain in the eta direction
-      const std::size_t N( 400 );       // Number of intervals in the zeta_hat direction
-      const std::size_t M( 400 );       // Number of intervals in the eta direction
+      const std::size_t N( 200 );       // Number of intervals in the zeta_hat direction
+      const std::size_t M( 200 );       // Number of intervals in the eta direction
       const std::size_t Nvar( 4 );      // Number of variables
       double beta( 0.0 );               // Hartree parameter
       double KB( 0.0 );                 // Base flow transpiration ( +ve = blowing )
@@ -553,8 +555,15 @@ int main()
 
   /* Iterate to a solution */
   double max_residual( 0.0 );                           // Maximum residual
+#ifdef NO_SPEED_UP
   std::size_t max_iterations( 20 );                     // Maximum number of iterations
+#endif
   std::size_t iteration( 0 );                           // Initialise iteration counter
+#ifdef SPEED_UP
+  std::size_t max_iterations( 200 );                     // Maximum number of iterations
+  Eigen::SparseMatrix<double, Eigen::ColMajor, long long> A_Eigen( 4 * N_eta * N_hzeta, 4 * N_eta * N_hzeta );
+  Eigen::SparseLU< Eigen::SparseMatrix<double, Eigen::ColMajor, long long> > solver;
+#endif
 
   do
   {
@@ -1005,11 +1014,28 @@ int main()
     cout << "***                                              Maximum residual = "
          << B.norm_inf() << endl;
 
-    //Timer timer;
-    //timer.start();
     Vector<double> x;
+#ifdef SPEED_UP
+    // Convert things to Eigen to see if we can get some speed benefits
+    // Only decompose the matrix on the first iteration as it can be reused after
+    // This means more iterations but they should be quicker
+    if ( iteration == 0 )
+    {
+      A_Eigen = A.convert_to_Eigen();
+      solver.compute( A_Eigen );
+    }
+
+    Eigen::Matrix<double, -1, 1> B_Eigen( 4 * N_eta * N_hzeta );
+    B_Eigen = B.convert_to_Eigen_Matrix();
+
+    Eigen::Matrix<double, -1, 1> x_Eigen( 4 * N_eta * N_hzeta );
+    x_Eigen = solver.solve( B_Eigen );
+    x = x.convert_to_Vector( x_Eigen );
+#endif
+#ifdef NO_SPEED_UP
     x = A.solve( B );
-    B = x;
+#endif
+    B = x; //TODO do we need to do this - could just use x to update Q(i,j,Var) and max correction
     timer.print();
     timer.stop();
 

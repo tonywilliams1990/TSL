@@ -23,10 +23,10 @@ namespace TSL
 
 	// Templated vector class
 	template <class T>
-	
-	class Vector 
+
+	class Vector
 	{
-		
+
       protected:
       friend class Matrix<T>;			        // Friend class that may access VECTOR directly
       friend class SparseMatrix<T>;			  // Friend class that may access VECTOR directly
@@ -71,7 +71,7 @@ namespace TSL
       /// Indexing operator ( read only )
 			const T& operator[] ( const std::size_t& i ) const
 			{
-					// Range check 
+					// Range check
 					if ( i<0 || SIZE<=i )	{ throw Error( "Vector range error" );}
 					return this->VECTOR( i, 0 );
 			}
@@ -79,15 +79,15 @@ namespace TSL
       /// Indexing operator ( read/write )
 			T& operator[] ( const std::size_t& i )
 			{
-					// Range check 
+					// Range check
 					if ( i<0 || SIZE<=i )	{ throw Error( "Vector range error" );}
 					return this->VECTOR( i, 0 );
 			}
 
       /// Assignment
     	Vector& operator=( const Vector& original )
-      {	
-        SIZE = original.SIZE;	
+      {
+        SIZE = original.SIZE;
 		    VECTOR = original.VECTOR;
 		    return *this;
 	    }
@@ -96,8 +96,8 @@ namespace TSL
       Vector<T> operator+() const
 			{
 				return *this;
-			}  
-      
+			}
+
       /// Unary -
       Vector<T> operator-() const
       {
@@ -133,14 +133,14 @@ namespace TSL
 				  temp.VECTOR( i, 0 ) *= v_times;
 		    }
 		    return temp;
-      } 
+      }
       // Friend function so the * operator can be on either side
       friend Vector<T> operator*( const T& v, Vector<T>& vec )
 			{
 				return vec * v;
-			}				
+			}
 
-      /// Scalar division 
+      /// Scalar division
       Vector<T> operator/( const T& v_div )const
       {
         Vector<T> temp( *this );
@@ -149,15 +149,15 @@ namespace TSL
 				  temp.VECTOR( i, 0 ) /= v_div;
 		    }
 		    return temp;
-      } 
-      
-      /// Addition assignment  
+      }
+
+      /// Addition assignment
       Vector<T> operator+=( const Vector<T>& v_plus )
       {
         if ( v_plus.SIZE != SIZE ) { throw Error( "Vector dimension error" );}
         VECTOR = VECTOR + v_plus.VECTOR;
         return *this;
-      }    
+      }
 
       /// Subtraction assignment
       Vector<T> operator-=( const Vector<T>& v_minus )
@@ -165,10 +165,10 @@ namespace TSL
         if ( v_minus.SIZE != SIZE ) { throw Error( "Vector dimension error" );}
         VECTOR = VECTOR - v_minus.VECTOR;
         return *this;
-      } 
-    
+      }
+
       /* ----- Methods ----- */
-      
+
       /// Return the size of the vector
       std::size_t size() const { return SIZE; }
 
@@ -197,12 +197,12 @@ namespace TSL
       /// Return a vector of absolute values of the elements
       Vector<double> abs() const
       {
-        Vector<double> abs_vals( SIZE );		
+        Vector<double> abs_vals( SIZE );
         for (size_t i=0; i < SIZE; ++i)
         {
           abs_vals.VECTOR( i, 0 ) = std::abs( VECTOR( i, 0 ) ) ;
         }
-        return abs_vals; 
+        return abs_vals;
       }
 
       /// Swap elements i and j
@@ -259,7 +259,7 @@ namespace TSL
 			    S += VECTOR( i, 0 );
 		    }
         return S;
-      }	
+      }
 
       T sum( )
       {
@@ -297,10 +297,24 @@ namespace TSL
           dump << VECTOR( i, 0) << std::endl;
         }
       }
-      
+
+      /// Convert to an Eigen::Matrix
+      Eigen::Matrix<T, -1, 1> convert_to_Eigen_Matrix() const
+      {
+        return VECTOR;
+      }
+
+      /// Convert Eigen::Matrix to a TSL::Vector
+      Vector<T> convert_to_Vector( const Eigen::Matrix<T, -1, 1> mat ) const
+      {
+        Vector<T> vec( mat.rows() );
+        vec.VECTOR = mat;
+        return vec;
+      }
+
       /* ----- Norms ----- */
 
-      /// L1 norm: sum of absolute values 
+      /// L1 norm: sum of absolute values
       double norm_1() const
       {
         double sum( 0.0 );
@@ -308,10 +322,10 @@ namespace TSL
         {
 			    sum += std::abs( VECTOR( i, 0 ) );
 		    }
-		    return sum;  
+		    return sum;
 	    }
 
-      /// L2 norm: square root of the sum of the squares 
+      /// L2 norm: square root of the sum of the squares
       double norm_2() const
       {
         double sum( 0.0 );
@@ -319,7 +333,7 @@ namespace TSL
         {
 			    sum += std::pow( std::abs( VECTOR( i, 0 ) ), 2.0 );
 		    }
-		    return std::sqrt( sum );  
+		    return std::sqrt( sum );
 	    }
 
       /// Lp norm: p-th root of the sum of the absolute values raised to the power p
@@ -330,13 +344,13 @@ namespace TSL
         {
 			    sum += std::pow( std::abs( VECTOR( i, 0 ) ), p );
 		    }
-		    return std::pow( sum , 1.0/p ); 
+		    return std::pow( sum , 1.0/p );
 	    }
 
       /// Inf norm: largest absolute value element (p -> infinity)
       double norm_inf() const
 	    {
-		    std::vector<double> abs_vals;		
+		    std::vector<double> abs_vals;
 		    for (size_t i=0; i < SIZE; ++i)
 		    {
 			    abs_vals.push_back( std::abs( VECTOR( i, 0 ) ) );
@@ -353,7 +367,7 @@ namespace TSL
   {
     os << vec.VECTOR;
     return os;
-  }  
+  }
 
   /// Create a linearly spaced vector (of doubles) with n elements
   template <>
@@ -363,8 +377,8 @@ namespace TSL
 		VECTOR.resize( n, 1 );
     SIZE = n;
 		const double h = ( b - a ) / (n - 1)  ;
-		for ( std::size_t i=0; i < n; ++i ) 
-		{		
+		for ( std::size_t i=0; i < n; ++i )
+		{
 			VECTOR( i, 0 ) = a + h * i;
 		}
 	}

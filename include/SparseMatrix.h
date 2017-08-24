@@ -1,4 +1,4 @@
-/* Sparse Matrix class 
+/* Sparse Matrix class
 */
 
 #ifndef SPARSEMATRIX_H
@@ -23,7 +23,7 @@ namespace TSL
 
   class SparseMatrix
   {
-    typedef std::map<std::size_t, std::map<std::size_t , T> > s_mat; 
+    typedef std::map<std::size_t, std::map<std::size_t , T> > s_mat;
     typedef typename s_mat::const_iterator row_iter;
     typedef std::map<std::size_t, T> s_col;
     typedef typename s_col::const_iterator col_iter;
@@ -39,7 +39,7 @@ namespace TSL
 
       /// Constructor for an empty matrix of unspecified size
 			SparseMatrix()
-      { 
+      {
         ROWS = 0;
         COLS = 0;
       }
@@ -74,7 +74,7 @@ namespace TSL
     	SparseMatrix<T>& operator=( const SparseMatrix<T>& original );
 
       /* ----- Methods ----- */
-      
+
       /// Return the number of rows in the matrix
       std::size_t rows() const { return ROWS; }
 
@@ -86,7 +86,7 @@ namespace TSL
 
       /// Return the number of non zero elements
       std::size_t numel() const
-      { 
+      {
         std::size_t sum( 0 );
         row_iter ii;
         // Loop over the rows and add up the size of the columns
@@ -152,8 +152,8 @@ namespace TSL
         {
           for(jj=(*ii).second.begin(); jj!=(*ii).second.end(); jj++)
           {
-            std::cout << "( " << (*ii).first << ", " 
-                      << (*jj).first << ", " 
+            std::cout << "( " << (*ii).first << ", "
+                      << (*jj).first << ", "
                       << (*jj).second << " ), ";
           }
         }
@@ -162,14 +162,44 @@ namespace TSL
       }
 
       /* ----- Solve sparse linear systems ----- */
-      
+
       /// Solve system of equations Ax=b where x and b are vectors (SparseLU)
       Vector<T> solve( const Vector<T>& b ) const
       {
-        if ( ROWS != b.SIZE ) {throw Error( "Sparse solver error: dimension 1 " );}  
+        if ( ROWS != b.SIZE ) {throw Error( "Sparse solver error: dimension 1 " );}
         Eigen::SparseLU< SpMat > solver;
         SpMat S_mat( ROWS, COLS );
+        // Fill Eigen sparse matrix
+        S_mat = this->convert_to_Eigen();
+        /*std::vector<Triplet> tripletList;             // Vector of triplets
+        row_iter ii;
+        col_iter jj;
+        for(ii=this->CONTAINER.begin(); ii!=this->CONTAINER.end(); ii++)
+        {
+          for(jj=(*ii).second.begin(); jj!=(*ii).second.end(); jj++)
+          {
+            std::size_t i = (*ii).first;
+            std::size_t j = (*jj).first;
+            T elem = (*jj).second;
+            tripletList.push_back( Triplet(i, j, elem) );
+          }
+        }
+        S_mat.setFromTriplets( tripletList.begin(), tripletList.end() );
+        S_mat.makeCompressed();*/
+        solver.compute( S_mat );
 
+        Eigen::Matrix<T, -1, 1> X;
+	      X.resize( b.SIZE, 1 );
+        X = solver.solve( b.VECTOR );
+        Vector<T> x( b.SIZE );
+        x.VECTOR = X;
+        return x;
+      }
+
+      /// Return the Eigen::SparseMatrix of the TSL::SparseMatrix
+      SpMat convert_to_Eigen() const
+      {
+        SpMat S_mat( ROWS, COLS );
         // Fill Eigen sparse matrix
         std::vector<Triplet> tripletList;             // Vector of triplets
         row_iter ii;
@@ -185,25 +215,19 @@ namespace TSL
           }
         }
         S_mat.setFromTriplets( tripletList.begin(), tripletList.end() );
-        S_mat.makeCompressed(); 
-        solver.compute( S_mat );
+        S_mat.makeCompressed();
 
-        Eigen::Matrix<T, -1, 1> X;
-	      X.resize( b.SIZE, 1 );
-        X = solver.solve( b.VECTOR );
-        Vector<T> x( b.SIZE );
-        x.VECTOR = X;
-        return x;
+        return S_mat;
       }
-  
+
   }; // End of class SparseMatrix
 
   /* Indexing operator (read only)
   template <class T>
-  inline const T SparseMatrix<T>::operator() ( const std::size_t& i, 
+  inline const T SparseMatrix<T>::operator() ( const std::size_t& i,
                                                const std::size_t& j ) const
   {
-    // Range check 
+    // Range check
     if ( i<0 || ROWS<=i )	{ throw Error( "Matrix range error: dimension 1" );}
     if ( j<0 || COLS<=j )	{ throw Error( "Matrix range error: dimension 2" );}
     return CONTAINER[ i ][ j ];
@@ -213,7 +237,7 @@ namespace TSL
   template <class T>
   inline T& SparseMatrix<T>::operator() ( const std::size_t& i, const std::size_t& j )
   {
-    // Range check 
+    // Range check
     if ( i<0 || ROWS<=i )	{ throw Error( "Matrix range error: dimension 1" );}
     if ( j<0 || COLS<=j )	{ throw Error( "Matrix range error: dimension 2" );}
     return CONTAINER[ i ][ j ];
@@ -222,7 +246,7 @@ namespace TSL
   /// Assignment
   template <class T>
   inline SparseMatrix<T>& SparseMatrix<T>::operator=( const SparseMatrix<T>& original )
-  {		
+  {
     CONTAINER = original.CONTAINER;
     ROWS = original.ROWS;
     COLS = original.COLS;
