@@ -5,13 +5,13 @@ import matplotlib.pyplot as plt
 
 
 zeta0 = 20
-beta = 0.1
-K = 0.5
-N = 1
+beta = 0
+K = 3
+N = 2
 # change the levels in the VW plot to see more detail (line 85)
 
-data = np.loadtxt("./DATA/K_"+ str(K) + "_beta_"+ str(beta) + "_401x401_16_128/Qout_" + str(zeta0) + ".dat")
-#data = np.loadtxt("./DATA/K_Step_beta_"+ str(beta) + "_zeta0_" + str(zeta0) + "_N_" + str(N) + "/Qout_K_" + str(K) + "_zeta0_" + str(zeta0) + ".dat")
+#data = np.loadtxt("./DATA/K_"+ str(K) + "_beta_"+ str(beta) + "_401x401_16_128/Qout_" + str(zeta0) + ".dat")
+data = np.loadtxt("./DATA/K_Step_beta_"+ str(beta) + "_zeta0_" + str(zeta0) + "_N_" + str(N) + "/Qout_K_" + str(K) + "_zeta0_" + str(zeta0) + ".dat")
 
 zeta_hat = data[:,0]
 eta = data[:,1]
@@ -31,7 +31,7 @@ V = (1 - beta)*eta*U - Phi
 W = (1 - beta)*zeta_hat*U - Psi # effectively W / zeta0
 
 
-U[U > 1.0] = 1.0
+#U[U > 1.0] = 1.0
 
 min_x = np.min(zeta_hat)
 #max_x = np.max(zeta_hat)
@@ -85,7 +85,7 @@ plt.savefig('U_contour_K_' + str(K) + "_beta_" + str(beta) + "_zeta0_" + str(zet
 
 plt.figure()
 
-levels = np.linspace(-13, 0, 11)
+levels = np.linspace(-9, 0, 11)
 
 CS = plt.contourf(xi, yi, Vorticity_perturbation, levels,
                   #[-1, -0.1, 0, 0.1],

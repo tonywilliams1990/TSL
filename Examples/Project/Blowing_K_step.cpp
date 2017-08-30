@@ -27,8 +27,8 @@ namespace TSL
     {
       double hzeta_right( 16.0 );       // Size of the domain in the zeta_hat direction
       double eta_top( 128.0 );          // Size of the domain in the eta direction
-      const std::size_t N( 200 );       // Number of intervals in the zeta_hat direction
-      const std::size_t M( 200 );       // Number of intervals in the eta direction
+      const std::size_t N( 400 );       // Number of intervals in the zeta_hat direction
+      const std::size_t M( 400 );       // Number of intervals in the eta direction
       const std::size_t Nvar( 4 );      // Number of variables
       double beta( 0 );                 // Hartree parameter
       double KB( 0.0 );                 // Base flow transpiration ( +ve = blowing )
@@ -37,7 +37,7 @@ namespace TSL
       double A( 0.0 );                  // Mass flux parameter
       double K( 0.0 );                  // Transpiration parameter ( +ve = blowing )
       double gamma( 20.0 );             // Steepness factor
-      const std::size_t N_transp( 2 );  // Number of blowing and sucking regions (1 = standard blowing)
+      const std::size_t N_transp( 4 );  // Number of blowing and sucking regions (1 = standard blowing)
 
     } // End of namespace Param
 
@@ -1288,7 +1288,7 @@ int main()
     cout << "  * K = " << Param::K << ", A = " << Param::A << endl;
     Param::K += 0.01;
 
-  }while( Param::K < 3.01 );
+  }while( Param::K < 10.01 );
 
 
   cout << "FINISHED" << endl;
