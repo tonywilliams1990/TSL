@@ -4,10 +4,10 @@ import matplotlib.mlab as mlab
 import matplotlib.pyplot as plt
 
 beta = 0
-K = 1
+K = 3
 # change the levels in the VW plot to see more detail (line 85)
 
-data = np.loadtxt("./DATA/Marching_K_"+ str(K) + "_beta_" + str(beta) + "_3000x201x201_30_30_30/A_file.dat")
+data = np.loadtxt("./DATA/Marching_K_"+ str(K) + "_beta_" + str(beta) + "_1000x201x201_100_30_30/A_file.dat")
 
 zeta0 = data[:,0]
 A = data[:,1]

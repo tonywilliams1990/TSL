@@ -35,8 +35,8 @@ namespace TSL
       double A( 0.0 );                  // Mass flux parameter
       double K( 1.0 );                  // Transpiration parameter ( +ve = blowing )
       double gamma( 20.0 );             // Steepness factor
-      double x_step( 0.01 );            // Size of the downstream grid spacing
-      const std::size_t N_x( 2000 );    // Number of intervals in the downstream x direction
+      double x_step( 0.1 );            // Size of the downstream grid spacing
+      const std::size_t N_x( 1000 );    // Number of intervals in the downstream x direction
       //=> x_max = x_step * N_x
       double x_max( x_step * N_x );     // Maximum downstream location
       double x( 0.0 );                  // Current downstream x location
@@ -64,8 +64,13 @@ namespace TSL
         /*return - Param::K * sqrt( 2 * x )
               * exp( - 2 * x * Param::zeta0_2 * hzeta * hzeta )
               * exp( - ( x - Param::x_d ) * ( x - Param::x_d ) );*/
-        return - Param::K * ( 1.0 - exp( - x * x ) )
-                          * exp( - Param::zeta0_2 * hzeta * hzeta );
+        // Gaussian (self-sim for large x?)
+        /*return - Param::K * ( 1. - exp( - x * x ) )
+                          * exp( - Param::zeta0_2 * hzeta * hzeta );*/
+        // Top-hat (self-sim for large x?)
+        return - Param::K * 0.5 * ( 1. - exp( - x * x ) )
+                          * ( 1. - tanh( Param::gamma * ( hzeta - 1. ) ) );
+
       }
 
       double Phi_w_hzeta( const double& hzeta, const double& x )
@@ -73,7 +78,11 @@ namespace TSL
         /*double x_pow = pow( x, 2. * ( 1. - Param::beta ) / ( 2. - Param::beta ) );
         return - 2 * ( 2. - Param::beta ) * x_pow * Param::zeta0_2 * hzeta * Example::Phi_w( hzeta, x );*/
         /*return - 4 * x * Param::zeta0_2 * hzeta * Example::Phi_w( hzeta, x );*/
-        return - 2 * Param::zeta0_2 * hzeta * Example::Phi_w( hzeta, x );
+        // Gaussian (self-sim for large x?)
+        /*return - 2 * Param::zeta0_2 * hzeta * Example::Phi_w( hzeta, x );*/
+        // Top-hat (self-sim for large x?)
+        double sech_squared = pow( cosh( Param::gamma * ( hzeta - 1. ) ) , -2. );
+        return Param::K * 0.5 * Param::gamma * sech_squared * ( 1. - exp( - x * x ) );
       }
 
     } // End of namespace Example

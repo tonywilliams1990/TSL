@@ -6,11 +6,11 @@ import matplotlib.pyplot as plt
 
 zeta0 = 1
 beta = 0
-K = 1
-x = 6
+K = 3
+x = 2
 # change the levels in the VW plot to see more detail (line 85)
 
-data = np.loadtxt("./DATA/Marching_K_"+ str(K) + "_beta_" + str(beta) + "_3000x201x201_30_30_30/Qout_" + str(zeta0) + "_x_" + str( x ) + ".dat")
+data = np.loadtxt("./DATA/Marching_K_"+ str(K) + "_beta_" + str(beta) + "_1000x201x201_100_30_30/Qout_" + str(zeta0) + "_x_" + str( x ) + ".dat")
 
 zeta_hat = data[:,0]
 eta = data[:,1]
@@ -33,8 +33,8 @@ W = (1 - beta)*zeta_hat*U - Psi # effectively W / zeta0
 U[U > 1.0] = 1.0
 
 min_x = np.min(zeta_hat)
-max_x = np.max(zeta_hat)
-#max_x = 2
+#max_x = np.max(zeta_hat)
+max_x = 2
 min_y = np.min(eta)
 #max_y = np.max(eta)
 #max_y = max_x * zeta0
