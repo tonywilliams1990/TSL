@@ -16,21 +16,21 @@ enum{ Phi, Psi, U, Theta };                                   // PDE
 #define BASE_2D
 // Either UNIFORM or NONUNIFORM for uniform of non-uniform mesh
 #define NONUNIFORM
-// Either NO_SPEED_UP or SPEED_UP for normal or reusing the factorised matrix
+// Either NO_SPEED_UP for normal or SPEED_UP for reusing the factorised matrix
 #define SPEED_UP
 
 namespace TSL
 {
     namespace Param
     {
-      double hzeta_right( 30.0 );        // Size of the domain in the zeta_hat direction
-      double eta_top( 30.0 );           // Size of the domain in the eta direction
-      const std::size_t N( 200 );       // Number of intervals in the zeta_hat direction
-      const std::size_t M( 200 );       // Number of intervals in the eta direction
+      double hzeta_right( 16.0 );        // Size of the domain in the zeta_hat direction
+      double eta_top( 128.0 );           // Size of the domain in the eta direction
+      const std::size_t N( 400 );       // Number of intervals in the zeta_hat direction
+      const std::size_t M( 400 );       // Number of intervals in the eta direction
       const std::size_t Nvar( 4 );      // Number of variables
       double beta( 0.0 );               // Hartree parameter
       double KB( 0.0 );                 // Base flow transpiration ( +ve = blowing )
-      double zeta0( 1.0 );              // Ridge/transpiration width
+      double zeta0( 20 );              // Ridge/transpiration width
       double zeta0_2 = zeta0 * zeta0;   // Square of the ridge/transpiration width
       double A( 0.0 );                  // Mass flux parameter
       double K( 1.0 );                  // Transpiration parameter ( +ve = blowing )
@@ -119,6 +119,22 @@ namespace TSL
 #endif
 #ifdef NONUNIFORM
 
+      const double a1( 0.1 );
+      const double a2( 0.5 );   // X = (zeta + a1)^a2
+
+      double X( const double& zeta )
+      {
+        return std::pow(zeta + a1, a2);
+      }
+      double Xd( const double& zeta )
+      {
+        return a2 * std::pow(zeta + a1, a2 - 1);
+      }
+      double Xdd( const double& zeta )
+      {
+        return a2 * (a2 - 1) * std::pow(zeta + a1, a2 - 2);
+      }
+/*
       const double a1( 10.0 );
       const double a2( 4.0 );
 
@@ -135,7 +151,48 @@ namespace TSL
       {
         return - ( a1 / ( a2 * a2 ) ) * std::exp( - zeta / a2 );
       }
+*/
+/*
+    const double g0( 2 );// bigger => more points around zeta_hat=1
+    const double B0( 4 ); // bigger => more points near zeta=0 and (less for large zeta)
+    //
+    double X( const double& zeta )
+    {
+        return B0 * zeta * 0.5 * ( 1+tanh( g0 * (1-zeta) ) )
+              + (zeta + 2 * B0 ) * 0.5 * ( 1+tanh( g0 * (zeta-1) ) );
+    }
+    double Xd( const double& zeta )
+    {
+        return 0.5 * B0 * ( tanh( g0 * (1-zeta) ) + 1 )
+             - 0.5 * B0 * g0 * zeta * std::pow( cosh( g0 * (1-zeta) ), -2 )
+             + 0.5 * ( tanh( g0 * (zeta-1) ) + 1 )
+             + 0.5 * g0 * (zeta + 2 * B0 ) * std::pow( cosh( g0 * (1-zeta) ), -2 );
+    }
+    double Xdd( const double& zeta )
+    {
+      return - B0 * g0 * std::pow( cosh( g0 * (1-zeta) ), -2 )
+             + g0 * std::pow( cosh( g0 * (zeta-1) ),-2)
+             - B0 * g0 * g0 * zeta * std::pow(cosh(g0*(1-zeta)),-2)*tanh(g0*(1 - zeta))
+             - g0 * g0 * (2*B0 + zeta)*std::pow(cosh(g0*(zeta-1)),-2)*tanh(g0*(zeta-1));
+    }
+*/
 
+      const double b1( 0.3 );
+      const double b2( 0.3 );   // Y = (eta + b1)^b2
+
+      double Y( const double& eta )
+      {
+        return std::pow(eta + b1, b2) - pow(b1,b2);
+      }
+      double Yd( const double& eta )
+      {
+        return b2 * std::pow(eta + b1, b2 - 1);
+      }
+      double Ydd( const double& eta )
+      {
+        return b2 * (b2 - 1) * std::pow(eta + b1, b2 - 2);
+      }
+/*
       const double b1( 10.0 );
       const double b2( 4.0 );
 
@@ -152,7 +209,7 @@ namespace TSL
       {
         return - ( b1 / ( b2 * b2 ) ) * std::exp( - eta / b2 );
       }
-
+*/
 #endif
 
       class invert_eta : public Residual<double>

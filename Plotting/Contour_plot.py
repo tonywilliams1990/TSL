@@ -6,8 +6,8 @@ import matplotlib.pyplot as plt
 
 zeta0 = 20
 beta = 0
-K = 3
-N = 2
+K = 7
+N = 4
 # change the levels in the VW plot to see more detail (line 85)
 
 #data = np.loadtxt("./DATA/K_"+ str(K) + "_beta_"+ str(beta) + "_401x401_16_128/Qout_" + str(zeta0) + ".dat")

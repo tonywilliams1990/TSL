@@ -18,7 +18,7 @@ enum{ Phi, Psi, U, Theta };                                   // PDE
 #define NONUNIFORM
 // Either DIRICHLET or NEUMANN boundary conditions on Phi and Psi at eta=eta_inf
 #define DIRICHLET
-// Either NO_SPEED_UP or SPEED_UP for normal or reusing the factorised matrix
+// Either NO_SPEED_UP for normal or SPEED_UP for reusing the factorised matrix
 #define SPEED_UP
 
 namespace TSL

@@ -16,7 +16,7 @@ enum{ Phi, Psi, U, Theta };                                   // PDE
 #define BASE_2D
 // Either UNIFORM or NONUNIFORM for uniform of non-uniform mesh
 #define NONUNIFORM
-// Either NO_SPEED_UP or SPEED_UP for normal or reusing the factorised matrix
+// Either NO_SPEED_UP for normal or SPEED_UP for reusing the factorised matrix
 #define SPEED_UP
 
 namespace TSL
