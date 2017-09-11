@@ -82,7 +82,7 @@ namespace TSL
         /*return - 2 * Param::zeta0_2 * hzeta * Example::Phi_w( hzeta, x );*/
         // Top-hat (self-sim for large x?)
         double sech_squared = pow( cosh( Param::gamma * ( hzeta - 1. ) ) , -2. );
-        return Param::K * 0.5 * Param::gamma * sech_squared * ( 1. - exp( - x * x ) );
+        return - Param::K * 0.5 * Param::gamma * sech_squared * ( 1. - exp( - x * x ) );
       }
 
     } // End of namespace Example
