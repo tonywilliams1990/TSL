@@ -17,7 +17,7 @@ plt.plot(K, eta_half, color='k')
 
 plt.xlabel('K')
 axes = plt.gca()
-axes.set_xlim([0,6.5])
+axes.set_xlim([0,7.4])
 axes.set_ylim([0,20])
 
 # Plot the asymptotic predictions

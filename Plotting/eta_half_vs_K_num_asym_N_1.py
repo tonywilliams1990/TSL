@@ -7,7 +7,7 @@ beta = 0
 zeta0 = 20
 
 # Load data
-data = np.loadtxt("./DATA/K_Step_beta_" + str(beta) + "_zeta0_" + str(zeta0) + "_N_1/A_file.dat")
+data = np.loadtxt("./DATA/K_Step_beta_" + str(beta) + "_zeta0_" + str(zeta0) + "/A_file.dat")
 K  = data[:,1]
 eta_half   = data[:,4]
 K_max = np.max(K)

@@ -17,7 +17,7 @@ enum{ Phi, Psi, U, Theta };                                   // PDE
 // Either UNIFORM or NONUNIFORM for uniform of non-uniform mesh
 #define NONUNIFORM
 // Either NO_SPEED_UP for normal or SPEED_UP for reusing the factorised matrix
-#define SPEED_UP
+#define NO_SPEED_UP
 
 namespace TSL
 {
@@ -33,14 +33,16 @@ namespace TSL
       double zeta0( 20 );              // Ridge/transpiration width
       double zeta0_2 = zeta0 * zeta0;   // Square of the ridge/transpiration width
       double A( 0.0 );                  // Mass flux parameter
-      double K( 1.0 );                  // Transpiration parameter ( +ve = blowing )
+      double K( 2.5 );                  // Transpiration parameter ( +ve = blowing )
       double gamma( 20.0 );             // Steepness factor
       double x_step( 0.1 );            // Size of the downstream grid spacing
       const std::size_t N_x( 1000 );    // Number of intervals in the downstream x direction
       //=> x_max = x_step * N_x
-      double x_max( x_step * N_x );     // Maximum downstream location
+      //double x_max( x_step * N_x );     // Maximum downstream location
+      double x_max( 100 );
       double x( 0.0 );                  // Current downstream x location
       double x_d( 5.0 );                // Downstream location of the injection
+      double a( 0.01 );                 // Rate of downstream injection
       //TODO change the output description at the start + include more info
 
     } // End of namespace Param
@@ -65,11 +67,11 @@ namespace TSL
               * exp( - 2 * x * Param::zeta0_2 * hzeta * hzeta )
               * exp( - ( x - Param::x_d ) * ( x - Param::x_d ) );*/
         // Gaussian (self-sim for large x?)
-        /*return - Param::K * ( 1. - exp( - x * x ) )
-                          * exp( - Param::zeta0_2 * hzeta * hzeta );*/
+        return - Param::K * ( 1. - exp( - x * x ) )
+                          * exp( - hzeta * hzeta );
         // Top-hat (self-sim for large x?)
-        return - Param::K * 0.5 * ( 1. - exp( - x * x ) )
-                          * ( 1. - tanh( Param::gamma * ( hzeta - 1. ) ) );
+        /*return - Param::K * 0.5 * ( 1. - exp( - Param::a * x * x ) )
+                          * ( 1. - tanh( Param::gamma * ( hzeta - 1. ) ) );*/
 
       }
 
@@ -79,10 +81,10 @@ namespace TSL
         return - 2 * ( 2. - Param::beta ) * x_pow * Param::zeta0_2 * hzeta * Example::Phi_w( hzeta, x );*/
         /*return - 4 * x * Param::zeta0_2 * hzeta * Example::Phi_w( hzeta, x );*/
         // Gaussian (self-sim for large x?)
-        /*return - 2 * Param::zeta0_2 * hzeta * Example::Phi_w( hzeta, x );*/
+        return - 2 * hzeta * Example::Phi_w( hzeta, x );
         // Top-hat (self-sim for large x?)
-        double sech_squared = pow( cosh( Param::gamma * ( hzeta - 1. ) ) , -2. );
-        return - Param::K * 0.5 * Param::gamma * sech_squared * ( 1. - exp( - x * x ) );
+        /*double sech_squared = pow( cosh( Param::gamma * ( hzeta - 1. ) ) , -2. );
+        return Param::K * 0.5 * Param::gamma * sech_squared * ( 1. - exp( - Param::a * x * x ) );*/
       }
 
     } // End of namespace Example
@@ -118,7 +120,7 @@ namespace TSL
       }
 #endif
 #ifdef NONUNIFORM
-
+/*
       const double a1( 0.1 );
       const double a2( 0.5 );   // X = (zeta + a1)^a2
 
@@ -134,7 +136,7 @@ namespace TSL
       {
         return a2 * (a2 - 1) * std::pow(zeta + a1, a2 - 2);
       }
-/*
+*/
       const double a1( 10.0 );
       const double a2( 4.0 );
 
@@ -151,7 +153,7 @@ namespace TSL
       {
         return - ( a1 / ( a2 * a2 ) ) * std::exp( - zeta / a2 );
       }
-*/
+
 /*
     const double g0( 2 );// bigger => more points around zeta_hat=1
     const double B0( 4 ); // bigger => more points near zeta=0 and (less for large zeta)
@@ -176,7 +178,7 @@ namespace TSL
              - g0 * g0 * (2*B0 + zeta)*std::pow(cosh(g0*(zeta-1)),-2)*tanh(g0*(zeta-1));
     }
 */
-
+/*
       const double b1( 0.3 );
       const double b2( 0.3 );   // Y = (eta + b1)^b2
 
@@ -192,7 +194,7 @@ namespace TSL
       {
         return b2 * (b2 - 1) * std::pow(eta + b1, b2 - 2);
       }
-/*
+*/
       const double b1( 10.0 );
       const double b2( 4.0 );
 
@@ -209,7 +211,7 @@ namespace TSL
       {
         return - ( b1 / ( b2 * b2 ) ) * std::exp( - eta / b2 );
       }
-*/
+
 #endif
 
       class invert_eta : public Residual<double>
@@ -1424,7 +1426,7 @@ int main()
     cout << "  * x = " << Param::x << ", A = " << Param::A << endl;
     Param::x += Param::x_step;
 
-  }while( Param::x < Param::x_step * Param::N_x );
+  }while( Param::x < Param::x_max );
 
   cout << "FINISHED" << endl;
 }

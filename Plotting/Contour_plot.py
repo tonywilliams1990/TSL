@@ -6,12 +6,17 @@ import matplotlib.pyplot as plt
 
 zeta0 = 20
 beta = 0
-K = 7
-N = 4
+K = 0.85
+N = 1
+Gaussian = True
+
 # change the levels in the VW plot to see more detail (line 85)
 
-#data = np.loadtxt("./DATA/K_"+ str(K) + "_beta_"+ str(beta) + "_401x401_16_128/Qout_" + str(zeta0) + ".dat")
-data = np.loadtxt("./DATA/K_Step_beta_"+ str(beta) + "_zeta0_" + str(zeta0) + "_N_" + str(N) + "/Qout_K_" + str(K) + "_zeta0_" + str(zeta0) + ".dat")
+if Gaussian:
+    data = np.loadtxt("./DATA/K_Step_beta_"+ str(beta) + "_zeta0_" + str(zeta0) + "_Gaussian/Qout_K_" + str(K) + "_zeta0_" + str(zeta0) + ".dat")
+else:
+    #data = np.loadtxt("./DATA/K_"+ str(K) + "_beta_"+ str(beta) + "_401x401_16_128/Qout_" + str(zeta0) + ".dat")
+    data = np.loadtxt("./DATA/K_Step_beta_"+ str(beta) + "_zeta0_" + str(zeta0) + "_N_" + str(N) + "/Qout_K_" + str(K) + "_zeta0_" + str(zeta0) + ".dat")
 
 zeta_hat = data[:,0]
 eta = data[:,1]
@@ -81,7 +86,10 @@ axes.set_xlim([0,max_x])
 plt.xticks(np.arange(0, max_x + 0.5, 0.5))
 axes.set_ylim([0,40])
 
-plt.savefig('U_contour_K_' + str(K) + "_beta_" + str(beta) + "_zeta0_" + str(zeta0) + "_N_" + str(N) + ".eps", format='eps', dpi=1000)
+if Gaussian:
+    plt.savefig('U_contour_K_' + str(K) + "_beta_" + str(beta) + "_zeta0_" + str(zeta0) + "_Gaussian.eps", format='eps', dpi=1000)
+else:
+    plt.savefig('U_contour_K_' + str(K) + "_beta_" + str(beta) + "_zeta0_" + str(zeta0) + "_N_" + str(N) + ".eps", format='eps', dpi=1000)
 
 plt.figure()
 
@@ -113,6 +121,9 @@ axes.set_xlim([0,max_x])
 plt.xticks(np.arange(0, max_x + 0.5, 0.5))
 axes.set_ylim([0,40])
 
-plt.savefig('VW_stream_K_' + str(K) + "_beta_" + str(beta) + "_zeta0_" + str(zeta0) + "_N_" + str(N) + ".eps", format='eps', dpi=1000)
+if Gaussian:
+    plt.savefig('VW_stream_K_' + str(K) + "_beta_" + str(beta) + "_zeta0_" + str(zeta0) + "_Gaussian.eps", format='eps', dpi=1000)
+else:
+    plt.savefig('VW_stream_K_' + str(K) + "_beta_" + str(beta) + "_zeta0_" + str(zeta0) + "_N_" + str(N) + ".eps", format='eps', dpi=1000)
 
 plt.show()

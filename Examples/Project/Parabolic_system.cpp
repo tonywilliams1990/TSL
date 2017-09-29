@@ -17,18 +17,21 @@ namespace TSL
   {
     double hzeta_inf( 16 );			      // Size of the domain in the hzeta direction
     double eta_top( 128 );				      // Size of the domain in the eta direction
-    unsigned N( 2000 );					      // Number of intervals in the hzeta direction
+    unsigned N( 4000 );					      // Number of intervals in the hzeta direction
     unsigned M( 1000 );					      // Number of intervals in the eta direction
     std::string output_path("./DATA/Parabolic_System/");        // Data output path
     double hzeta( hzeta_inf );        // Value of hzeta at the current step
-    double K( 2.0 );                  // Blowing intensity
-    double beta( 0.1 );               // Hartree parameter
+    double K( 0.875 );                  // Blowing intensity
+    double beta( 0 );               // Hartree parameter
     double gamma( 20.0 );             // Steepness factor
 
     double Phi_w( const double& hzeta )
     {
         // Return the transpiration function
-        return -Example::K * 0.5 * ( 1. - tanh( Example::gamma * ( hzeta - 1. ) ) );
+        // Top-hat
+        //return -Example::K * 0.5 * ( 1. - tanh( Example::gamma * ( hzeta - 1. ) ) );
+        // Gaussian
+        return - Example::K * exp( - hzeta * hzeta );
     }
 
     /* ------------------------- Base-flow ODE (2D/3D) -------------------------*/
@@ -404,7 +407,7 @@ int main()
 
   // Define the domain
   //double bottom( 0.0 );
-  //double top( Example::eta_top );  
+  //double top( Example::eta_top );
 
   // hzeta step
   double dhzeta = - ( Example::hzeta_inf ) / (Example::N);
