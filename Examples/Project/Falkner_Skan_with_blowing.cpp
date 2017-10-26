@@ -12,18 +12,18 @@ enum{ UB, UBd, PhiB, ThetaB, ThetaBd, PsiB };                 // Base ODE
 
 #define BASE_2D
 // Either UNIFORM or NONUNIFORM for uniform of non-uniform mesh
-#define NONUNIFORM
+#define UNIFORM
 
 namespace TSL
 {
     namespace Param
     {
       double eta_top( 128.0 );          // Size of the domain in the eta direction
-      const std::size_t M( 400 );       // Number of intervals in the eta direction
-      double beta( 0.05 );               // Hartree parameter
+      const std::size_t M( 4000 );       // Number of intervals in the eta direction
+      double beta( 0.0 );               // Hartree parameter
       double KB( 0.0 );                 // Base flow transpiration ( +ve = blowing )
-      double KB_max( 9.0 );             // Maximum value of the transpiration
-      std::size_t KB_n( 4 );            // Number of KB values
+      double KB_max( 0.87 );             // Maximum value of the transpiration
+      std::size_t KB_n( 88 );            // Number of KB values
 
     } // End of namespace Param
 

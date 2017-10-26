@@ -5,10 +5,10 @@ import matplotlib.pyplot as plt
 
 
 zeta0 = 20
-beta = 0
-K = 0.85
+beta = 0.1
+K = 2.5
 N = 1
-Gaussian = True
+Gaussian = False
 
 # change the levels in the VW plot to see more detail (line 85)
 
@@ -16,7 +16,8 @@ if Gaussian:
     data = np.loadtxt("./DATA/K_Step_beta_"+ str(beta) + "_zeta0_" + str(zeta0) + "_Gaussian/Qout_K_" + str(K) + "_zeta0_" + str(zeta0) + ".dat")
 else:
     #data = np.loadtxt("./DATA/K_"+ str(K) + "_beta_"+ str(beta) + "_401x401_16_128/Qout_" + str(zeta0) + ".dat")
-    data = np.loadtxt("./DATA/K_Step_beta_"+ str(beta) + "_zeta0_" + str(zeta0) + "_N_" + str(N) + "/Qout_K_" + str(K) + "_zeta0_" + str(zeta0) + ".dat")
+    #data = np.loadtxt("./DATA/K_Step_beta_"+ str(beta) + "_zeta0_" + str(zeta0) + "_N_" + str(N) + "/Qout_K_" + str(K) + "_zeta0_" + str(zeta0) + ".dat")
+    data = np.loadtxt("./DATA/K_Step_beta_"+ str(beta) + "_zeta0_" + str(zeta0) + "/Qout_K_" + str(K) + "_zeta0_" + str(zeta0) + ".dat")
 
 zeta_hat = data[:,0]
 eta = data[:,1]
@@ -93,7 +94,7 @@ else:
 
 plt.figure()
 
-levels = np.linspace(-9, 0, 11)
+levels = np.linspace(-7, 0, 11)
 
 CS = plt.contourf(xi, yi, Vorticity_perturbation, levels,
                   #[-1, -0.1, 0, 0.1],

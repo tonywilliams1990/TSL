@@ -10,7 +10,7 @@ int main()
 
   /* ----- TESTING sparse linear system solver ----- */
 
-  size_t N = 10;
+  size_t N = 1000;
 
   TSL::SparseMatrix<double> A_matrix(N,N);
   for (size_t i=0; i<N; ++i)

@@ -56,22 +56,25 @@ K = np.linspace( K_crit, K_max_10)
 plt.figure()
 
 # Plot the numerical data
-plt.plot(K_5, A_5/25, "g--")
-plt.plot(K_10, A_10/100, "k--")
-plt.plot(K_15, A_15/225, "b--")
-plt.plot(K_20, A_20/400, "r--")
-# get new data for zeta0 = 20, 10 ??
+#plt.plot(K_5, A_5/25, "g--")
+plt.plot(K_10[50:61], A_10[50:61]/100, "ks--", clip_on=False)
+plt.plot(K_15[50:61], A_15[50:61]/225, "k*--", clip_on=False) #????
+plt.plot(K_20[50:61], A_20[50:61]/400, "k^:", clip_on=False)
 
 # Plot the asymptotic predictions
 A_zeta0_2 = - ( K * K ) / ( F_minus_inf * F_minus_inf * np.pi)
-plt.plot(K, A_zeta0_2, color='r')
+plt.plot(K, A_zeta0_2, color='k')
 
-plt.xlabel('K')
-plt.ylabel('A/zeta0^2')
+#plt.xlabel('K')
+#plt.ylabel('A/zeta0^2')
 axes = plt.gca()
 axes.set_xlim([2.5,3])
-#axes.set_ylim([-2,0])
+axes.set_ylim([-2,0])
 
-#plt.savefig("plot.eps", format='eps', dpi=1000)
+# Hide axis numbers
+axes.xaxis.set_ticklabels([])
+axes.yaxis.set_ticklabels([])
+
+plt.savefig("Gaussian_A_numeric_asymptotic.eps", format='eps', dpi=1000)
 
 plt.show()
