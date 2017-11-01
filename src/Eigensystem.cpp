@@ -91,6 +91,6 @@ namespace TSL
 
   // Templated versions
   template class Eigensystem<double>;
-	//template class Eigensystem< std::complex<double> >;
+	//template class Eigensystem< std::complex<double> >; //TODO need to get this working with complex
 
 } // End of namespace TSL

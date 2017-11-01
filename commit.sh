@@ -24,7 +24,8 @@ echo $message
 git add .
 git commit -m $message
 #git push origin master
-git push origin Ridge
+#git push origin Ridge
+git push origin ODE_EVP
 
 # Move the files back
 mv ~/Desktop/figs_temp ./figs
