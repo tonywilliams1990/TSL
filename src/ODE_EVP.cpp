@@ -1,20 +1,10 @@
-/// \file ODE_EVP.cpp
-/// A specification of a class for an \f$ n^{th} \f$-order ODE LINEAR EVP defined by
-/// \f[ {\underline f}^\prime (x) = {\underline R}( {\underline f}(x), x )\,, \f]
-/// subject to \f$ n \f$ zero Dirichlet conditions defined at \f$ x = x_{left} \f$ or
-/// \f$ x_{right} \f$ for some components of \f$ {\underline f}(x) \f$. The routine
-/// constructs a banded 2nd order finite-difference (banded) representation of the EVP
-/// in the form \f[ A_{MxM} {\underline x} = \lambda B_{MxM} {\underline x} \f]
-/// which can then be solved via the LinearEigenSystem class where
-/// \f$ M = N x O \f$ for an order O equation and N (uniformly spaced) mesh points. The default
-/// configuration uses the DenseLinearEigenSystem class for solution via LAPACK
-/// although ARPACK can be used if you really know the resulting system has the
-/// correct mass matrix properties (typically it wont!).
+/* ODE_EVP - Here we define the ODE_EVP class used for solving ODE linear
+             eigenvalue problems.
+*/
 
 #include <string>
 
 #include "Equation.h"
-//#include <Utility.h>
 #include "ODE_EVP.h"
 #include "Error.h"
 #include "Eigensystem.h"
@@ -22,11 +12,11 @@
 
 namespace TSL
 {
-  template <typename _Type>
-  ODE_EVP<_Type>::ODE_EVP( Equation_2matrix<_Type >* ptr_to_equation,
+  template <typename T>
+  ODE_EVP<T>::ODE_EVP( Equation_2matrix<T >* ptr_to_equation,
                            const Vector<double> &nodes,
-                           Residual<_Type>* ptr_to_left_residual,
-                           Residual<_Type>* ptr_to_right_residual ) :
+                           Residual<T>* ptr_to_left_residual,
+                           Residual<T>* ptr_to_right_residual ) :
       p_EQUATION( ptr_to_equation ),
       p_LEFT_RESIDUAL( ptr_to_left_residual ),
       p_RIGHT_RESIDUAL( ptr_to_right_residual ),
@@ -34,50 +24,42 @@ namespace TSL
   {
     unsigned n( nodes.size() );
     unsigned order( p_EQUATION -> get_order() );
-    // first make the dense matrix equivalent of the problem
-    // using the Dense( banded ) constructor
-    A_DENSE = Matrix<_Type>( n * order, n * order, 0.0 );
-    B_DENSE = Matrix<_Type>( n * order, n * order, 0.0 );
-    // point the system pointer to the dense problem
-    //p_SYSTEM = new Eigensystem<_Type>( p_A_DENSE, p_B_DENSE );
-    //p_SYSTEM = new Eigensystem<_Type>;
+    A_DENSE = Matrix<T>( n * order, n * order, 0.0 );
+    B_DENSE = Matrix<T>( n * order, n * order, 0.0 );
   }
 
-  template <typename _Type>
-  ODE_EVP<_Type>::~ODE_EVP()
-  {
-    //TODO don't need this if not using pointers
-    // clean up the matrices & evp system
-    //delete p_SYSTEM;
-    //delete p_A_DENSE;
-    //delete p_B_DENSE;
-  }
+  template <typename T>
+  ODE_EVP<T>::~ODE_EVP()
+  {}
 
-  template <typename _Type>
-  Eigensystem<_Type>& ODE_EVP<_Type>::eigensystem()
+  template <typename T>
+  Eigensystem<T>& ODE_EVP<T>::eigensystem()
   {
     return SYSTEM;
   }
 
-  template <typename _Type>
-  void ODE_EVP<_Type>::eigensolve()
+  template <typename T>
+  void ODE_EVP<T>::eigensolve( bool compute_evecs )
   {
-    // NOTE: moving construct_banded_system to the constructor is a bad idea, because
-    // sometimes we will want to construct an EVP that depends on an
-    // underlying baseflow solution that is unknown at the time of construction.
-    //
-    // construct the banded matrix eigenvalue problem that corresponds
-    // to the equation & boundary conditions specified in the constructor.
+    // Construct the eigenvalue problem
     assemble_dense_problem();
     // solve the system
-    //p_SYSTEM -> eigensolve();
-    SYSTEM.compute( A_DENSE, B_DENSE, false );
+    if ( compute_evecs )
+    {
+      SYSTEM.compute( A_DENSE, B_DENSE, true );
+      EIGENVECTORS_COMPUTED = true;
+    }
+    else
+    {
+      SYSTEM.compute( A_DENSE, B_DENSE, false );
+      EIGENVECTORS_COMPUTED = false;
+    }
     EIGENVALUES_COMPUTED = true;
   }
 
 
-  template <typename _Type>
-  void ODE_EVP<_Type>::assemble_dense_problem()
+  template <typename T>
+  void ODE_EVP<T>::assemble_dense_problem()
   {
     // clear the A & B matrices, as they could have been filled with
     // pivoting if this is a second solve.
@@ -86,10 +68,10 @@ namespace TSL
     // eqn order
     unsigned order( p_EQUATION -> get_order() );
     // Jacobian matrix for the equation
-    Matrix<_Type> jac_midpt( order, order, 0.0 );
+    Matrix<T> jac_midpt( order, order, 0.0 );
     // local state variable and functions
     // the problem has to be linear, so this is a dummy vector.
-    Vector<_Type> temp_dummy( order, 0.0 );
+    Vector<T> temp_dummy( order, 0.0 );
     // number of nodes in the mesh
     std::size_t num_of_nodes( NODES.size() );
     // row counter

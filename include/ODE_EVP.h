@@ -19,7 +19,7 @@
 namespace TSL
 {
 
-  template <typename _Type>
+  template <typename T>
   class ODE_EVP
   {
     private:
@@ -28,16 +28,16 @@ namespace TSL
       void assemble_dense_problem();
 
       /// The function associated with this instance.
-      Equation_2matrix<_Type > *p_EQUATION;
+      Equation_2matrix<T > *p_EQUATION;
       /// Pointer to the residual defining the LHS BC
-      Residual<_Type > *p_LEFT_RESIDUAL;
+      Residual<T > *p_LEFT_RESIDUAL;
       /// Pointer to the residual defining the RHS BC
-      Residual<_Type > *p_RIGHT_RESIDUAL;
+      Residual<T > *p_RIGHT_RESIDUAL;
       /// The linear eigensystem
-      Eigensystem<_Type> SYSTEM;
+      Eigensystem<T> SYSTEM;
       /// Matrices
-      Matrix<_Type> A_DENSE;
-      Matrix<_Type> B_DENSE;
+      Matrix<T> A_DENSE;
+      Matrix<T> B_DENSE;
       /// the nodal distribution
       Vector<double> NODES;
       /// A vector of uniform meshes that store the eigenfunctions
@@ -47,29 +47,24 @@ namespace TSL
       /// has the eigensystem been constructed/solved?
       bool CONSTRUCTED;
       bool EIGENVALUES_COMPUTED;
+      bool EIGENVECTORS_COMPUTED;
 
   public:
 
-    /// The class is defined by a vector function for the system.
-    /// \param equation_ptr A pointer to an equation with 2 associated matrices; matrix1 will define the eigenvalue problem.
-    /// \param nodes A vector of nodal points.
-    /// \param ptr_to_left_residual A pointer to a residual object that defines the LHS boundary conditions.
-    /// \param ptr_to_right_residual A pointer to a residual object that defines the RHS boundary conditions.
-    ODE_EVP( Equation_2matrix<_Type > *equation_ptr,
+    /// Constructor
+    ODE_EVP( Equation_2matrix<T > *equation_ptr,
              const Vector<double> &nodes,
-             Residual<_Type>* ptr_to_left_residual,
-             Residual<_Type>* ptr_to_right_residual );
+             Residual<T>* ptr_to_left_residual,
+             Residual<T>* ptr_to_right_residual );
 
     /// Destructor
     ~ODE_EVP();
 
     /// Formulate and solve the global eigenvalue problem
-    /// for a linear system.
-    void eigensolve();
+    void eigensolve( bool compute_evecs = false );
 
-    /// Allow access to the underlying dense linear eigensystem
-    /// through a pointer to the private member data.
-    Eigensystem<_Type>& eigensystem();
+    /// Allow access to the underlying linear eigensystem
+    Eigensystem<T>& eigensystem();
 
     /// Return the computed eigenvalues in a vector
     Vector< std::complex<double> > eigenvalues() const
@@ -78,7 +73,19 @@ namespace TSL
       else { throw Error( "Eigensystem: eigenvalues not computed." ); }
     }
 
-    //TODO function for returning eigenvectors + decide if we want to compute evecs
+    /// Return the matrix of eigenvectors ( each column is an eigenvector )
+    Matrix< std::complex<double> > eigenvector_matrix() const
+    {
+      if ( EIGENVECTORS_COMPUTED ) { return SYSTEM.eigenvector_matrix(); }
+      else { throw Error( "Eigensystem: eigenvectors not computed." ); }
+    }
+
+    /// Return an std::vector of eigenvectors
+    std::vector< Vector< std::complex<double> > > eigenvectors() const
+    {
+      if ( EIGENVECTORS_COMPUTED ){ return SYSTEM.eigenvectors(); }
+      else { throw Error( "Eigensystem: eigenvectors not computed." ); }
+    }
 
     /*void add_tagged_to_mesh()
     {
@@ -138,7 +145,6 @@ namespace TSL
     }
 
   }; // End of class ODE_EVP
-
 } // End of namespace TSL
 
 #endif

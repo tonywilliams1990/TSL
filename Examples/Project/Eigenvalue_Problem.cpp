@@ -23,29 +23,29 @@ enum{ u, ud, phi, theta, thetad, psi };
 
 namespace TSL
 {
-    unsigned col( const unsigned& i, const unsigned& k )           
-    {        
+    unsigned col( const unsigned& i, const unsigned& k )
+    {
         // Return the column number for kth variable at node i
-        return 6 * i  + k;   
+        return 6 * i  + k;
     }
 
     namespace Base_Flow
     {
-        double K( 0.0 );   // Transpiration parameter (+ve is blowing)                  
+        double K( 0.0 );   // Transpiration parameter (+ve is blowing)
 
 #ifdef Base_2D
 	    class equation : public Equation<double>
 	    {
 		    public:
 			    // The Blasius equation is 3rd order
-			    equation() : Equation<double> ( 3 ) {} 
+			    equation() : Equation<double> ( 3 ) {}
 
 			    // Define the equation
 			    void residual_fn( const Vector<double>& u, Vector<double>& F  ) const
 			    {
 				    F[ f ]   = u[ fd ];
 				    F[ fd ]  = u[ fdd ];
-				    F[ fdd ] = - u[ f ] * u[ fdd ];    
+				    F[ fdd ] = - u[ f ] * u[ fdd ];
 			    }
 	    };
 
@@ -70,7 +70,7 @@ namespace TSL
             {
                 B[ 0 ] = z[ fd ] - 1.0;
             }
-        }; 
+        };
 #endif
 
 #ifdef Base_3D
@@ -78,7 +78,7 @@ namespace TSL
 	    {
 		    public:
 			    // The equation is 6th order
-			    equation() : Equation<double> ( 6 ) {} 
+			    equation() : Equation<double> ( 6 ) {}
 
 			    // Define the equation
 			    void residual_fn( const Vector<double>& u, Vector<double>& F  ) const
@@ -88,7 +88,7 @@ namespace TSL
 				    F[ fdd ] = - ( u[ f ] +  u[ g ] ) * u[ fdd ];
             F[ g ]   = u[ gd ];
             F[ gd ]  = u[ gdd ];
-            F[ gdd ] = - ( u[ f ] + u[ g ] ) * u[ gdd ] - 2.0 * u[ gd ] * u[ fd ] + u[ gd ] * u[ gd ];     
+            F[ gdd ] = - ( u[ f ] + u[ g ] ) * u[ gdd ] - 2.0 * u[ gd ] * u[ fd ] + u[ gd ] * u[ gd ];
 			    }
 	    };
 
@@ -117,8 +117,8 @@ namespace TSL
                 B[ 1 ] = z[ gd ];
             }
         };
-#endif  
- 
+#endif
+
     } // End of namespace Base_Flow
 } // End of namespace TSL
 
@@ -127,13 +127,13 @@ using namespace TSL;
 
 int main()
 {
-    cout << "----- Eigenvalue problem -----" << endl;	
- 	
+    cout << "----- Eigenvalue problem -----" << endl;
+
 	// Define the domain
-	double Inf( 30.0 );											           // Infinite boundary 
+	double Inf( 30.0 );											           // Infinite boundary
 	size_t N_nodes( 200 );                             // Number of nodes
 	Vector<double> nodes;								               // Declare vector of nodes (uniform)
-	nodes.linspace(0,Inf,N_nodes); 
+	nodes.linspace(0,Inf,N_nodes);
   const double delta = Inf / ( N_nodes - 1 );        // Mesh grid spacing
 
   cout << "*** Solving the base flow ODE using " << N_nodes << " points." << endl;
@@ -144,14 +144,14 @@ int main()
   Base_Flow::far_BC right_BC;
 
   ODE_BVP<double> bvp( &equation, nodes, &left_BC, &right_BC ); // Create boundary value problem
-    
-    // Set the initial guess 
+
+    // Set the initial guess
 #ifdef Base_2D
 	for (std::size_t j=0; j < N_nodes; ++j )
 	{
 		double eta = nodes[ j ];				                      // eta value at node j
 		bvp.solution()( j, f )  		= eta + exp( -eta );
-    bvp.solution()( j, fd ) 		= 1.0 - exp( -eta ); 
+    bvp.solution()( j, fd ) 		= 1.0 - exp( -eta );
 		bvp.solution()( j, fdd )  	= exp( -eta );
 	}
 #endif
@@ -160,10 +160,10 @@ int main()
 	{
 		double eta = nodes[ j ];					                   // eta value at node j
 		bvp.solution()( j, f )  		= eta + exp( -eta );
-    bvp.solution()( j, fd ) 		= 1.0 - exp( -eta ); 
+    bvp.solution()( j, fd ) 		= 1.0 - exp( -eta );
 		bvp.solution()( j, fdd )  	= exp( -eta );
     bvp.solution()( j, g )  		= 0.35 * (1.0 - exp( -eta ));
-    bvp.solution()( j, gd ) 		= 1 - exp( -eta ) - exp( -1 / (eta * eta) ); 
+    bvp.solution()( j, gd ) 		= 1 - exp( -eta ) - exp( -1 / (eta * eta) );
 		bvp.solution()( j, gdd )  	= exp( -eta ) - 0.5 * tanh( eta ) + 0.5 * tanh( eta - 2.0 );
 	}
 #endif
@@ -212,7 +212,7 @@ int main()
     cout << "*** Assembling the matrices for the eigenvalue problem." << endl;
 
     // Create the generalised eigenvalue problem A v = lambda B v
-    Matrix<double> A( 6*N_nodes, 6*N_nodes, 0.0 ); // 6N*6N -> 6th order system    
+    Matrix<double> A( 6*N_nodes, 6*N_nodes, 0.0 ); // 6N*6N -> 6th order system
     Matrix<double> B( 6*N_nodes, 6*N_nodes, 0.0 );
 
     unsigned row( 0 );                     // Row counter
@@ -220,7 +220,7 @@ int main()
     // Plate BCs
     unsigned i( 0 );
     // u(0) = 0
-    A( row, col( i, u ) )               =  1.0;                                        
+    A( row, col( i, u ) )               =  1.0;
     ++row;
     // phi(0) = 0
     A( row, col( i, phi ) )             =  1.0;
@@ -228,17 +228,17 @@ int main()
     // psi(0) = 0
     A( row, col( i, psi ) )             =  1.0;
     ++row;
-    
+
     // Interior points
     for ( std::size_t i=0; i<N_nodes-1; ++i)
     {
         // Base solution at the mid-node location i + 1/2
-        double U_B      = 0.5 * ( Base_soln( i, UB      ) + Base_soln( i + 1, UB      )  );   
-        double U_Bd     = 0.5 * ( Base_soln( i, UBd     ) + Base_soln( i + 1, UBd     )  );              
+        double U_B      = 0.5 * ( Base_soln( i, UB      ) + Base_soln( i + 1, UB      )  );
+        double U_Bd     = 0.5 * ( Base_soln( i, UBd     ) + Base_soln( i + 1, UBd     )  );
         double Phi_B    = 0.5 * ( Base_soln( i, PhiB    ) + Base_soln( i + 1, PhiB    )  );
-        double Theta_B  = 0.5 * ( Base_soln( i, ThetaB  ) + Base_soln( i + 1, ThetaB  )  );   
-        double Theta_Bd = 0.5 * ( Base_soln( i, ThetaBd ) + Base_soln( i + 1, ThetaBd )  );              
-        double Psi_B    = 0.5 * ( Base_soln( i, PsiB    ) + Base_soln( i + 1, PsiB    )  );              
+        double Theta_B  = 0.5 * ( Base_soln( i, ThetaB  ) + Base_soln( i + 1, ThetaB  )  );
+        double Theta_Bd = 0.5 * ( Base_soln( i, ThetaBd ) + Base_soln( i + 1, ThetaBd )  );
+        double Psi_B    = 0.5 * ( Base_soln( i, PsiB    ) + Base_soln( i + 1, PsiB    )  );
         // Equation 1
         A( row, col( i, u ) )           =  1.0;
         A( row, col( i + 1, u ) )       =  1.0;
@@ -296,12 +296,12 @@ int main()
     // Far BCs
     i = N_nodes - 1;
     // u(inf) = 0
-    A( row, col( i, u ) )               =  1.0;                                        
+    A( row, col( i, u ) )               =  1.0;
     ++row;
     // theta(inf) = 0
-    A( row, col( i, theta ) )           =  1.0;                                        
+    A( row, col( i, theta ) )           =  1.0;
     ++row;
-    // psi(0) = 0
+    // psi(inf) = 0
     A( row, col( i, psi ) )             =  1.0;
     //++row;
 
@@ -313,9 +313,9 @@ int main()
     TSL::Timer timer;								// Create a Timer object
 	  timer.start();								  // Start the timer
     system.compute( A, B, compute_eigenvectors );
-    
-    TSL::Vector< std::complex<double> > evals = system.eigenvalues(); 
-    
+
+    TSL::Vector< std::complex<double> > evals = system.eigenvalues();
+
     for (size_t i=0; i < evals.size(); ++i)
     {
         if ( evals[i].real() < 2.0 && evals[i].real() > -1.0 && abs( evals[i] ) < 50.0 )
@@ -324,7 +324,7 @@ int main()
         }
     }
 
-    timer.print();                                      // Output time to screen 
+    timer.print();                                      // Output time to screen
 	  timer.stop();                                       // Stop the timer
 
     cout << "FINISHED" << endl;

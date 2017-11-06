@@ -3,9 +3,16 @@ import glob
 
 # compiler
 c_comp = 'g++'
+f_comp = 'gfortran'
+
+# library names
+TSL_lib = 'TSL'
+blas_lib = 'blas'
+lapack_lib = 'lapack'
 
 # source is all cpp files, so let's glob them
 src = glob.glob('src/*.cpp')
+blas_src = glob.glob('BLAS/SRC/*.f')
 
 # set the build dir
 topdir = os.getcwd()
@@ -19,13 +26,13 @@ incdir = incdir_str.split()
 libdir = libdir_str.split()
 
 # Initialise the environment
-env = Environment( CXX = c_comp, CPPPATH = incdir, CCFLAGS = opts, LIBPATH = libdir)
+env = Environment( FORTRAN = f_comp, CXX = c_comp, CPPPATH = incdir, CCFLAGS = opts, LIBPATH = libdir)
 
 # Now check the environment is complete
 conf = Configure( env )
 env = conf.Finish()
 
-libs_str   = 'TSL '
+libs_str   = TSL_lib + ' ' + blas_lib
 libs = libs_str.split()
 
 # default output format for messaging
@@ -41,7 +48,8 @@ def message( col, text ):
 # Output message to user
 message( blue, " -----  Building -----")
 
-# Build the library in ./lib
+# Build the libraries in ./lib
+env.StaticLibrary('lib/blas', blas_src)
 env.StaticLibrary('lib/TSL', src )
 
 SConscript('Examples/SConscript', exports='env opts incdir libdir topdir libs' )

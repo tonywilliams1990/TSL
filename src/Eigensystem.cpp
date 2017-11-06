@@ -52,8 +52,6 @@ namespace TSL
     { std::cout << "Success" << std::endl;
     } else { std::cout << "Fail" << std::endl; }*/
 
-
-
     // Put the eigenvalues into the storage vector
     for ( std::size_t i=0; i<N; ++i )
     {

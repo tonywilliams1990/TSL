@@ -1,9 +1,9 @@
-/// Solving the Harmonic equation //TODO - description
-
+/// Solving the Harmonic equation f''(x) + \lambda f(x) = 0 as an eigenvalue
+/// problem with homogeneous boundary conditions.
 #include <cassert>
 
 #include "Core"
-#include "ODE_EVP.h"
+#include "Eigenvalue"
 
 // enumerate the variables in the ODE
 enum {f, fd };
@@ -80,10 +80,10 @@ int main()
   Vector<double> nodes;
   nodes.linspace( left, right, N );
   ODE_EVP<double> ode_evp( &problem, nodes, &BC_both, &BC_both );
-
+  bool compute_eigenvectors( false );
   try
   {
-    ode_evp.eigensolve();
+    ode_evp.eigensolve( compute_eigenvectors );
   }
   catch ( std::runtime_error )
   {
@@ -105,6 +105,13 @@ int main()
   cout << "The exact answer is pi^2 = " << M_PI * M_PI << endl;
 
   //cout << "eigenvalues = " << ode_evp.eigenvalues() << endl;
+
+  if ( compute_eigenvectors )
+  {
+    Matrix< std::complex<double> > evec_mat;
+    evec_mat = ode_evp.eigenvector_matrix();
+    cout << "eigenvector matrix = " << evec_mat << endl;
+  }
 
   cout << "FINISHED" << endl;
 }
