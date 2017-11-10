@@ -48,8 +48,13 @@ namespace TSL
       /// Return true if the eigenvectors have been computed
       bool eigenvectors_computed()  { return EIGENVECTORS_COMPUTED; }
 
-      /// Compute the eigenvalues ( and optionally the eigenvectors )
-      void compute( const Matrix<T>& A, const Matrix<T>& B, bool compute_evecs = true );
+      /// Compute the eigenvalues ( and optionally the eigenvectors ) for real matrices
+      void compute( const Matrix<double>& A, const Matrix<double>& B, bool compute_evecs = true );
+
+      /// Compute the eigenvalues ( and optionally the eigenvectors ) for complex matrices
+      void compute( const Matrix<std::complex<double>>& A, const Matrix<std::complex<double>>& B, bool compute_evecs = true );
+
+      //TODO non-generalised A*x = lambda*x (no B matrix) -> zgeev
 
       /// Return the computed eigenvalues in a vector
       Vector< std::complex<double> > eigenvalues() const

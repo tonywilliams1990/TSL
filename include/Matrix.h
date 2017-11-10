@@ -20,12 +20,12 @@ namespace TSL
 	// Templated matrix class
 	template <class T>
 
-	
-	class Matrix 
+
+	class Matrix
 	{
-		
+
 		protected:
-				std::size_t ROWS;					          // Number of rows 
+				std::size_t ROWS;					          // Number of rows
 				std::size_t COLS;					          // Number of columns
 				Eigen::Matrix<T, -1, -1> MATRIX;	  // Dynamic matrix object
         friend class Eigensystem<T>;        // Friend class that may access MATRIX directly
@@ -63,7 +63,7 @@ namespace TSL
       /// Indexing operator ( read only )
 			const T& operator() ( const std::size_t& i, const std::size_t& j ) const
 			{
-					// Range check 
+					// Range check
 					if ( i<0 || ROWS<=i )	{ throw Error( "Matrix range error: dimension 1" );}
 					if ( j<0 || COLS<=j )	{ throw Error( "Matrix range error: dimension 2" );}
 					return this->MATRIX( i, j );
@@ -72,7 +72,7 @@ namespace TSL
       /// Indexing operator ( read/write )
 			T& operator() ( const std::size_t& i, const std::size_t& j )
 			{
-					// Range check 
+					// Range check
 					if ( i<0 || ROWS<=i )	{ throw Error( "Matrix range error: dimension 1" );}
 					if ( j<0 || COLS<=j )	{ throw Error( "Matrix range error: dimension 2" );}
 					return this->MATRIX( i, j );
@@ -80,7 +80,7 @@ namespace TSL
 
       /// Assignment
     	Matrix& operator=( const Matrix& original )
-      {		
+      {
 		    MATRIX = original.MATRIX;
 		    ROWS = original.ROWS;
 		    COLS = original.COLS;
@@ -91,7 +91,7 @@ namespace TSL
       Matrix<T> operator+() const
 			{
 				return *this;
-			}      
+			}
 
       /// Unary -
       Matrix<T> operator-() const
@@ -138,9 +138,9 @@ namespace TSL
 			friend Matrix<T> operator*( const T& m, Matrix<T>& mat )
 			{
 				return mat * m;
-			}	
+			}
 
-      /// Scalar division 
+      /// Scalar division
       Matrix<T> operator/( const T& m_div )const
       {
         Matrix<T> temp( *this );
@@ -166,6 +166,15 @@ namespace TSL
         return result;
       }
 
+      /// TODO Matrix Vector multiplication
+      Vector<T> mult( const Vector<T>& b ) const
+      {
+        if ( COLS != b.SIZE ) { throw Error( "Matrix error: dimensions do not agree." );}
+        Vector<T> result( b.SIZE );
+        result.VECTOR = MATRIX * b.VECTOR;
+        return result;
+      }
+
       /// Addition assignment
       Matrix<T> operator+=( const Matrix<T>& m_plus )
       {
@@ -181,17 +190,17 @@ namespace TSL
         if ( m_minus.ROWS != ROWS ) { throw Error( "Matrix error: dimension 1 " );}
 				if ( m_minus.COLS != COLS ) { throw Error( "Matrix error: dimension 2 " );}
         MATRIX = MATRIX - m_minus.MATRIX;
-        return *this; 
+        return *this;
       }
 
       /// Operator overloading for ROW access
       Vector<T> operator[] ( const std::size_t& row )
-      { 
+      {
         return this->get_row( row );
       }
 
       /// Scalar multiplication assignment TODO
-      
+
       /// Scalar division assignment TODO
 
       /* ----- Methods ----- */
@@ -302,7 +311,7 @@ namespace TSL
         for ( std::size_t i=0; i<N; ++i )
         {
           MATRIX( i, i ) = elem;
-        }        
+        }
       }
 
       /// Fill a diagonal band of the matrix
@@ -398,8 +407,8 @@ namespace TSL
       double norm_frob() const
 			{
 				return this->norm_p( 2.0 );
-			}	
-				
+			}
+
       /// Return the entrywise max-norm of the matrix
       double norm_max() const
 			{
@@ -409,7 +418,7 @@ namespace TSL
             for ( std::size_t j = 0; j < COLS; ++j )
             {
                 max = std::max( max, std::abs( MATRIX( i, j ) ) );
-            } 
+            }
         }
         return max;
     	}
@@ -425,18 +434,18 @@ namespace TSL
         return det;
       }
 
-      
-      
+
+
 
       /* ----- Solve linear systems ----- */
 
-      /// Solve system of equations Ax=b where x and b are vectors  
+      /// Solve system of equations Ax=b where x and b are vectors
       Vector<T> solve( const Vector<T>& b, const std::string method = "LU"  ) const
       {
         if ( ROWS != b.SIZE ) { throw Error( "Linear system error: dimension 1 " );}
         Eigen::Matrix<T, -1, 1> X;
         X.resize(b.SIZE,1);
-        if ( !(method == "LU" || method == "QR" || method == "PartialLU") ) 
+        if ( !(method == "LU" || method == "QR" || method == "PartialLU") )
         { throw Error( "Linear system error: solve method is not recognised " ); }
 
         if ( method == "LU" )
@@ -446,11 +455,11 @@ namespace TSL
         if ( method == "PartialLU" )
         {
           X = MATRIX.partialPivLu().solve( b.VECTOR );
-        } 
+        }
         if ( method == "QR" )
         {
           X = MATRIX.fullPivHouseholderQr().solve( b.VECTOR );
-        }       
+        }
         Vector<T> x( b.SIZE );
         x.VECTOR = X;
         return x;
@@ -463,7 +472,7 @@ namespace TSL
         Matrix<T> X;
         X.ROWS = COLS;
         X.COLS = B.COLS;
-        if ( !(method == "LU" || method == "QR" || method == "PartialLU") ) 
+        if ( !(method == "LU" || method == "QR" || method == "PartialLU") )
         { throw Error( "Linear system error: solve method is not recognised " ); }
 
         if ( method == "LU" )

@@ -7,30 +7,30 @@ int main()
 {
   cout << "----- TESTING Matrix -----" << endl;
 
-  /* ----- TESTING Tmatrix class ----- */	
+  /* ----- TESTING Tmatrix class ----- */
 
 	TSL::Matrix<double> A;                              // Test basic constructor
   TSL::Matrix<double> B( A );                         // Test copy constructor
 	TSL::Matrix<double> C(3,3,0.5);                     // Test constructor with elements
-  
+
   C(0,0) = 2.22; C(2,2) = 1.2;                        // Test indexing operator
 
   cout << "C = " << endl << C << endl;                // Test output operator
 
-  A = C;                                              // Test assignment 
+  A = C;                                              // Test assignment
   cout << "A = " << endl << A << endl;
-  A(2,0) = 0.7;   
+  A(2,0) = 0.7;
   cout << "+A = " << endl << +A << endl;              // Test unary +
   cout << "-A = " << endl << -A << endl;              // Test unary -
-  cout << "A + C = " << endl << A + C << endl;        // Test binary +  
+  cout << "A + C = " << endl << A + C << endl;        // Test binary +
   cout << "A - C = " << endl << A - C << endl;        // Test binary -
 
-  cout << "A * 3.0 = " << endl << A * 3.0 << endl;    // Test scalar multiplication 
+  cout << "A * 3.0 = " << endl << A * 3.0 << endl;    // Test scalar multiplication
   cout << "2.0 * A = " << endl << 2.0 * A << endl;    // Test scalar multiplication
   cout << "A / 3.0 = " << endl << A / 3.0 << endl;    // Test scalar division
-  
-  cout << "A * C = " << endl << A * C << endl;        // Test matrix multiplication 
-  
+
+  cout << "A * C = " << endl << A * C << endl;        // Test matrix multiplication
+
   A += C;                                             // Test addition assignment +=
   cout << "A += C: A = " << endl << A << endl;
 
@@ -79,7 +79,17 @@ int main()
   cout << "C.get_col( 1 ) = " << C.get_col( 1 ) << endl;   // Test get_col
   cout << "C.get_row( 1 ) = " << C.get_row( 1 ) << endl;   // Test get_row
   cout << "C[ 1 ] = " << C[ 1 ] << endl;
-  
+
+  A(0,0) = 1; A(0,1) = 2;
+  A(1,0) = 3; A(1,1) = 4;
+
+  cout << "A = " << endl << A << endl;
+  TSL::Vector<double> x( 2, 0.0 );
+  x[0] = 5; x[1] = 6;
+  cout << "x = " << x << endl;
+
+  cout << "A*x = " << A.mult(x) << endl;
+
 	cout << "FINISHED" << endl;
 
 }

@@ -53,7 +53,7 @@ message( blue, " -----  Building -----")
 # Build the libraries in ./lib
 env.StaticLibrary('lib/' + blas_lib, blas_src)
 env.StaticLibrary('lib/' + lapack_lib, [blas_src, lapack_src]) # LAPACK requires BLAS
-env.StaticLibrary('lib/' + TSL_lib, src )
+env.StaticLibrary('lib/' + TSL_lib, [blas_src, lapack_src, src] ) # TSL requires LAPACK & BLAS
 
 
 

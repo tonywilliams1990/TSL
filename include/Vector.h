@@ -205,6 +205,17 @@ namespace TSL
         return abs_vals;
       }
 
+      /// Return the real part of the vector
+      Vector<double> real() const
+      {
+        Vector<double> real_part( SIZE );
+        for (size_t i=0; i < SIZE; ++i)
+        {
+          real_part[ i ] = std::real( VECTOR( i, 0 ) ) ;
+        }
+        return real_part;
+      }
+
       /// Swap elements i and j
       void swap( const std::size_t& i, const std::size_t& j )
       {

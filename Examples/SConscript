@@ -22,6 +22,7 @@ env.Program( 'Test/Arc_BVP_test.out' , ['Test/Arc_BVP_test.cpp'] , OPTS = opts, 
 env.Program( 'Test/BVP_test.out' , ['Test/BVP_test.cpp'] , OPTS = opts, LIBS = libs)  #BVP
 env.Program( 'Test/BLAS_test.out' , ['Test/BLAS_test.cpp'] , OPTS = opts, LIBS = libs) #BLAS
 env.Program( 'Test/LAPACK_test.out' , ['Test/LAPACK_test.cpp'] , OPTS = opts, LIBS = libs) #LAPACK
+env.Program( 'Test/Complex_Eigen_test.out' , ['Test/Complex_Eigen_test.cpp'] , OPTS = opts, LIBS = libs)  #Eigensystem
 
 # Project codes
 
