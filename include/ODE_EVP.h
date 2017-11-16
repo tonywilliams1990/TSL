@@ -132,15 +132,13 @@ namespace TSL
 
     OneD_node_mesh< std::complex<double> > get_mesh( const unsigned& i ) const
     {
-#ifdef PARANOID
       if ( i > MESHES.size() )
       {
         std::string problem;
         problem = "You have tried to extract an eigenfunction from the ODE_EVP class\n";
         problem += "whose index is outside the range of stored meshes.\n";
-        throw ExceptionRange( problem, MESHES.size(), i );
+        throw Error( problem );
       }
-#endif
       return MESHES[ i ];
     }
 

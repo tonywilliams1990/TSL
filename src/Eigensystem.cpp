@@ -111,11 +111,13 @@ namespace TSL
     int info, lwork;
     std::complex<double> wkopt;
     std::complex<double>* work;
-    double rwork[2*n];
-    std::complex<double> vl[ldvl*n], vr[ldvr*n];
 
     Vector< std::complex<double> > alphas( n, 0.0 );
     Vector< std::complex<double> > betas( n, 0.0 );
+    Vector< std::complex<double> > vec_right( n * n, 0.0 );
+    Vector< std::complex<double> > vec_left( 1, 0.0 );
+
+    Vector<double> rwork( 8 * n, 0.0 );
 
     // Convert A and B matrices to vectors
     std::vector< std::complex<double> > a_vec( n * n, 0.0);
@@ -124,20 +126,21 @@ namespace TSL
     {
       for ( int j=0; j<n; ++j)
       {
-        a_vec[ i * n + j ] = A(i,j);
-        b_vec[ i * n + j ] = B(i,j);
+        a_vec[ i * n + j ] = A(j,i);
+        b_vec[ i * n + j ] = B(j,i);
       }
     }
 
     // Query and allocate the optimal workspace
+    info = 0;
     lwork = -1;
-    zggev_( &jobvl, &jobvr, &n, &a_vec[0], &lda, &b_vec[0], &ldb, &alphas[0], &betas[0], vl, &ldvl, vr, &ldvr,
-            &wkopt, &lwork, rwork, &info );
+    zggev_( &jobvl, &jobvr, &n, &a_vec[0], &lda, &b_vec[0], &ldb, &alphas[0], &betas[0], &vec_left[0], &ldvl, &vec_right[0], &ldvr,
+            &wkopt, &lwork, &rwork[0], &info );
     lwork = (int)wkopt.real();
     work = (std::complex<double>*)malloc( lwork*sizeof(std::complex<double>) );
     // Solve eigenproblem
-    zggev_( &jobvl, &jobvr, &n, &a_vec[0], &lda, &b_vec[0], &ldb, &alphas[0], &betas[0], vl, &ldvl, vr, &ldvr,
-    work, &lwork, rwork, &info );
+    zggev_( &jobvl, &jobvr, &n, &a_vec[0], &lda, &b_vec[0], &ldb, &alphas[0], &betas[0], &vec_left[0], &ldvl, &vec_right[0], &ldvr,
+    work, &lwork, &rwork[0], &info );
 
     if( info > 0 ) {
       std::string problem = "zggev_ failed to compute eigenvalues.";
@@ -172,7 +175,7 @@ namespace TSL
       {
         for ( std::size_t j=0; j<N; ++j )
         {
-          EIGENVECTORS( i, j ) = vr[ i * n + j ];
+          EIGENVECTORS( j, i ) = vec_right[ i * n + j ];
         }
       }
     }

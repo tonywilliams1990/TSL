@@ -45,7 +45,7 @@ namespace TSL
         g[ fdd ] = z[ f ] * z[ fdd ] + Example::beta * ( 1.0 - z[ fd ] * z[ fd ]);
       }
 
-      /// Define the (BVP) deriv by providing the identity matrix
+      /// Define the (BVP) deriv by providing the matrix
       void matrix0( const Vector<double>& z, Matrix<double>& m ) const
       {
         m( 0, 0 ) = 1.0;
