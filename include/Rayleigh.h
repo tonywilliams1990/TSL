@@ -172,6 +172,8 @@ namespace TSL
     bool compute_eigenvectors = true;
     rayleigh_evp.compute( A, B, compute_eigenvectors );
 
+    EIGENVALUES.resize(0);
+
     // Return eigenvalues based on Howard's semi-circle theorem
     for ( unsigned i=0; i < N; ++i)
     {
@@ -181,6 +183,16 @@ namespace TSL
       if ( c_r * c_r + c_i * c_i - ( U_max + U_min ) * c_r + U_max * U_min <= 0 )
       {
         EIGENVALUES.push_back( rayleigh_evp.eigenvalues()[i] );
+      }
+    }
+    // Eigenvectors
+    Matrix< std::complex<double> > evec_mat = rayleigh_evp.eigenvector_matrix();
+    EIGENVECTORS = OneD_node_mesh<std::complex<double>, std::complex<double> >( BASEFLOW.nodes(), N );
+    for ( unsigned evec = 0; evec < EIGENVALUES.size(); ++evec )
+    {
+      for ( unsigned node = 0; node < N; ++node )
+      {
+        EIGENVECTORS( node, evec ) = evec_mat( evec, node );
       }
     }
 

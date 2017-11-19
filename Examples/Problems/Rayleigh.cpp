@@ -40,10 +40,10 @@ int main()
 
   // Define the problem
   Problem::alpha = 0.8;               // wavenumber
-  double tol( 1.e-5 );                // tolerance
+  //double tol( 1.e-5 );                // tolerance
   double left( 0.0 );                 // y1 = 0
   double right(  2 * M_PI );          // y2 = 2*pi
-  unsigned N( 201 );
+  unsigned N( 801 );
 
   // Real distribution of nodes
   Vector<double> r_nodes;
@@ -73,8 +73,27 @@ int main()
   // Solve the global eigenvalue problem
   rayleigh.global_evp();
 
+  unsigned i_ev( 0 );                 // Index of the least stable eigenvalue
+
   // Output the eigenvalues
-  cout << rayleigh.eigenvalues() << endl;
+  for ( unsigned i = 0; i < rayleigh.eigenvalues().size(); ++i )
+  {
+    if ( rayleigh.eigenvalues()[ i ].imag() > -0.05 )
+    {
+      //if ( rayleigh.eigenvalues()[i].imag() < 0 && std::abs(rayleigh.eigenvalues()[i].imag()) < std::abs(rayleigh.eigenvalues()[i_ev].imag()) )
+      if ( rayleigh.eigenvalues()[i].real() > 0 && std::abs(rayleigh.eigenvalues()[i].real()) < std::abs(rayleigh.eigenvalues()[i_ev].real()) )
+      {
+        i_ev = i;
+      }
+      cout << i << " " << rayleigh.eigenvalues()[ i ] << "\n";
+    }
+  }
+
+  cout << "i_ev = " << i_ev << ", eval[i_ev] = " << rayleigh.eigenvalues()[i_ev] << endl;
+
+  // Get eigenvectors mesh
+  OneD_node_mesh<std::complex<double>, std::complex<double> > evecs = rayleigh.eigenvectors();
+  //evecs.output( "./DATA/evec.dat" );
 
 
   cout << "FINISHED" << endl;

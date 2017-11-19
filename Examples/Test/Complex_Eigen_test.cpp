@@ -106,7 +106,7 @@ int main()
   cout << "Eigenvectors = " << endl << Eig_cmplx_2.eigenvector_matrix() << endl;*/
 
   // Another test
-  /*std::size_t N( 3 );
+  std::size_t N( 200 );
   Matrix< std::complex<double> > A_mat( N, N, 0.0 );
   Matrix< std::complex<double> > B_mat( N, N, 0.0 );
 
@@ -123,14 +123,14 @@ int main()
     B_mat(n,n) = std::complex<double>( 1.0, 1.0 );
   }
 
-  cout << "A = " << endl << A_mat << endl;
-  cout << "B = " << endl << B_mat << endl;
+  //cout << "A = " << endl << A_mat << endl;
+  //cout << "B = " << endl << B_mat << endl;
 
   Eigensystem<std::complex<double>> Eig_cmplx_3;
   Eig_cmplx_3.compute( A_mat, B_mat, compute_eigenvectors );
 
-  cout << "Eigenvalues = " << endl << Eig_cmplx_3.eigenvalues() << endl;
-  cout << "Eigenvectors = " << endl << Eig_cmplx_3.eigenvector_matrix() << endl;*/
+  cout << "Eigenvalues[0] = " << endl << Eig_cmplx_3.eigenvalues()[0] << endl;
+  //cout << "Eigenvectors = " << endl << Eig_cmplx_3.eigenvector_matrix() << endl;
 
 	cout << "FINISHED" << endl;
 
