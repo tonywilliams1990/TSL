@@ -22,11 +22,11 @@ namespace TSL
   class Rayleigh
   {
     /// Class to define the Rayleigh equation
-    class Rayleigh_equation : public Equation_1matrix<std::complex<double>, T>
+    class Rayleigh_equation : public Equation<std::complex<double>, T>
     {
       public:
         // this is 3rd order for local refinement
-        Rayleigh_equation( ) : Equation_1matrix<std::complex<double> , T>( 3 )
+        Rayleigh_equation( ) : Equation<std::complex<double> , T>( 3 )
         {}
 
         void residual_fn( const Vector<std::complex<double> > &z, Vector<std::complex<double> > &g ) const
@@ -122,6 +122,12 @@ namespace TSL
       /// Solve the global eigenvalue problem using 2nd order finite-differences
       void global_evp();
 
+      /// Solve the EVP locally as a nonlinear BVP
+      void local_evp( std::size_t i_ev );
+
+      /// Iterate on the wavenumber to drive a selected eigenvalue to neutral
+      void iterate_to_neutral( std::size_t i_ev );
+
   }; // End of class Rayleigh
 
   template <>
@@ -196,6 +202,76 @@ namespace TSL
       }
     }
 
+  }
+
+  template <typename T>
+  void Rayleigh<T>::local_evp( std::size_t i_ev  )
+  {
+    // number of nodes in the mesh
+    std::size_t N = BASEFLOW.get_nnodes();
+    // formulate the Rayleigh equation as a BVP
+    Rayleigh_equation Rayleigh_problem;
+    // boundary conditions
+    Rayleigh_left_BC Rayleigh_left;
+    Rayleigh_right_BC Rayleigh_right;
+    // set the private member data in the objects
+    Rayleigh_problem.p_BASEFLOW = &BASEFLOW;
+    Rayleigh_problem.p_ALPHA = &ALPHA;
+
+    // pointer to the equation
+    ODE_BVP<std::complex<double>, T>* p_Rayleigh;
+    p_Rayleigh = new ODE_BVP<std::complex<double>, T>( &Rayleigh_problem, BASEFLOW.nodes(), &Rayleigh_left, &Rayleigh_right );
+
+    p_Rayleigh -> max_iterations() = 30;
+
+    // set the initial guess using the global_evp solve data
+    p_Rayleigh -> solution()( 0, 0 ) = EIGENVECTORS( 0, i_ev );
+    p_Rayleigh -> solution()( 0, 1 ) = ( EIGENVECTORS( 1, i_ev ) - EIGENVECTORS( 0, i_ev ) ) / ( BASEFLOW.coord( 1 ) - BASEFLOW.coord( 0 ) );
+    p_Rayleigh -> solution()( 0, 2 ) = EIGENVALUES[ i_ev ];
+    // set the (arbitrary) amplitude from the global_evp solve data
+    Rayleigh_left.AMPLITUDE = p_Rayleigh -> solution()( 0, 1 );
+    for ( unsigned i = 1; i < N - 1; ++i )
+    {
+      p_Rayleigh -> solution()( i, 0 ) = EIGENVECTORS( i, i_ev );
+      p_Rayleigh -> solution()( i, 1 ) = ( EIGENVECTORS( i + 1, i_ev ) - EIGENVECTORS( i - 1, i_ev ) ) / ( BASEFLOW.coord( i + 1 ) - BASEFLOW.coord( i - 1 ) );
+      p_Rayleigh -> solution()( i, 2 ) = EIGENVALUES[ i_ev ];
+    }
+    p_Rayleigh -> solution()( N - 1, 0 ) = EIGENVECTORS( N - 1, i_ev );
+    p_Rayleigh -> solution()( N - 1, 1 ) = ( EIGENVECTORS( N - 1, i_ev ) - EIGENVECTORS( N - 2, i_ev ) ) / ( BASEFLOW.coord( N - 1 ) - BASEFLOW.coord( N - 2 ) );
+    p_Rayleigh -> solution()( N - 1, 2 ) = EIGENVALUES[ i_ev ];
+
+    // do a local solve
+    p_Rayleigh -> solve_bvp();
+    // write the eigenvalue and eigenvector back to private member data store
+    EIGENVALUES[ i_ev ] = p_Rayleigh -> solution()( 0, 2 );
+    for ( unsigned i = 0; i < N; ++i )
+    {
+      EIGENVECTORS( i, i_ev ) = p_Rayleigh -> solution()( i, 0 );
+    }
+    // delete the equation object
+    delete p_Rayleigh;
+  }
+
+  template<>
+  void Rayleigh<double>::iterate_to_neutral( std::size_t i_ev ) {}
+
+  template<>
+  void Rayleigh<std::complex<double> >::iterate_to_neutral( std::size_t i_ev )
+  {
+    double delta( 1.e-8 );
+    do
+    {
+      std::cout << "ALPHA = " << ALPHA << "\n";
+      local_evp( i_ev );
+      std::complex<double> copy_of_ev( EIGENVALUES[ i_ev ] );
+      ALPHA += delta;
+      local_evp( i_ev );
+      ALPHA -= delta;
+      double d_ev = ( std::imag( EIGENVALUES[ i_ev ] ) - std::imag( copy_of_ev ) ) / delta;
+      ALPHA -= std::imag( copy_of_ev ) / d_ev;
+      std::cout << "ITERATING: " << ALPHA << " " << EIGENVALUES[ i_ev ] << " " << d_ev << "\n";
+    }
+    while ( std::abs( std::imag( EIGENVALUES[ i_ev ] ) ) > 1.e-6 );
   }
 
 } // End of namespace TSL

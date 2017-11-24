@@ -39,8 +39,8 @@ int main()
   cout << "=== Rayleigh equation eigenvalue problem (EVP) ===" << endl;
 
   // Define the problem
-  Problem::alpha = 0.8;               // wavenumber
-  //double tol( 1.e-5 );                // tolerance
+  Problem::alpha = 0.7;               // starting wavenumber
+  double tol( 1.e-5 );                // tolerance
   double left( 0.0 );                 // y1 = 0
   double right(  2 * M_PI );          // y2 = 2*pi
   unsigned N( 801 );
@@ -90,6 +90,19 @@ int main()
   }
 
   cout << "i_ev = " << i_ev << ", eval[i_ev] = " << rayleigh.eigenvalues()[i_ev] << endl;
+
+  rayleigh.iterate_to_neutral( i_ev );
+
+  if ( std::abs( rayleigh.alpha() - 0.5 * sqrt( 3.0 ) ) > tol )
+  {
+    cout << " * Error in critical wavenumber = "
+         << std::abs( rayleigh.alpha() - 0.5 * sqrt( 3.0 ) ) << endl;
+  }
+  else
+  {
+    cout << "\033[1;32;48m * PASSED " << endl;
+    cout << " * CRITICAL ALPHA = " << rayleigh.alpha() << "\033[0m" << endl;
+  }
 
   // Get eigenvectors mesh
   OneD_node_mesh<std::complex<double>, std::complex<double> > evecs = rayleigh.eigenvectors();

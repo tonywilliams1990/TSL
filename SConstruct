@@ -20,7 +20,7 @@ topdir = os.getcwd()
 incdir_str = topdir + '/include '
 libdir_str = topdir + '/lib '
 #opts = ' -O2 -std=c++14 -Wall -Wextra '
-opts = ' -O2 -Wall '
+opts = ' -O2 '
 link_flags = ''
 
 # Split the strings into list elements for lib/inc directoris
