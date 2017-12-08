@@ -23,6 +23,7 @@ env.Program( 'Test/BVP_test.out' , ['Test/BVP_test.cpp'] , OPTS = opts, LIBS = l
 env.Program( 'Test/BLAS_test.out' , ['Test/BLAS_test.cpp'] , OPTS = opts, LIBS = libs) #BLAS
 env.Program( 'Test/LAPACK_test.out' , ['Test/LAPACK_test.cpp'] , OPTS = opts, LIBS = libs) #LAPACK
 env.Program( 'Test/Complex_Eigen_test.out' , ['Test/Complex_Eigen_test.cpp'] , OPTS = opts, LIBS = libs)  #Eigensystem
+env.Program( 'Test/Complex_Sparse_Eigen_test.out', ['Test/Complex_Sparse_Eigen_test.cpp'], OPTS = opts, LIBS = libs) #SparseEigenSystem
 
 # Project codes
 
@@ -44,4 +45,5 @@ env.Program( 'Project/Blowing_marching.out' , ['Project/Blowing_marching.cpp'] ,
 env.Program( 'Problems/Heat_diffusion.out' , ['Problems/Heat_diffusion.cpp'] , OPTS = opts, LIBS = libs)  #IBVP
 env.Program( 'Problems/Falkner_Skan_marching.out' , ['Problems/Falkner_Skan_marching.cpp'] , OPTS = opts, LIBS = libs)  #IBVP
 env.Program( 'Problems/Harmonic.out' , ['Problems/Harmonic.cpp'] , OPTS = opts, LIBS = libs)  #ODE_BVP
-env.Program( 'Problems/Rayleigh.out' , ['Problems/Rayleigh.cpp'] , OPTS = opts, LIBS = libs)  #ODE_BVP
+env.Program( 'Problems/Rayleigh.out' , ['Problems/Rayleigh.cpp'] , OPTS = opts, LIBS = libs)  #EVP
+env.Program( 'Problems/OrrSommerfeld_sparse.out', ['Problems/OrrSommerfeld_sparse.cpp'] , OPTS = opts, LIBS = libs) #SparseEVP
