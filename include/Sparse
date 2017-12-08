@@ -17,3 +17,4 @@
 // Sparse
 #include "SparseMatrix.h"
 #include "SparseVector.h"
+#include "SparseEigenSystem.h"

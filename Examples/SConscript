@@ -20,6 +20,10 @@ env.Program( 'Test/Dual_test.out' , ['Test/Dual_test.cpp'] , OPTS = opts, LIBS =
 env.Program( 'Test/AutoDiff_test.out' , ['Test/AutoDiff_test.cpp'] , OPTS = opts, LIBS = libs)  #AutoDiff
 env.Program( 'Test/Arc_BVP_test.out' , ['Test/Arc_BVP_test.cpp'] , OPTS = opts, LIBS = libs)  #ODE_BVP (arc-length)
 env.Program( 'Test/BVP_test.out' , ['Test/BVP_test.cpp'] , OPTS = opts, LIBS = libs)  #BVP
+env.Program( 'Test/BLAS_test.out' , ['Test/BLAS_test.cpp'] , OPTS = opts, LIBS = libs) #BLAS
+env.Program( 'Test/LAPACK_test.out' , ['Test/LAPACK_test.cpp'] , OPTS = opts, LIBS = libs) #LAPACK
+env.Program( 'Test/Complex_Eigen_test.out' , ['Test/Complex_Eigen_test.cpp'] , OPTS = opts, LIBS = libs)  #Eigensystem
+env.Program( 'Test/Complex_Sparse_Eigen_test.out', ['Test/Complex_Sparse_Eigen_test.cpp'], OPTS = opts, LIBS = libs) #SparseEigenSystem
 
 # Project codes
 
@@ -36,7 +40,10 @@ env.Program( 'Project/Eigenvalue_Problem_pressure_gradient.out' , ['Project/Eige
 env.Program( 'Project/Blowing_K_step.out' , ['Project/Blowing_K_step.cpp'] , OPTS = opts, LIBS = libs )
 env.Program( 'Project/Blowing_marching.out' , ['Project/Blowing_marching.cpp'] , OPTS = opts, LIBS = libs )
 
-# Example problem codes
+# Example Problem codes
 
 env.Program( 'Problems/Heat_diffusion.out' , ['Problems/Heat_diffusion.cpp'] , OPTS = opts, LIBS = libs)  #IBVP
 env.Program( 'Problems/Falkner_Skan_marching.out' , ['Problems/Falkner_Skan_marching.cpp'] , OPTS = opts, LIBS = libs)  #IBVP
+env.Program( 'Problems/Harmonic.out' , ['Problems/Harmonic.cpp'] , OPTS = opts, LIBS = libs)  #ODE_BVP
+env.Program( 'Problems/Rayleigh.out' , ['Problems/Rayleigh.cpp'] , OPTS = opts, LIBS = libs)  #EVP
+env.Program( 'Problems/OrrSommerfeld_sparse.out', ['Problems/OrrSommerfeld_sparse.cpp'] , OPTS = opts, LIBS = libs) #SparseEVP

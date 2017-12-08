@@ -16,6 +16,14 @@
 #include "Error.h"
 #include "Vector.h"
 
+#if defined(PETSC_D) || defined(PETSC_Z)
+#include "petscsys.h"
+#endif
+
+#ifdef SLEPC
+#include "slepceps.h"
+#endif
+
 namespace TSL
 {
 
@@ -97,6 +105,22 @@ namespace TSL
         return sum;
       }
 
+      /// Return the number of non zero elements in a specified rows
+      std::size_t numel_row( std::size_t row ) const
+      {
+        std::size_t sum( 0 );
+        row_iter ii;
+        // Loop over the rows and add up the size of the columns
+        for(ii=this->CONTAINER.begin(); ii!=this->CONTAINER.end(); ii++)
+        {
+          if ( (*ii).first == row )
+          {
+            sum += (*ii).second.size();
+          }
+        }
+        return sum;
+      }
+
       /// Clear all the elements
       void clear()
       {
@@ -171,21 +195,6 @@ namespace TSL
         SpMat S_mat( ROWS, COLS );
         // Fill Eigen sparse matrix
         S_mat = this->convert_to_Eigen();
-        /*std::vector<Triplet> tripletList;             // Vector of triplets
-        row_iter ii;
-        col_iter jj;
-        for(ii=this->CONTAINER.begin(); ii!=this->CONTAINER.end(); ii++)
-        {
-          for(jj=(*ii).second.begin(); jj!=(*ii).second.end(); jj++)
-          {
-            std::size_t i = (*ii).first;
-            std::size_t j = (*jj).first;
-            T elem = (*jj).second;
-            tripletList.push_back( Triplet(i, j, elem) );
-          }
-        }
-        S_mat.setFromTriplets( tripletList.begin(), tripletList.end() );
-        S_mat.makeCompressed();*/
         solver.compute( S_mat );
 
         Eigen::Matrix<T, -1, 1> X;
@@ -220,6 +229,20 @@ namespace TSL
         return S_mat;
       }
 
+#if defined (PETSC_D) || defined (PETSC_Z)
+    /// Converts the SparseMatrix to a compressed format for a specified row.
+    void get_row_petsc( PetscInt row_number, PetscScalar* storage, PetscInt* cols );
+
+    /// Extracts the number of non-zero elements in each row and returns a PetscInt array.
+    void nelts_all_rows( PetscInt* row_nnz)
+    {
+      for ( std::size_t i = 0; i < ROWS; ++i )
+      {
+        row_nnz[i] = this->numel_row( i );
+      }
+    }
+#endif
+
   }; // End of class SparseMatrix
 
   /* Indexing operator (read only)
@@ -252,8 +275,6 @@ namespace TSL
     COLS = original.COLS;
     return *this;
   }
-
-
 } // End of namespace TSL
 
 #endif

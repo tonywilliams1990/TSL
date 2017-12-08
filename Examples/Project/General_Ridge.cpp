@@ -22,6 +22,7 @@ enum{ Phi, Psi, U, Theta };                                   // PDE
 
 //TODO slow convergence for RIDGE code - must be a problem with matrix/equations
 //TODO try with DIRICHLET boundary conditions
+//TODO Need to check through this code
 
 namespace TSL
 {
