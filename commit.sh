@@ -11,6 +11,7 @@ mv ./petsc-3.8.2 ~/Desktop/petsc-3.8.2
 mv ./slepc-3.8.2 ~/Desktop/slepc-3.8.2
 mkdir ./DATA
 cp ~/Desktop/DATA_temp/.gitkeep ./DATA/.gitkeep
+rm -rf .sconf_temp
 
 # Setup commit message
 if [ $# -eq 0 ] ;

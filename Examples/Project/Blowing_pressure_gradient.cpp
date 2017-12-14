@@ -17,7 +17,7 @@ enum{ Phi, Psi, U, Theta };                                   // PDE
 // Either UNIFORM or NONUNIFORM for uniform of non-uniform mesh
 #define NONUNIFORM
 // Either NO_SPEED_UP for normal or SPEED_UP for reusing the factorised matrix
-#define SPEED_UP
+#define NO_SPEED_UP
 
 namespace TSL
 {
@@ -30,7 +30,7 @@ namespace TSL
       const std::size_t Nvar( 4 );      // Number of variables
       double beta( 0.0 );               // Hartree parameter
       double KB( 0.0 );                 // Base flow transpiration ( +ve = blowing )
-      double zeta0( 1.0 );              // Ridge/transpiration width
+      double zeta0( 1.0 );              // Transpiration width
       double zeta0_2 = zeta0 * zeta0;   // Square of the ridge/transpiration width
       double A( 0.0 );                  // Mass flux parameter
       double K( 2.0 );                  // Transpiration parameter ( +ve = blowing )
@@ -182,7 +182,7 @@ namespace TSL
 
       double Y( const double& eta )
       {
-        return std::pow(eta + b1, b2) - pow(b1,b2);
+        return std::pow(eta + b1, b2);// - std::pow(b1,b2);
       }
       double Yd( const double& eta )
       {
@@ -347,7 +347,7 @@ int main()
   // define the remapped (non-uniform mesh) domain
   double left   = Mesh::X( 0.0 );
   double right  = Mesh::X( Param::hzeta_right );
-  double bottom = Mesh::Y(0.0);
+  double bottom = Mesh::Y( 0.0 );
   double top    = Mesh::Y( Param::eta_top );
 
   // number of points to solve for
