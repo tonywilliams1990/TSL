@@ -141,7 +141,7 @@ namespace TSL
 
     // we need to convert from the native sparse format to that required by SLEPc/PETSc
 
-    std::cout << "Starting matrix assembly\n";
+    std::cout << "  * Starting matrix assembly\n";
     Timer timer;
     timer.start();
 
@@ -180,8 +180,9 @@ namespace TSL
     MatAssemblyEnd(A,MAT_FINAL_ASSEMBLY);
 
     std::cout << "A assembled \n";
-    timer.stop();
     timer.print();
+    timer.stop();
+    //timer.print();
     timer.reset();
     timer.start();
 
@@ -220,8 +221,9 @@ namespace TSL
     MatAssemblyEnd(B,MAT_FINAL_ASSEMBLY);
 
     std::cout << "B assembled \n";
-    timer.stop();
     timer.print();
+    timer.stop();
+    //timer.print();
 
     // PETSc storage for the eigenvector, using A to define the size
 #ifdef PETSC_D

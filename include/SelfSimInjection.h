@@ -462,6 +462,18 @@ namespace TSL
       /// Return the base flow solution
       OneD_node_mesh<double> base_flow_solution() { return BASE_SOLUTION; }
 
+      /// Return the ETA_NODES
+      Vector<double> eta_nodes(){ return ETA_NODES; }
+
+      /// Return the HZETA_NODES
+      Vector<double> hzeta_nodes(){ return HZETA_NODES; }
+
+      /// Return the X_NODES
+      Vector<double> x_nodes(){ return X_NODES; }
+
+      /// Return the Y_NODES
+      Vector<double> y_nodes(){ return Y_NODES; }
+
       /* ----- Mesh functions ----- */
 
       double mesh_X( const double& zeta )
@@ -553,7 +565,7 @@ namespace TSL
       double Phi_w_function( const double& hzeta )
       {
         // Return the transpiration function
-        if ( N_TRANSP < 1 )
+        /*if ( N_TRANSP < 1 )
         {
           return 0.0;
         }
@@ -568,17 +580,19 @@ namespace TSL
           }
           sign = N_TRANSP % 2 ? -1 : 1; // (-1)^N
           return - K * 0.5 *( 1 + 2 * sum + sign * tanh( GAMMA * ( hzeta - 1. ) ) );
-        }
+        }/*
 
         /*return - Param::K * 0.5 * ( tanh( Param::gamma * ( hzeta - 1. ) )
                - tanh( Param::gamma * ( hzeta - 2. ) ) );
         */
+
+        return - K * exp( - hzeta * hzeta / 4 ) / sqrt( M_PI );
       }
 
       double Phi_w_hzeta_function( const double& hzeta )
       {
         // Return derivative of transpiration wrt hzeta
-        if ( N_TRANSP < 1 )
+        /*if ( N_TRANSP < 1 )
         {
           return 0.0;
         }
@@ -596,11 +610,13 @@ namespace TSL
           sign = N_TRANSP % 2 ? -1 : 1; // (-1)^N
           sech_squared = pow( cosh( GAMMA * ( hzeta - 1. ) ) , -2. );
           return - K * 0.5 * GAMMA * ( 2 * sum + sign * sech_squared );
-        }
+        }*/
 
         /*double sech_squared = pow( cosh( Param::gamma * ( hzeta - 1. ) ) , -2. );
         double sech_squared_2 = pow( cosh( Param::gamma * ( hzeta - 2. ) ) , -2. );
         return - Param::K * 0.5 * Param::gamma * ( sech_squared - sech_squared_2  );*/
+
+        return 0.5 * hzeta * K * exp( - hzeta * hzeta / 4 ) / sqrt( M_PI );
       }
 
       void solve_perturbation_eqns()

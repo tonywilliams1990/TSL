@@ -40,6 +40,7 @@ env.Program( 'Project/Falkner_Skan_with_blowing.out' , ['Project/Falkner_Skan_wi
 env.Program( 'Project/Eigenvalue_Problem_pressure_gradient.out' , ['Project/Eigenvalue_Problem_pressure_gradient.cpp'] , OPTS = opts, LIBS = libs )
 env.Program( 'Project/Blowing_K_step.out' , ['Project/Blowing_K_step.cpp'] , OPTS = opts, LIBS = libs )
 env.Program( 'Project/Blowing_marching.out' , ['Project/Blowing_marching.cpp'] , OPTS = opts, LIBS = libs )
+env.Program( 'Project/Rayleigh_2D.out' , ['Project/Rayleigh_2D.cpp'] , OPTS = opts, LIBS = libs )
 
 # Example Problem codes
 
