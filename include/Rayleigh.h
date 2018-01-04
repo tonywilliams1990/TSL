@@ -40,7 +40,7 @@ namespace TSL
         }
 
         /// The matrix for the BVP coord -- in this case its identity
-        void matrix0( const Vector<std::complex<double>>& z, Matrix<std::complex<double>>& m ) const
+        void matrix0( const Vector< std::complex<double> >& z, Matrix< std::complex<double> >& m ) const
         {
           m.fill_diag( 1.0 );
         }

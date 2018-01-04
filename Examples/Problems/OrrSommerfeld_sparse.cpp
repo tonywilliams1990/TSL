@@ -62,8 +62,8 @@ int main()
   const double d = ( right - left ) / ( nodes - 1 );
 
   // matrices for the EVP, initialised with zeroes
-  SparseMatrix<std::complex<double>> a( N, N );
-  SparseMatrix<std::complex<double>> b( N, N );
+  SparseMatrix< std::complex<double> > a( N, N );
+  SparseMatrix< std::complex<double> > b( N, N );
 
   // streamwise wavenumber and Reynolds number
   const double alpha ( 1.02 );
@@ -110,8 +110,8 @@ int main()
     which doesn't mind zeros on the diagonal of a. */
 
   // a vector for storing the eigenvalues
-  Vector<std::complex<double>> lambdas;
-  SparseEigenSystem<std::complex<double>> system( &a, &b );
+  Vector< std::complex<double> > lambdas;
+  SparseEigenSystem< std::complex<double> > system( &a, &b );
   system.set_target( std::complex<double>(0.2,0.0) );
   system.set_nev(4);
   system.set_order( "EPS_TARGET_MAGNITUDE" );

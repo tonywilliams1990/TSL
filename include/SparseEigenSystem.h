@@ -99,10 +99,10 @@ namespace TSL
     }
 
     /// Return the tagged eigenvalues TODO
-    Vector<std::complex<double>> get_tagged_eigenvalues() const;
+    Vector< std::complex<double> > get_tagged_eigenvalues() const;
 
     /// Return the tagged eigenvectors TODO
-    Matrix<std::complex<double>> get_tagged_eigenvectors();
+    Matrix< std::complex<double> > get_tagged_eigenvectors();
 
   private:
 
@@ -136,8 +136,8 @@ namespace TSL
     SparseMatrix<_Type>* p_B;
 
     /// storage for eigenvectors and eigenvalues
-    Vector<std::complex<double>> ALL_EIGENVALUES;
-    Matrix<std::complex<double>> ALL_EIGENVECTORS;
+    Vector< std::complex<double> > ALL_EIGENVALUES;
+    Matrix< std::complex<double> > ALL_EIGENVECTORS;
 
     bool CALC_EIGENVECTORS; // Calculate the eigenvectors?
     std::complex<double> SHIFT; // Complex shift value

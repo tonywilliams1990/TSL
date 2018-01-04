@@ -21,6 +21,7 @@
 enum{ f, fd, fdd, g, gd, gdd };                               // Base ODE
 enum{ UB, UBd, PhiB, ThetaB, ThetaBd, PsiB };                 // Base ODE
 enum{ Phi, Psi, U, Theta };                                   // PDE
+enum{ oU, oUd, oPhi, oTheta, oThetad, oPsi };
 
 namespace TSL
 {
@@ -42,14 +43,14 @@ namespace TSL
       bool SOLVED;                // True if equations have been solved
 
       // Non-uniform mesh parameters
-      const double a1 = 0.1;
-      const double a2 = 0.5;   // X = (zeta + a1)^a2
-      const double b1 = 0.3;
-      const double b2 = 0.3;   // Y = (eta + b1)^b2
+      double a1;
+      double a2;   // X = (zeta + a1)^a2
+      double b1;
+      double b2;   // Y = (eta + b1)^b2
 
       // Transpiration function parameters
-      double GAMMA = 20.0;         // Steepness of the injection
-      std::size_t N_TRANSP = 1;    // Number of blowing and sucking regions (1 = standard blowing)
+      double GAMMA;         // Steepness of the injection
+      std::size_t N_TRANSP;    // Number of blowing and sucking regions (1 = standard blowing)
 
       // Nodal positions in the remapped domain (spanned by X,Y)
       Vector<double> X_NODES, Y_NODES;
@@ -164,6 +165,25 @@ namespace TSL
             F[ fd ]  = u[ fdd ];
             F[ fdd ] = - u[ f ] * u[ fdd ] - beta * ( 1.0 - u[ fd ] * u[ fd ] );
           }
+          /*double beta;
+          equation_2D() : Equation<double>( 6 ) {}
+
+          void residual_fn( const Vector<double> &z, Vector<double> &g ) const
+          {
+            // CORNER BL EQNS IN LARGE ZETA LIMIT
+            g[ oU ] = z[ oUd ];
+            g[ oUd ] = - z[ oPhi ] * z[ oUd ];
+            //
+            g[ oPhi ] = 2*z[ oU ] - z[ oPsi ];
+            //
+            g[ oTheta ] = z[ oThetad ];
+            g[ oThetad ] = 2 * z[ oU ] * z[ oUd ] - z[ oPhi ] * z[ oThetad ]
+              - z[ oPsi ] * z[ oTheta ] - 2 * z[ oU ] * z[ oTheta ];
+            //
+            g[ oPsi ] = z[ oTheta ];
+
+          }*/
+
       }; // End of equation_2D class
 
       class plate_BC_2D : public Residual<double>
@@ -178,6 +198,16 @@ namespace TSL
             B[ 0 ] = z[ f ] + KB;
             B[ 1 ] = z[ fd ];
           }
+          /*double KB;
+          plate_BC_2D() : Residual<double> ( 3, 6 ) {}
+
+          void residual_fn( const Vector<double> &z, Vector<double> &B ) const
+          {
+            B[ 0 ] = z[ oU ];
+            B[ 1 ] = z[ oPsi ];
+            B[ 2 ] = z[ oPhi ];
+          }*/
+
       }; // End Falkner-Skan plate_BC_2D class
 
       class far_BC_2D : public Residual<double>
@@ -189,6 +219,16 @@ namespace TSL
           {
             B[ 0 ] = z[ fd ] - 1.0;
           }
+
+          /*far_BC_2D() : Residual<double> ( 3, 6 ) {}
+
+          void residual_fn( const Vector<double> &z, Vector<double> &B ) const
+          {
+            B[ 0 ] = z[ oU ] - 1.0;
+            B[ 1 ] = z[ oPsi ] - 1.0;
+            B[ 2 ] = z[ oTheta ];
+          }*/
+
       }; // End Falkner-Skan far_BC_2D class
 
       class equation_3D : public Equation<double>
@@ -244,6 +284,12 @@ namespace TSL
       {
         std::cout << "*** Solving the base flow ODE ***" << std::endl;
 
+        //TODO create a parameter to set number of nodes in base flow solution with default value
+        // More nodes in base flow
+        std::size_t m = M * 100;
+        Vector<double> eta_nodes;
+        eta_nodes.linspace( 0.0, ETA_TOP, m + 1 );
+
         if ( BASE_FLOW=="2D" )
         {
           equation_2D equation;
@@ -251,14 +297,22 @@ namespace TSL
           far_BC_2D far_BC;
           equation.beta = 0.1;
           plate_BC.KB = 0.0;
-          ODE_BVP<double> base( &equation, ETA_NODES, &plate_BC, &far_BC );
-
-          for (std::size_t j=0; j < M + 1; ++j )
+          //ODE_BVP<double> base( &equation, ETA_NODES, &plate_BC, &far_BC );
+          ODE_BVP<double> base( &equation, eta_nodes, &plate_BC, &far_BC );
+          //for (std::size_t j=0; j < M + 1; ++j )
+          for (std::size_t j=0; j < m + 1; ++j )
         	{
-        		double eta = ETA_NODES[ j ];
+        		//double eta = ETA_NODES[ j ];
+            double eta = eta_nodes[ j ];
         		base.solution()( j, f )  	= eta + exp( -eta );
             base.solution()( j, fd ) 	= 1.0 - exp( -eta );
         		base.solution()( j, fdd ) = exp( -eta );
+            /*base.solution()( j, oU )      =   1 - exp( -eta );
+            base.solution()( j, oUd )     =   exp(-eta);
+            base.solution()( j, oPhi )    =   eta - 1.5 * tanh(eta);
+            base.solution()( j, oPsi )    =   1 - exp( -eta );
+            base.solution()( j, oTheta )  = - 5 * eta * exp( -2*eta );
+            base.solution()( j, oThetad ) = - 5 * exp( -eta ) + 10 * eta * exp( -eta );*/
         	}
 
           // Solve the system with KB = 0 then arc-length continue until KB = Param::KB
@@ -284,9 +338,11 @@ namespace TSL
           equation.beta = BETA;
           base.solve_bvp();
 
-          OneD_node_mesh<double> Base_soln( ETA_NODES, 6 );
+          //OneD_node_mesh<double> Base_soln( ETA_NODES, 6 );
+          OneD_node_mesh<double> Base_soln( eta_nodes, 6 );
 
-          for (std::size_t j=0; j < M + 1; ++j )
+          //for (std::size_t j=0; j < M + 1; ++j )
+          for (std::size_t j=0; j < m + 1; ++j )
         	{
         		Base_soln( j, UB )      =   base.solution()( j, fd );
             Base_soln( j, UBd )     =   base.solution()( j, fdd );
@@ -296,6 +352,12 @@ namespace TSL
                                         base.solution()( j, fdd ) - BETA * ( 1.0 -
                                         base.solution()( j, fd ) * base.solution()( j, fd ) ) );
             Base_soln( j, PsiB )    =   ( 1.0 - BETA ) * base.solution()( j, fd );
+            /*Base_soln( j, UB )      =   base.solution()( j, oU );
+            Base_soln( j, UBd )     =   base.solution()( j, oUd );
+            Base_soln( j, PhiB )    =   base.solution()( j, oPhi );
+            Base_soln( j, ThetaB )  =   base.solution()( j, oTheta );
+            Base_soln( j, ThetaBd ) =   base.solution()( j, oThetad );
+            Base_soln( j, PsiB )    =   base.solution()( j, oPsi );*/
         	}
 
           BASE_SOLUTION = Base_soln;
@@ -392,7 +454,12 @@ namespace TSL
                             K( 0.0 ), MESH( "UNIFORM" ), BASE_FLOW( "2D" ),
                             SPEED_UP( false ), SOLVED( false )
       {
-
+        a1 = 10.0;//0.1;
+        a2 = 4.0;//0.5;
+        b1 = 10.0;//0.3;
+        b2 = 4.0;//0.3;
+        GAMMA = 20.0;
+        N_TRANSP = 1;
       }
 
       /// Destructor
@@ -479,42 +546,48 @@ namespace TSL
       double mesh_X( const double& zeta )
       {
         if ( MESH=="UNIFORM" ) { return zeta; }
-        if ( MESH=="NONUNIFORM" ) { return std::pow(zeta + a1, a2); }
+        //if ( MESH=="NONUNIFORM" ) { return std::pow(zeta + a1, a2); }
+        if ( MESH=="NONUNIFORM" ) { return a1 + zeta - a1 * std::exp( - zeta / a2 ); }
         else { throw Error( "Mesh string is not defined." ); }
       }
 
       double mesh_Xd( const double& zeta )
       {
         if ( MESH=="UNIFORM" ) { return 1.0; }
-        if ( MESH=="NONUNIFORM" ) { return a2 * std::pow(zeta + a1, a2 - 1); }
+        //if ( MESH=="NONUNIFORM" ) { return a2 * std::pow(zeta + a1, a2 - 1); }
+        if ( MESH=="NONUNIFORM" ) { return 1 + ( a1 / a2 ) * std::exp( - zeta / a2 ); }
         else { throw Error( "Mesh string is not defined." ); }
       }
 
       double mesh_Xdd( const double& zeta )
       {
         if ( MESH=="UNIFORM" ) { return 0.0; }
-        if ( MESH=="NONUNIFORM" ) { return a2 * (a2 - 1) * std::pow(zeta + a1, a2 - 2); }
+        //if ( MESH=="NONUNIFORM" ) { return a2 * (a2 - 1) * std::pow(zeta + a1, a2 - 2); }
+        if ( MESH=="NONUNIFORM" ) { return - ( a1 / ( a2 * a2 ) ) * std::exp( - zeta / a2 ); }
         else { throw Error( "Mesh string is not defined." ); }
       }
 
       double mesh_Y( const double& eta )
       {
         if ( MESH=="UNIFORM" ) { return eta; }
-        if ( MESH=="NONUNIFORM" ) { return std::pow(eta + b1, b2); }
+        //if ( MESH=="NONUNIFORM" ) { return std::pow(eta + b1, b2); }
+        if ( MESH=="NONUNIFORM" ) { return b1 + eta - b1 * std::exp( - eta / b2 ); }
         else { throw Error( "Mesh string is not defined." ); }
       }
 
       double mesh_Yd( const double& eta )
       {
         if ( MESH=="UNIFORM" ) { return 1.0; }
-        if ( MESH=="NONUNIFORM" ) { return b2 * std::pow(eta + b1, b2 - 1); }
+        //if ( MESH=="NONUNIFORM" ) { return b2 * std::pow(eta + b1, b2 - 1); }
+        if ( MESH=="NONUNIFORM" ) { return 1 + ( b1 / b2 ) * std::exp( - eta / b2 ); }
         else { throw Error( "Mesh string is not defined." ); }
       }
 
       double mesh_Ydd( const double& eta )
       {
         if ( MESH=="UNIFORM" ) { return 0.0; }
-        if ( MESH=="NONUNIFORM" ) { return b2 * (b2 - 1) * std::pow(eta + b1, b2 - 2); }
+        //if ( MESH=="NONUNIFORM" ) { return b2 * (b2 - 1) * std::pow(eta + b1, b2 - 2); }
+        if ( MESH=="NONUNIFORM" ) { return - ( b1 / ( b2 * b2 ) ) * std::exp( - eta / b2 ); }
         else { throw Error( "Mesh string is not defined." ); }
       }
 
@@ -713,6 +786,7 @@ namespace TSL
 
             // Phi = Phi_w
             A( row, col( i, j, Phi ) )        =  1.;
+            //B[ row ]                          = -Q( i, j, Phi ) + Phi_w;
             B[ row ]                          = -Q( i, j, Phi ) + Phi_w;
             ++row;
             // Psi = 0
@@ -724,14 +798,24 @@ namespace TSL
             B[ row ]                          = -Q( i, j, U );
             ++row;
             // Theta - Psi_eta = -( 1 / ( zeta0^2 ) ) * Phi_w_hzeta
-            A( row, col( i, j, Theta ) )      =  1.;
+            /*A( row, col( i, j, Theta ) )      =  1.;
             A( row, col( i, j, Psi ) )        =  3.*Yd / ( 2 * dY );
             A( row, col( i, j + 1, Psi ) )    = -4.*Yd / ( 2 * dY );
             A( row, col( i, j + 2, Psi ) )    =  1.*Yd / ( 2 * dY );
             B[ row ]                          = -Q(i,j,Theta) + Yd*( -3*Q(i,j,Psi)
                                                 + 4*Q(i,j+1,Psi) - Q(i,j+2,Psi) ) / (2*dY)
                                                 - ( 1. / ( ZETA0 * ZETA0 ) )
-                                                * Phi_w_hzeta;
+                                                * Phi_w_hzeta;*/
+            // theta = psi_eta  - phi_zeta on eta=0
+            A( row, col( i, j, Theta ) ) = 1;
+            A( row, col( i, j, Psi ) ) = Yd*3./(2*dY);
+            A( row, col( i, j + 1, Psi ) ) = -Yd*4./(2*dY);
+            A( row, col( i, j + 2, Psi ) ) = Yd/(2*dY);
+            A( row, col( i + 1, 0, Phi ) ) = Xd/(2*dX);
+            A( row, col( i - 1, 0, Phi ) ) = -Xd/(2*dX);
+            B[ row ] = -Q( i, 0, Theta ) + Yd*( -3*Q(i,0,Psi) + 4*Q(i,1,Psi) - Q(i,2,Psi) ) / (2*dY)
+              - ( Q(i+1,0,Phi) -  Q(i-1,0,Phi) )*Xd/(2*dX);
+
             ++row;
 
             /* Main interior grid points */
@@ -774,7 +858,7 @@ namespace TSL
               //////////////////
               // Phi equation //
               //////////////////
-
+              /*
               // Laplacian of Phi
               A( row, col( i, j - 1, Phi ) )      = laplace_1;
               A( row, col( i - 1, j, Phi ) )      = laplace_3;
@@ -791,12 +875,35 @@ namespace TSL
               // Residual
               B[ row ]      = - Guess_laplace[ Phi ] + ( 2. - BETA ) * Guess_eta[ U ]
                               - Guess_hzeta[ Theta ];
+              */
+
+              // phi_i,j+1
+              A( row, col( i, j + 1, Phi ) ) = Yd*Yd/(dY*dY) + Ydd/(2*dY);
+              // phi_i,j
+              A( row, col( i, j, Phi ) ) = -2*Yd*Yd/(dY*dY) - 2*Xd*Xd/(dX*dX);
+              // phi_i,j-1
+              A( row, col( i, j - 1, Phi ) ) = Yd*Yd/(dY*dY) - Ydd/(2*dY);
+              // phi_i+1,j
+              A( row, col( i + 1, j, Phi ) ) = Xd*Xd/(dX*dX) + Xdd/(2*dX);
+              // phi_i-1,j
+              A( row, col( i - 1, j, Phi ) ) = Xd*Xd/(dX*dX) - Xdd/(2*dX);
+              // u_i,j+1
+              A( row, col( i, j + 1, U ) ) = -Yd/dY;
+              // u_i,j-1
+              A( row, col( i, j - 1, U ) ) = Yd/dY;
+              // theta_i+1,j
+              A( row, col( i + 1, j, Theta ) ) = Xd/(2*dX);
+              // theta_i-1,j
+              A( row, col( i - 1, j, Theta ) ) = -Xd/(2*dX);
+              // RHS
+              B[ row ] = -Guess_laplace[ Phi ] + 2 * Guess_eta[ U ] - Guess_hzeta[ Theta ];
+
               ++row;
 
               //////////////////
               // Psi equation //
               //////////////////
-
+              /*
               // Laplacian of Psi
               A( row, col( i, j - 1, Psi ) )      = laplace_1;
               A( row, col( i - 1, j, Psi ) )      = laplace_3;
@@ -819,6 +926,29 @@ namespace TSL
                               * ( Guess_hzeta[ U ] )
                               / ( ZETA0 * ZETA0 )
                               + Guess_eta[ Theta ];
+              */
+
+              // psi_i,j+1
+              A( row, col( i, j + 1, Psi ) ) = Yd*Yd/(dY*dY) + Ydd/(2*dY);
+              // psi_i,j
+              A( row, col( i, j, Psi ) ) = -2*Yd*Yd/(dY*dY) - 2*Xd*Xd/(dX*dX);
+              // psi_i,j-1
+              A( row, col( i, j - 1, Psi ) ) = Yd*Yd/(dY*dY) - Ydd/(2*dY);
+              // psi_i+1,j
+              A( row, col( i + 1, j, Psi ) ) = Xd*Xd/(dX*dX) + Xdd/(2*dX);
+              // psi_i-1,j
+              A( row, col( i - 1, j, Psi ) ) = Xd*Xd/(dX*dX) - Xdd/(2*dX);
+              // u_i+1,j
+              A( row, col( i + 1, j, U ) ) = -Xd/(dX);
+              // u_i-1,j
+              A( row, col( i - 1, j, U ) ) = Xd/(dX);
+              // theta_i,j+1
+              A( row, col( i, j + 1, Theta ) ) = -Yd/(2*dY);
+              // theta_i,j-1
+              A( row, col( i, j - 1, Theta ) ) = Yd/(2*dY);
+              // RHS
+              B[ row ] = -Guess_laplace[ Psi ] + 2 * Guess_hzeta[ U ]  + Guess_eta[ Theta ];
+
 
               ++row;
 
@@ -826,6 +956,7 @@ namespace TSL
               // U equation //
               ////////////////
 
+              /*
               // Laplacian of U
               A( row, col( i, j - 1, U ) )        = laplace_1;
               A( row, col( i - 1, j, U ) )        = laplace_3;
@@ -862,13 +993,35 @@ namespace TSL
                                 * ( Guess_hzeta[ U ] )
                                 - ( Base[ PhiB ] + Guess[ Phi ] ) * Guess_eta[ U ]
                                 - Base[UBd] * Guess[Phi] ;
+              */
+              // u_i,j+1
+              A( row, col( i, j + 1, U ) ) = Yd*Yd/(dY*dY) + Ydd/(2*dY) + ( Base[ PhiB ] + Guess[ Phi ] )* Yd / (2*dY);
+              // u_i,j
+              A( row, col( i, j, U ) ) = -2*Yd*Yd/(dY*dY) - 2*Xd*Xd/(dX*dX);
+              // u_i,j-1
+              A( row, col( i, j - 1, U ) ) = Yd*Yd/(dY*dY) - Ydd/(2*dY) - ( Base[ PhiB ] + Guess[ Phi ] )* Yd / (2*dY);
+              // u_i+1,j
+              A( row, col( i + 1, j, U ) ) = Xd*Xd/(dX*dX) + Xdd/(2*dX)
+                + ( hzeta * Base[ PsiB ] + Guess[ Psi ] ) * Xd / (2*dX);
+              // u_i-1,j
+              A( row, col( i - 1, j, U ) ) = Xd*Xd/(dX*dX) - Xdd/(2*dX)
+                - ( hzeta * Base[ PsiB ] + Guess[ Psi ] ) * Xd / (2*dX);
+              // phi_i,j
+              A( row, col( i, j, Phi ) ) = Base[ UBd ] + Guess_eta[ U ];
+              // psi_i,j
+              A( row, col( i, j, Psi ) ) = Guess_hzeta[ U ];
+              // RHS
+              B[ row ] = - Guess_laplace[ U ]
+                - ( Base[ PhiB ] + Guess[ Phi ] ) * Guess_eta[ U ]
+                - Base[UBd] * Guess[Phi]
+                - ( hzeta * Base[ PsiB ] + Guess[ Psi ] ) * ( Guess_hzeta[ U ] );
               ++row;
 
               ////////////////////
               // Theta equation //
               ////////////////////
 
-              // Laplacian of Theta
+              /*// Laplacian of Theta
               A( row, col( i, j - 1, Theta ) )     = laplace_1;
               A( row, col( i - 1, j, Theta ) )     = laplace_3;
               A( row, col( i, j, Theta ) )         = laplace_4;
@@ -944,6 +1097,47 @@ namespace TSL
                               * ( Guess_hzeta[ Theta ] ) - Guess[ Psi ] * Base[ ThetaB ]
                               - ( 2. - BETA ) * ( ( Base[ UB ] + Guess[ U ] )
                               * Guess[ Theta ] + hzeta * Base[ ThetaB ] * Guess[ U ] );
+
+              */
+
+              // theta_i,j+1
+              A( row, col( i, j + 1, Theta ) ) = Yd*Yd/(dY*dY) + Ydd/(2*dY) + ( Base[ PhiB ] + Guess[ Phi ] ) * Yd / (2*dY);
+              // theta_i,j
+              A( row, col( i, j, Theta ) ) = -2*Yd*Yd/(dY*dY) - 2*Xd*Xd/(dX*dX) + 2*( Base[ UB ] + Guess[ U ] );
+              // theta_i,j-1
+              A( row, col( i, j - 1, Theta ) ) = Yd*Yd/(dY*dY) - Ydd/(2*dY) - ( Base[ PhiB ] + Guess[ Phi ] ) * Yd / (2*dY);
+              // theta_i+1,j
+              A( row, col( i + 1, j, Theta ) ) = Xd*Xd/(dX*dX) + Xdd/(2*dX)
+                + ( hzeta * Base[ PsiB ] + Guess[ Psi ] ) * Xd / (2*dX);
+              // theta_i-1,j
+              A( row, col( i - 1, j, Theta ) ) = Xd*Xd/(dX*dX) - Xdd/(2*dX)
+                - ( hzeta * Base[ PsiB ] + Guess[ Psi ] ) * Xd / (2*dX);
+              // u_i,j+1
+              A( row, col( i, j + 1, U ) ) = -hzeta*(Guess[U]+Base[UB])*Yd / dY;
+              // u_i,j
+              A( row, col( i, j, U ) ) = -2*hzeta*(Guess_eta[U]+Base[ UBd ])
+                + 2*eta*Guess_hzeta[ U ] + 2*( hzeta * Base[ Theta ]
+                + Guess[ Theta ] ) ;
+              // u_i,j-1
+              A( row, col( i, j - 1, U ) ) = hzeta*( Base[ UB ] + Guess[ U ] )*Yd / dY;
+              // u_i+1,j
+              A( row, col( i + 1, j, U ) ) = eta*( Base[ UB ] + Guess[ U ] )*Xd/dX;
+              // u_i-1,j
+              A( row, col( i - 1, j, U ) ) = -eta*( Base[ UB ] + Guess[ U ] )*Xd/dX;
+              // phi_i,j
+              A( row, col( i, j, Phi ) ) = hzeta * Base[ ThetaBd ] + Guess_eta[ Theta ];
+              // psi_i,j
+              A( row, col( i, j, Psi ) ) = Base[ ThetaB ] + Guess_hzeta[ Theta ];
+              //
+              B[ row ] = - Guess_laplace[ Theta ]
+                + 2*( hzeta*(Guess[ U ]+Base[UB])*Guess_eta[ U ] + hzeta*Base[UBd]*Guess[U]
+                      - eta*(Guess[ U ]+Base[UB])*Guess_hzeta[ U ] )
+                - (Guess[Phi]+Base[PhiB])*Guess_eta[Theta]
+                - hzeta*(-Base[PhiB]*Base[UBd])*Guess[Phi]
+                - (Guess[Psi]+hzeta*Base[PsiB])*Guess_hzeta[Theta]
+                - Base[UBd]*Guess[Psi]
+                - 2*(Guess[U]+Base[UB])*Guess[Theta] - 2*hzeta*Base[UBd]*Guess[U];
+
               ++row;
 
 
@@ -955,7 +1149,7 @@ namespace TSL
             Yd = mesh_Yd( eta );
 
             // Phi_eta*( eta^2 + zeta_0^2*hzeta^2) + [ 2*eta - (eta^2 + zeta_0^2*hzeta^2)/eta ]*Phi = 0
-            A( row, col( i, j, Phi ) )        =   3.0 * Yd * ( eta * eta
+            /*A( row, col( i, j, Phi ) )        =   3.0 * Yd * ( eta * eta
                                                 + ZETA0 * ZETA0 * hzeta * hzeta) / (2*dY);
             A( row, col( i, j - 1, Phi ) )    = - 4.0 * Yd * ( eta * eta
                                                 + ZETA0 * ZETA0 * hzeta * hzeta) / (2*dY);
@@ -969,10 +1163,19 @@ namespace TSL
                                                 + ZETA0 * ZETA0 * hzeta * hzeta) / ( 2 * dY )
                                                 + (((eta * eta + ZETA0 * ZETA0 * hzeta * hzeta) / eta )
                                                 - 2.0 * eta) * Q( i, j, Phi );
+            */
+
+            const double rsq =  eta*eta+hzeta*hzeta;
+            A( row, col( i, j, Phi ) ) = 3.0*rsq*Yd/ (2*dY) + (2*eta-rsq/eta);
+            A( row, col( i, j - 1, Phi ) ) = -4.0*rsq*Yd/ (2*dY);
+            A( row, col( i, j - 2, Phi ) ) = 1.0*rsq*Yd/ (2*dY);
+            B[ row ] = -( rsq*( 3*Q(i,j,Phi) - 4*Q(i,j-1,Phi) + Q(i,j-2,Phi) ) * Yd / (2*dY)
+                + Q(i,j,Phi )*(2*eta-rsq/eta) );
+
             ++row;
 
             // Psi_eta*( eta^2 + zeta_0^2*hzeta^2) + 2 * eta * Psi = 0
-            A( row, col( i, j, Psi ) )        =   3.0 * Yd * ( eta * eta
+            /*A( row, col( i, j, Psi ) )        =   3.0 * Yd * ( eta * eta
                                                 + ZETA0 * ZETA0 * hzeta * hzeta) / (2*dY);
             A( row, col( i, j - 1, Psi ) )    = - 4.0 * Yd * ( eta * eta
                                                 + ZETA0 * ZETA0 * hzeta * hzeta) / (2*dY);
@@ -984,6 +1187,12 @@ namespace TSL
                                                  + Q( i, j-2, Psi ) ) * Yd * (eta * eta
                                                  + ZETA0 * ZETA0 * hzeta * hzeta) / ( 2 * dY ))
                                                  - 2 * eta * Q( i, j, Psi );
+            */
+            A( row, col( i, j, Psi ) ) = 3.0*rsq*Yd/ (2*dY) + 2*eta;
+            A( row, col( i, j - 1, Psi ) ) = -4.0*rsq*Yd/ (2*dY);
+            A( row, col( i, j - 2, Psi ) ) = 1.0*rsq*Yd/ (2*dY);
+            B[ row ] = -( rsq*( 3*Q(i,j,Psi) - 4*Q(i,j-1,Psi) + Q(i,j-2,Psi) ) * Yd / (2*dY)
+                + Q(i,j,Psi)*2*eta );
             ++row;
 
             // U = 0
@@ -1011,8 +1220,10 @@ namespace TSL
 
             Vector<double> Base( BASE_SOLUTION.get_interpolated_vars( eta ) );
 
+            const double rsq =  eta*eta+hzeta*hzeta;
+
             // (eta^2 + zeta_0^2 * hzeta^2) * Phi_hzeta + 2 * zeta_0^2 * hzeta * Phi = 0
-            A( row, col( i, j, Phi ) )          =   (eta*eta + ZETA0 * ZETA0 * hzeta*hzeta) * 3. * Xd
+            /*A( row, col( i, j, Phi ) )          =   (eta*eta + ZETA0 * ZETA0 * hzeta*hzeta) * 3. * Xd
                                                   / ( 2 * dX );
             A( row, col( i - 1, j, Phi ) )      = - (eta*eta + ZETA0 * ZETA0 * hzeta*hzeta) * 4. * Xd
                                                   / ( 2 * dX );
@@ -1023,10 +1234,18 @@ namespace TSL
             B[ row ]        = - (eta*eta + ZETA0 * ZETA0 * hzeta*hzeta) * ( 3 * Q( i, j, Phi)
                               - 4 * Q( i - 1, j, Phi) + Q( i - 2, j, Phi) ) * Xd / ( 2 * dX )
                               - 2 * ZETA0 * ZETA0 * hzeta * Q( i, j, Phi );
+            */
+
+            A( row, col( i, j, Phi ) ) = rsq*3.*Xd/(2*dX) + 2.0*hzeta;
+            A( row, col( i - 1, j, Phi ) ) = -rsq*4.*Xd/(2*dX);
+            A( row, col( i - 2, j, Phi ) ) = rsq*Xd/(2*dX);
+            B[ row ] = -( rsq*( 3*Q(i,j,Phi) - 4*Q(i-1,j,Phi) + Q(i-2,j,Phi) )*Xd/(2*dX)
+              + 2*hzeta*Q(i,j,Phi) );
+
             ++row;
 
             // (eta^2 + zeta_0^2 * hzeta^2)*Psi_hzeta + (2*zeta_0^2*hzeta-(eta^2 + zeta_0^2*hzeta^2)/hzeta)*Psi = 0
-            A( row, col( i, j, Psi ) )          =   (eta*eta + ZETA0 * ZETA0 * hzeta*hzeta) * 3. * Xd
+            /*A( row, col( i, j, Psi ) )          =   (eta*eta + ZETA0 * ZETA0 * hzeta*hzeta) * 3. * Xd
                                                   / ( 2 * dX );
             A( row, col( i - 1, j, Psi ) )      = - (eta*eta + ZETA0 * ZETA0 * hzeta*hzeta) * 4. * Xd
                                                   / ( 2 * dX );
@@ -1040,6 +1259,14 @@ namespace TSL
                               - 4 * Q( i - 1, j, Psi ) + Q( i - 2, j, Psi) ) * Xd / ( 2 * dX ))
                               - 2 * ZETA0 * ZETA0 * hzeta  * Q( i, j, Psi)
                               + ((eta*eta + ZETA0 * ZETA0 * hzeta*hzeta) / hzeta)  * Q( i, j, Psi);
+            */
+
+            A( row, col( i, j, Psi ) ) = rsq*3.*Xd/(2*dX) + ( 2*hzeta - rsq/hzeta );
+            A( row, col( i - 1, j, Psi ) ) = -rsq*4.*Xd/(2*dX);
+            A( row, col( i - 2, j, Psi ) ) = rsq*Xd/(2*dX);
+            B[ row ] = -( rsq*( 3*Q(i,j,Psi) - 4*Q(i-1,j,Psi) + Q(i-2,j,Psi) )*Xd/(2*dX)
+              + ( 2*hzeta - rsq/hzeta )*Q(i,j,Psi) );
+
             ++row;
 
             // hzeta * U_hzeta + 2 * U = 0

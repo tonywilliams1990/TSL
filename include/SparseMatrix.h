@@ -167,7 +167,7 @@ namespace TSL
 				return mat * m;
 			}
 
-      /// Print the matrix
+      /// Print the matrix to screen
       void print()
       {
         row_iter ii;
@@ -183,6 +183,31 @@ namespace TSL
         }
         std::cout << std::endl;
 
+      }
+
+      /// Output the matrix to a file
+      void output( std::string filename, int precision = 10 ) const
+      {
+        std::ofstream dump;
+        dump.open( filename.c_str() );
+        dump.precision( precision );
+        dump.setf( std::ios::showpoint );
+        dump.setf( std::ios::showpos );
+        //dump.setf( std::ios::scientific );
+        row_iter ii;
+        col_iter jj;
+        for(ii=this->CONTAINER.begin(); ii!=this->CONTAINER.end(); ii++)
+        {
+          dump << "row " << (*ii).first << " : ";
+          for(jj=(*ii).second.begin(); jj!=(*ii).second.end(); jj++)
+          {
+            dump << "[ " << (*jj).first << " ] = "
+                 << (*jj).second << " ";
+          }
+          dump << "\n";
+        }
+        dump << "\n";
+        dump.close();
       }
 
       /* ----- Solve sparse linear systems ----- */

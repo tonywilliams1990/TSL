@@ -12,7 +12,7 @@ int main()
   /* ----- TESTING Eigensystem class ----- */
 
   // Create eigensystem
-  Eigensystem<std::complex<double>> Eig_cmplx;
+  Eigensystem< std::complex<double> > Eig_cmplx;
 
   // A matrix
   Matrix< std::complex<double> > A( 4, 4, 0.0 );
@@ -126,7 +126,7 @@ int main()
   //cout << "A = " << endl << A_mat << endl;
   //cout << "B = " << endl << B_mat << endl;
 
-  Eigensystem<std::complex<double>> Eig_cmplx_3;
+  Eigensystem< std::complex<double> > Eig_cmplx_3;
   Eig_cmplx_3.compute( A_mat, B_mat, compute_eigenvectors );
 
   cout << "Eigenvalues[0] = " << endl << Eig_cmplx_3.eigenvalues()[0] << endl;

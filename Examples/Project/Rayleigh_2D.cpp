@@ -1,4 +1,7 @@
-// Test the SelfSimInjection class
+// Solve the 2D Rayleigh pressure equation
+#include <cassert>
+#include <fstream>
+
 #include "Core"
 #include "Eigenvalue"
 #include "SelfSimInjection.h"
@@ -6,18 +9,16 @@
 using namespace std;
 using namespace TSL;
 
-//enum{ Phi, Psi, U, Theta };                     // SelfSimInjection PDE
-enum{ P };                                      // Pressure equation
 
 int main()
 {
   cout << "----- Solving the 2D Rayleigh equation (EVP) -----" << endl;
 
   // Define the domain + short scale injection parameters
-  double hzeta_right( 16.0 );       // Size of the domain in the zeta_hat direction
-  double eta_top( 128.0 );          // Size of the domain in the eta direction
-  const std::size_t N( 100 );       // Number of intervals in the zeta_hat direction
-  const std::size_t M( 100 );       // Number of intervals in the eta direction
+  double hzeta_right( 30.0 );       // Size of the domain in the zeta_hat direction
+  double eta_top( 30.0 );          // Size of the domain in the eta direction
+  const std::size_t N( 200 );       // Number of intervals in the zeta_hat direction
+  const std::size_t M( 200 );       // Number of intervals in the eta direction
   double beta( 0.0 );               // Hartree parameter
   double zeta0( 1.0 );              // Transpiration width
   double K( 8.0 );                  // Transpiration parameter ( +ve = blowing )
@@ -32,7 +33,7 @@ int main()
   SSI.hartree() = beta;
   SSI.injection_width() = zeta0;
   SSI.injection() = K;
-  SSI.set_mesh( "NONUNIFORM" );
+  SSI.set_mesh( "UNIFORM" );
   SSI.set_base_flow( "2D" );
   SSI.speed_up( false );
 
@@ -40,6 +41,8 @@ int main()
   SSI.solve();
   SSI.output();
   TwoD_node_mesh<double> sol = SSI.solution();
+
+  OneD_node_mesh<double> base = SSI.base_flow_solution();
   cout << "  * zeta0 = " << SSI.injection_width() << ", A = " << SSI.mass_flux() << endl;
 
   Vector<double> ETA_NODES   = SSI.eta_nodes();
@@ -50,23 +53,57 @@ int main()
   const double dY( Y_NODES[ 1 ] - Y_NODES[ 0 ] );
   const double dX( X_NODES[ 1 ] - X_NODES[ 0 ] );
 
-  // Check mesh functions
-  /*cout << "X( 0.1 ) = " << SSI.mesh_X( 0.1 ) << endl;
-  cout << "Xd( 0.1 ) = " << SSI.mesh_Xd( 0.1 ) << endl;
-  cout << "Xdd( 0.1 ) = " << SSI.mesh_Xdd( 0.1 ) << endl;
-  cout << "Y( 0.1 ) = " << SSI.mesh_Y( 0.1 ) << endl;
-  cout << "Yd( 0.1 ) = " << SSI.mesh_Yd( 0.1 ) << endl;
-  cout << "Ydd( 0.1 ) = " << SSI.mesh_Ydd( 0.1 ) << endl;*/
+  //cout << "dX = " << dX << endl;
+  //cout << "dY = " << dY << endl;
+
+  // Read from file
+  TwoD_node_mesh<double> Rich_sol( X_NODES, Y_NODES, 4 );
+  cout << "--- Reading from file" << endl;
+
+  ifstream inFile;
+  inFile.open( "./DATA/Q_8_1.dat" );
+  if (!inFile) {
+    cerr << "Unable to open file.";
+    exit(1);
+  }
+  double x, y;
+  Vector<double> vals( 4 );
+
+  for ( std::size_t i=0; i<X_NODES.size(); ++i )
+  {
+    for ( std::size_t j=0; j<Y_NODES.size(); ++j )
+    {
+      inFile >> x;
+      inFile >> y;
+      for ( std::size_t v=0; v<vals.size(); ++v )
+      {
+        inFile >> vals[v];
+      }
+
+      Rich_sol.set_nodes_vars( i, j, vals );
+      //cout << "x = " << x << ", y = " << y << endl;
+      //cout << "vals = " << vals << endl;
+    }
+  }
+
+  inFile.close();
+
+  //Rich_sol.read( "./DATA/Q_8_1.dat", true );
+  cout << "--- Finished reading" << endl;
+
+  // Check data read from file
+  Rich_sol.dump_gnu( "Test_out.dat" );
 
   // Setup the generalised eigenvalue problem A p = c B p (solved using SLEPc)
   cout << "*** Setting up the generalised eigenvalue problem ***" << endl;
+
   SlepcInitialize(NULL,NULL,(char*)0,(char*)0);
 
   std::size_t N_hzeta = N + 1;
   std::size_t N_eta = M + 1;
 
-  SparseMatrix<std::complex<double>> A( 4 * N_eta * N_hzeta, 4 * N_eta * N_hzeta );
-  SparseMatrix<std::complex<double>> B( 4 * N_eta * N_hzeta, 4 * N_eta * N_hzeta );
+  SparseMatrix< std::complex<double> > A( 4 * N_eta * N_hzeta, 4 * N_eta * N_hzeta );
+  SparseMatrix< std::complex<double> > B( 4 * N_eta * N_hzeta, 4 * N_eta * N_hzeta );
 
   // Fill the sparse matrices
   std::size_t row( 0 );                               // Initialise row counter
@@ -81,9 +118,9 @@ int main()
     double eta( ETA_NODES[ j ] );
 
     // P_hzeta = 0
-    A( row, i * N_eta + j )      = -3.*Xd / ( 2 * dX );
-    A( row, (i+1) * N_eta + j )  =  4.*Xd / ( 2 * dX );
-    A( row, (i+2) * N_eta + j )  = -1.*Xd / ( 2 * dX );
+    A( row, i * N_eta + j )      = -3 * Xd / ( 2 * dX );
+    A( row, (i+1) * N_eta + j )  =  4 * Xd / ( 2 * dX );
+    A( row, (i+2) * N_eta + j )  = -1 * Xd / ( 2 * dX );
 
     ++row;
 
@@ -117,9 +154,34 @@ int main()
       double Yd( SSI.mesh_Yd( eta ) );
       double Ydd( SSI.mesh_Ydd( eta ) );
       // Self similar solution ( U = UB + U_pert solution is stored in column 7 )
-      double U = sol( i, j, 7 );
-      double U_eta = Yd * ( sol( i, j + 1, 7 ) - sol( i, j - 1, 7 ) ) / ( 2 * dY );
-      double U_hzeta = Xd * ( sol( i + 1, j, 7 ) - sol( i - 1, j, 7 ) ) / ( 2 * dX );
+      // U_pert stored in column 3 -> index 2
+      //double U = sol( i, j, 6 );
+      //double U_eta = Yd * ( sol( i, j + 1, 2 ) - sol( i, j - 1, 2 ) ) / ( 2 * dY );
+      //U_eta += base.get_interpolated_vars( eta )[ 1 ];
+      //double U_hzeta = Xd * ( sol( i + 1, j, 6 ) - sol( i - 1, j, 6 ) ) / ( 2 * dX );
+      //double U_hzeta = Xd * ( sol( i + 1, j, 2 ) - sol( i - 1, j, 2 ) ) / ( 2 * dX );
+
+      // Use Rich's solution
+
+      double U = Rich_sol( i, j, 2 );
+      //double U_eta = Yd * ( Rich_sol( i, j + 1, 2 ) - Rich_sol( i, j - 1, 2 ) ) / ( 2 * dY );
+      double U_hzeta = Xd * ( Rich_sol( i + 1, j, 2 ) - Rich_sol( i - 1, j, 2 ) ) / ( 2 * dX );
+
+      double U_pert = U - base.get_interpolated_vars( eta )[ 0 ];
+      double eta_jp1( ETA_NODES[ j + 1 ] );
+      double eta_jm1( ETA_NODES[ j - 1 ] );
+      double U_pert_jp1 = Rich_sol( i, j + 1, 2 ) - base.get_interpolated_vars( eta_jp1 )[ 0 ];
+      double U_pert_jm1 = Rich_sol( i, j - 1, 2 ) - base.get_interpolated_vars( eta_jm1 )[ 0 ];
+
+      double U_eta = Yd * ( U_pert_jp1 - U_pert_jm1 ) / ( 2 * dY );
+      U_eta += base.get_interpolated_vars( eta )[ 1 ];
+
+
+      /*double U = Rich_sol( i, j, 2 ) + base.get_interpolated_vars( eta )[ 0 ]; // + UB
+      double U_eta = Yd * ( Rich_sol( i, j + 1, 2 ) - Rich_sol( i, j - 1, 2 ) ) / ( 2 * dY );
+      U_eta += base.get_interpolated_vars( eta )[ 1 ]; // + UBd
+      double U_hzeta = Xd * ( Rich_sol( i + 1, j, 2 ) - Rich_sol( i - 1, j, 2 ) ) / ( 2 * dX );*/
+
 
       // Laplacian coefficients for finite-differencing
 
@@ -134,7 +196,6 @@ int main()
       double laplace_5 = ( Xdd/(2.*dX) + Xd*Xd/(dX*dX) ) / ( zeta0 * zeta0 );
       // X(i,j+1)
       double laplace_7 = ( Yd*Yd/(dY*dY) + Ydd/ (2.*dY) );
-
 
       //////////////////////////
       // 2D Rayleigh equation //
@@ -153,12 +214,16 @@ int main()
       A( row, i * N_eta + j )       += - alpha * alpha * U;
 
       // - 2 * U_eta * P_eta
-      A( row, i * N_eta + j + 1 )   += -2 * U_eta * Yd / ( 2 * dY );
-      A( row, i * N_eta + j - 1 )   +=  2 * U_eta * Yd / ( 2 * dY );
+      A( row, i * N_eta + j + 1 )   += -2 * U_eta * ( Yd / ( 2 * dY ) );
+      A( row, i * N_eta + j - 1 )   +=  2 * U_eta * ( Yd / ( 2 * dY ) );
+
+      //cout << "2 * U_eta * Yd / ( 2 * dY ) = " << 2 * U_eta * Yd / ( 2 * dY ) << endl;
 
       // - 2 * U_hzeta * P_hzeta / zeta0^2
       A( row, (i + 1) * N_eta + j ) += -2 * U_hzeta * Xd / ( 2 * dX * zeta0 * zeta0 );
       A( row, (i - 1) * N_eta + j ) +=  2 * U_hzeta * Xd / ( 2 * dX * zeta0 * zeta0 );
+
+      //cout << "2 * U_hzeta * Xd / ( 2 * dX * zeta0 * zeta0 ) = " << 2 * U_hzeta * Xd / ( 2 * dX * zeta0 * zeta0 ) << endl;
 
       // B matrix
 
@@ -178,11 +243,12 @@ int main()
 
     // eta = eta_inf boundary ( top boundary )
     j = M ;
-    eta = ETA_NODES[ j ];
-    Yd = SSI.mesh_Yd( eta );
+    //eta = ETA_NODES[ j ];
+    //Yd = SSI.mesh_Yd( eta );
 
     // P = 0
     A( row, i * N_eta + j ) = 1;
+
     ++row;
 
   } // End of for loop over interior nodes
@@ -191,7 +257,6 @@ int main()
 
   for ( std::size_t j = 0; j < M + 1; ++j )
   {
-    //offset for global problem
     std::size_t i( N );
 
     // P = 0
@@ -200,13 +265,18 @@ int main()
 
   } // End of loop over nodes
 
+  A.output( "./A_mat.dat", 4 );
+  B.output( "./B_mat.dat", 4 );
+
   // Create the sparse eigenvalue problem
-  Vector<std::complex<double>> lambdas;
-  SparseEigenSystem<std::complex<double>> system( &A, &B );
-  system.set_target( std::complex<double>(0.56,0.18) );
+  Vector< std::complex<double> > lambdas;
+  SparseEigenSystem< std::complex<double> > system( &A, &B );
+
   system.set_nev(1);
-  //system.set_order( "EPS_TARGET_IMAGINARY" );
-  system.set_order( "EPS_TARGET_MAGNITUDE" );
+  system.set_region(0.1,1.0,-1.0,1.0);
+  system.set_target( std::complex<double>(0.56,0.18) );
+  system.set_order( "EPS_TARGET_IMAGINARY" );
+  //system.set_order( "EPS_TARGET_MAGNITUDE" );
 
   try
   {

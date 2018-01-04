@@ -37,7 +37,7 @@ int main()
 #else
 
   SlepcInitialize(NULL,NULL,(char*)0,(char*)0);
-  SparseMatrix<std::complex<double>> a( 4, 4 );
+  SparseMatrix< std::complex<double> > a( 4, 4 );
 
   a( 0, 0 ) = std::complex<double>( -21.10, -22.50 );
   a( 0, 1 ) = std::complex<double>( 53.50, -50.50 );
@@ -59,7 +59,7 @@ int main()
   a( 3, 2 ) = std::complex<double>( -32.50, -46.00 );
   a( 3, 3 ) = std::complex<double>( -19.00, -32.50 );
 
-  SparseMatrix<std::complex<double>> b( 4, 4 );
+  SparseMatrix< std::complex<double> > b( 4, 4 );
 
   b( 0, 0 ) = std::complex<double>( 1.00, -5.00 );
   b( 0, 1 ) = std::complex<double>( 1.60, 1.20 );
@@ -82,10 +82,10 @@ int main()
   b( 3, 3 ) = std::complex<double>( 4.00, -5.00 );
 
   // a vector for the eigenvalues
-  Vector<std::complex<double>> lambdas;
+  Vector< std::complex<double> > lambdas;
   // eigenvalues are: (3,-9), (2,-5), (3,-1), (4,-5)
 
-  SparseEigenSystem<std::complex<double>> system( &a, &b );
+  SparseEigenSystem< std::complex<double> > system( &a, &b );
   try
   {
     system.eigensolve();

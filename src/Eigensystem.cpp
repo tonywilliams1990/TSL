@@ -81,8 +81,8 @@ namespace TSL
 
   /// Compute the eigenvalues ( and optionally the eigenvectors ) for complex matrices
   template <>
-  void Eigensystem<std::complex<double>>::compute( const Matrix<std::complex<double>>& A,
-                                                   const Matrix<std::complex<double>>& B,
+  void Eigensystem< std::complex<double> >::compute( const Matrix< std::complex<double> >& A,
+                                                   const Matrix< std::complex<double> >& B,
                                                    bool compute_evecs )
   {
     // Check matrix dimensions agree

@@ -132,6 +132,7 @@ namespace TSL
     ST st;
     EPS eps;
 
+
     // assuming A & B are square
     n = p_A -> rows();
 
@@ -221,6 +222,7 @@ namespace TSL
     MatAssemblyEnd(B,MAT_FINAL_ASSEMBLY);
 
     std::cout << "B assembled \n";
+
     timer.print();
     timer.stop();
     //timer.print();
@@ -233,6 +235,7 @@ namespace TSL
 #ifdef PETSC_Z
     MatCreateVecs(A,NULL,&x);
 #endif
+
     /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
                   Create the eigensolver and set various options
        - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
@@ -344,9 +347,9 @@ namespace TSL
     // store it in the class
     NCONV = (unsigned)nconv;
     // create a complex eigenvalue vector
-    ALL_EIGENVALUES = Vector<std::complex<double>>( NCONV, 0.0 );
+    ALL_EIGENVALUES = Vector< std::complex<double> >( NCONV, 0.0 );
     // complex eigenvector matrix
-    ALL_EIGENVECTORS = Matrix<std::complex<double>>( NCONV, n, 0.0 );
+    ALL_EIGENVECTORS = Matrix< std::complex<double> >( NCONV, n, 0.0 );
     //
     for ( unsigned i=0; i<NCONV; i++ )
     {

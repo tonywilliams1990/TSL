@@ -473,7 +473,7 @@ namespace TSL
   {
     std::ifstream dump;
     dump.open( filename.c_str() );
-    dump.precision( 9 );
+    dump.precision( 15 );
     dump.setf( std::ios::showpoint );
     dump.setf( std::ios::showpos );
     dump.setf( std::ios::scientific );

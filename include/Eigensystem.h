@@ -52,7 +52,7 @@ namespace TSL
       void compute( const Matrix<double>& A, const Matrix<double>& B, bool compute_evecs = true );
 
       /// Compute the eigenvalues ( and optionally the eigenvectors ) for complex matrices
-      void compute( const Matrix<std::complex<double>>& A, const Matrix<std::complex<double>>& B, bool compute_evecs = true );
+      void compute( const Matrix< std::complex<double> >& A, const Matrix< std::complex<double> >& B, bool compute_evecs = true );
 
       //TODO non-generalised A*x = lambda*x (no B matrix) -> zgeev
 

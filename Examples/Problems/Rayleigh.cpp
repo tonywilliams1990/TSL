@@ -14,7 +14,7 @@ namespace TSL
   namespace Problem
   {
     // Base flow in the complex plane
-    OneD_node_mesh<std::complex<double>, std::complex<double>> baseflow;
+    OneD_node_mesh< std::complex<double>, std::complex<double> > baseflow;
     // Rayleigh wavenumber
     double alpha;
     // Base flow profile
@@ -48,7 +48,7 @@ int main()
   // Real distribution of nodes
   Vector<double> r_nodes;
   r_nodes.linspace( left, right, N );
-  Vector<std::complex<double>> c_nodes( r_nodes.size(), 0.0 );
+  Vector< std::complex<double> > c_nodes( r_nodes.size(), 0.0 );
   // Distribution of nodes in the complex plane
   for ( unsigned i = 0; i < N; ++i )
   {
@@ -60,7 +60,7 @@ int main()
   //cout << "c_nodes = " << c_nodes << endl;
 
   // Make a base flow on the complex distribution of nodes
-  OneD_node_mesh<std::complex<double>, std::complex<double>> base( c_nodes, 2 );
+  OneD_node_mesh< std::complex<double>, std::complex<double> > base( c_nodes, 2 );
   for ( unsigned i = 0; i < c_nodes.size(); ++i )
   {
     std::complex<double> y = c_nodes[ i ];
@@ -69,7 +69,7 @@ int main()
   }
 
   // Make the Rayleigh eigenvalue problem
-  TSL::Rayleigh<std::complex<double>> rayleigh( base, Problem::alpha );
+  TSL::Rayleigh< std::complex<double> > rayleigh( base, Problem::alpha );
   // Solve the global eigenvalue problem
   rayleigh.global_evp();
 
