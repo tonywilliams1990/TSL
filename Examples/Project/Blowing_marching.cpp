@@ -24,16 +24,17 @@ namespace TSL
     namespace Param
     {
       double hzeta_right( 16.0 );        // Size of the domain in the zeta_hat direction
-      double eta_top( 128.0 );           // Size of the domain in the eta direction
-      const std::size_t N( 400 );       // Number of intervals in the zeta_hat direction
-      const std::size_t M( 400 );       // Number of intervals in the eta direction
+      double eta_top( 64.0 );           // Size of the domain in the eta direction
+      const std::size_t N( 200 );       // Number of intervals in the zeta_hat direction
+      const std::size_t M( 200 );       // Number of intervals in the eta direction
+      const std::size_t M_b( M * 100 ); // Number of intervals for the base flow ODE
       const std::size_t Nvar( 4 );      // Number of variables
       double beta( 0.0 );               // Hartree parameter
       double KB( 0.0 );                 // Base flow transpiration ( +ve = blowing )
-      double zeta0( 20 );              // Ridge/transpiration width
+      double zeta0( 1 );              // Ridge/transpiration width
       double zeta0_2 = zeta0 * zeta0;   // Square of the ridge/transpiration width
       double A( 0.0 );                  // Mass flux parameter
-      double K( 2.5 );                  // Transpiration parameter ( +ve = blowing )
+      double K( 0.5 );                  // Transpiration parameter ( +ve = blowing )
       double gamma( 20.0 );             // Steepness factor
       double x_step( 0.1 );            // Size of the downstream grid spacing
       const std::size_t N_x( 1000 );    // Number of intervals in the downstream x direction
@@ -443,22 +444,31 @@ int main()
   Base_Flow::far_BC far_BC;
   equation.beta = 0.1;
   plate_BC.KB = 0.0;
-  ODE_BVP<double> base( &equation, eta_nodes, &plate_BC, &far_BC );
+
+  // More nodes in the base flow solution (uniform mesh)
+  std::size_t N_eta_base = Param::M_b + 1;
+  Vector<double> eta_nodes_base;
+  eta_nodes_base.linspace( 0.0, Param::eta_top, N_eta_base );
+
+  //ODE_BVP<double> base( &equation, eta_nodes, &plate_BC, &far_BC );
+  ODE_BVP<double> base( &equation, eta_nodes_base, &plate_BC, &far_BC );
 
   // Set the initial guess
 #ifdef BASE_2D
-  for (std::size_t j=0; j < N_eta; ++j )
+  //for (std::size_t j=0; j < N_eta; ++j )
+  for (std::size_t j=0; j < N_eta_base; ++j )
 	{
-		double eta = eta_nodes[ j ];				                      // eta value at node j
+		double eta = eta_nodes_base[ j ];				                      // eta value at node j
 		base.solution()( j, f )  	= eta + exp( -eta );
     base.solution()( j, fd ) 	= 1.0 - exp( -eta );
 		base.solution()( j, fdd ) = exp( -eta );
 	}
 #endif
 #ifdef BASE_3D
-  for (std::size_t j=0; j < N_eta; ++j )
+  //for (std::size_t j=0; j < N_eta; ++j )
+  for (std::size_t j=0; j < N_eta_base; ++j )
 	{
-		double eta = eta_nodes[ j ];					                   // eta value at node j
+		double eta = eta_nodes_base[ j ];					                   // eta value at node j
 		base.solution()( j, f )  	= eta + exp( -eta );
     base.solution()( j, fd ) 	= 1.0 - exp( -eta );
 		base.solution()( j, fdd )  = exp( -eta );
@@ -492,9 +502,11 @@ int main()
   base.solve_bvp();
 
   // Store the solution in a mesh
-  OneD_node_mesh<double> Base_soln( eta_nodes, 6 );
+  //OneD_node_mesh<double> Base_soln( eta_nodes, 6 );
+  OneD_node_mesh<double> Base_soln( eta_nodes_base, 6 );
 #ifdef BASE_2D
-  for (std::size_t j=0; j < N_eta; ++j )
+  //for (std::size_t j=0; j < N_eta; ++j )
+  for (std::size_t j=0; j < N_eta_base; ++j )
 	{
 		Base_soln( j, UB )      =   base.solution()( j, fd );
     Base_soln( j, UBd )     =   base.solution()( j, fdd );
@@ -507,7 +519,8 @@ int main()
 	}
 #endif
 #ifdef BASE_3D
-  for (std::size_t j=0; j < N_eta; ++j )
+  //for (std::size_t j=0; j < N_eta; ++j )
+  for (std::size_t j=0; j < N_eta_base; ++j )
 	{
 		Base_soln( j, UB )      =   base.solution()( j, fd );
     Base_soln( j, UBd )     =   base.solution()( j, fdd );
