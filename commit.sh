@@ -26,9 +26,9 @@ echo $message
 # GitHub stuff
 git add .
 git commit -m $message
-#git push origin master
+git push origin master
 #git push origin Ridge
-git push origin Rayleigh
+#git push origin Rayleigh
 
 # Move the files back
 mv ~/Desktop/figs_temp ./figs
