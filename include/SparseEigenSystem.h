@@ -7,17 +7,15 @@
 
 #include <set>
 
-//#include <Uncopyable.h>
-//#include <Types.h>
-//#include <LinearEigenSystem_base.h>
-
 #include "SparseMatrix.h"
 #include "Matrix.h"
 #include "Vector.h"
 
 #ifdef SLEPC
 #include <slepceps.h>
-// #include <SLEPc.h>
+
+#include <slepc.h>
+#include <petscksp.h>
 
 namespace TSL
 {
@@ -41,7 +39,7 @@ namespace TSL
   /// \f[ A_{NxN} \,{\underline x}_i = \lambda_i\, B_{NxN}\, {\underline x}_i \f]
   /// for Banded double/complex matrices \f$ A \f$ and \f$ B \f$. The eigenvalues
   /// and eigenvectors can be tagged and retrieved as required.
-  template <typename _Type>
+  template <typename T>
   class SparseEigenSystem
   {
 
@@ -50,7 +48,7 @@ namespace TSL
     /// Constructor for a linear system object.
     /// \param Aptr A pointer to a typed A matrix
     /// \param Bptr A pointer to a typed B matrix
-    SparseEigenSystem( SparseMatrix<_Type>* Aptr, SparseMatrix<_Type>* Bptr );
+    SparseEigenSystem( SparseMatrix<T>* Aptr, SparseMatrix<T>* Bptr );
 
     /// Destructor for a linear system object.
     ~SparseEigenSystem();
@@ -74,20 +72,18 @@ namespace TSL
     /// Gives a handle to the boolean that sets a region in the complex plane
     bool& region_defined();
 
+    /// Return a handle to the CALC_EIGENVECTORS variables
+    bool& calc_eigenvectors();
+
     /// Set a rectangular region of the complex plane in which to look for eigenvalues.
-    /// Calling this will also set REGION_DEFINED to true.
-    /// \param a Real=a defines left edge of the rectangular region
-    /// \param b Real=b defines right edge of the rectangular region
-    /// \param c Imag=c defines bottom edge of the rectangular region
-    /// \param d Imag=d defines top edge of the rectangular region
-    void set_region( const double& a, const double& b, const double& c, const double& d );
+    void set_region( const double& left, const double& right, const double& bottom, const double& top );
 
     /// Gives a handle to the boolean that sets if an initial guess has been used
     bool& guess_defined();
 
     /// Set the initial guess
     /// \param guess The vector of the guess
-    void set_initial_guess( const Vector<_Type>& guess );
+    void set_initial_guess( const Vector<T>& guess );
 
     /// Solve the matrix linear eigensystem
     void eigensolve();
@@ -128,21 +124,20 @@ namespace TSL
     double REAL_L,REAL_R,IMAG_B,IMAG_T;
 
     /// stores an initial guess to work with
-    Vector<_Type> INITIAL_GUESS;
+    Vector<T> INITIAL_GUESS;
 
     /// pointer to the LHS matrix
-    SparseMatrix<_Type>* p_A;
+    SparseMatrix<T>* p_A;
     /// pointer to the RHS matrix
-    SparseMatrix<_Type>* p_B;
+    SparseMatrix<T>* p_B;
 
     /// storage for eigenvectors and eigenvalues
     Vector< std::complex<double> > ALL_EIGENVALUES;
     Matrix< std::complex<double> > ALL_EIGENVECTORS;
 
-    bool CALC_EIGENVECTORS; // Calculate the eigenvectors?
-    std::complex<double> SHIFT; // Complex shift value
+    bool CALC_EIGENVECTORS;
+    std::complex<double> SHIFT;
 
-    // SLEPc* p_LIBRARY;
   };
 
 } //end namepsace

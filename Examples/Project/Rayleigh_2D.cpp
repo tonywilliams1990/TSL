@@ -9,27 +9,36 @@
 using namespace std;
 using namespace TSL;
 
+class mySelfSimInjection : public SelfSimInjection {
+public:
+  // Define the injection function
+  double Phi_w_func( const double& hzeta ){
+    return - K * exp( - hzeta * hzeta / 4 ) / sqrt( M_PI );
+  }
+}; // End of class mySelfSimInjection
 
 int main()
 {
-  cout << "----- Solving the 2D Rayleigh equation (EVP) -----" << endl;
+  cout << "*** ------- Solving the 2D Rayleigh equation (EVP) ------- ***" << endl;
 
   // Define the domain + short scale injection parameters
   double hzeta_right( 30.0 );       // Size of the domain in the zeta_hat direction
-  double eta_top( 30.0 );          // Size of the domain in the eta direction
+  double eta_top( 30.0 );           // Size of the domain in the eta direction
   const std::size_t N( 200 );       // Number of intervals in the zeta_hat direction
   const std::size_t M( 200 );       // Number of intervals in the eta direction
+  const std::size_t MB( M * 100 );  // Number of eta intervals in the base flow ODE
   double beta( 0.0 );               // Hartree parameter
   double zeta0( 1.0 );              // Transpiration width
   double K( 8.0 );                  // Transpiration parameter ( +ve = blowing )
   double alpha( 0.0 );              // Wavenumber (alpha hat)
 
   // Solve the self similar injection flow
-  SelfSimInjection SSI;
+  mySelfSimInjection SSI;
   SSI.hzeta_right() = hzeta_right;
   SSI.eta_top() = eta_top;
   SSI.hzeta_intervals() = N;
   SSI.eta_intervals() = M;
+  SSI.base_intervals() = MB;
   SSI.hartree() = beta;
   SSI.injection_width() = zeta0;
   SSI.injection() = K;
@@ -53,9 +62,7 @@ int main()
   const double dY( Y_NODES[ 1 ] - Y_NODES[ 0 ] );
   const double dX( X_NODES[ 1 ] - X_NODES[ 0 ] );
 
-  //cout << "dX = " << dX << endl;
-  //cout << "dY = " << dY << endl;
-
+  /*
   // Read from file
   TwoD_node_mesh<double> Rich_sol( X_NODES, Y_NODES, 4 );
   cout << "--- Reading from file" << endl;
@@ -93,6 +100,7 @@ int main()
 
   // Check data read from file
   Rich_sol.dump_gnu( "Test_out.dat" );
+  */
 
   // Setup the generalised eigenvalue problem A p = c B p (solved using SLEPc)
   cout << "*** Setting up the generalised eigenvalue problem ***" << endl;
@@ -102,8 +110,15 @@ int main()
   std::size_t N_hzeta = N + 1;
   std::size_t N_eta = M + 1;
 
-  SparseMatrix< std::complex<double> > A( 4 * N_eta * N_hzeta, 4 * N_eta * N_hzeta );
-  SparseMatrix< std::complex<double> > B( 4 * N_eta * N_hzeta, 4 * N_eta * N_hzeta );
+  SparseMatrix< std::complex<double> > A( N_eta * N_hzeta, N_eta * N_hzeta );
+  SparseMatrix< std::complex<double> > B( N_eta * N_hzeta, N_eta * N_hzeta );
+
+  SparseEigenSystem< std::complex<double> > system( &A, &B );
+  system.set_nev(1);
+  system.set_region(0.1,1.0,-1.0,1.0);
+  system.set_target( std::complex<double>(0.56,0.18) );
+  system.set_order( "EPS_TARGET_IMAGINARY" );
+  system.calc_eigenvectors() = false;
 
   // Fill the sparse matrices
   std::size_t row( 0 );                               // Initialise row counter
@@ -153,17 +168,10 @@ int main()
       double eta( ETA_NODES[ j ] );
       double Yd( SSI.mesh_Yd( eta ) );
       double Ydd( SSI.mesh_Ydd( eta ) );
-      // Self similar solution ( U = UB + U_pert solution is stored in column 7 )
-      // U_pert stored in column 3 -> index 2
-      //double U = sol( i, j, 6 );
-      //double U_eta = Yd * ( sol( i, j + 1, 2 ) - sol( i, j - 1, 2 ) ) / ( 2 * dY );
-      //U_eta += base.get_interpolated_vars( eta )[ 1 ];
-      //double U_hzeta = Xd * ( sol( i + 1, j, 6 ) - sol( i - 1, j, 6 ) ) / ( 2 * dX );
-      //double U_hzeta = Xd * ( sol( i + 1, j, 2 ) - sol( i - 1, j, 2 ) ) / ( 2 * dX );
 
       // Use Rich's solution
 
-      double U = Rich_sol( i, j, 2 );
+      /*double U = Rich_sol( i, j, 2 );
       //double U_eta = Yd * ( Rich_sol( i, j + 1, 2 ) - Rich_sol( i, j - 1, 2 ) ) / ( 2 * dY );
       double U_hzeta = Xd * ( Rich_sol( i + 1, j, 2 ) - Rich_sol( i - 1, j, 2 ) ) / ( 2 * dX );
 
@@ -174,14 +182,13 @@ int main()
       double U_pert_jm1 = Rich_sol( i, j - 1, 2 ) - base.get_interpolated_vars( eta_jm1 )[ 0 ];
 
       double U_eta = Yd * ( U_pert_jp1 - U_pert_jm1 ) / ( 2 * dY );
-      U_eta += base.get_interpolated_vars( eta )[ 1 ];
+      U_eta += base.get_interpolated_vars( eta )[ 1 ];*/
 
-
-      /*double U = Rich_sol( i, j, 2 ) + base.get_interpolated_vars( eta )[ 0 ]; // + UB
-      double U_eta = Yd * ( Rich_sol( i, j + 1, 2 ) - Rich_sol( i, j - 1, 2 ) ) / ( 2 * dY );
+      // Self similar solution
+      double U = sol( i, j, 6 ); // UB + U_pert
+      double U_hzeta = Xd * ( sol( i + 1, j, 2 ) - sol( i - 1, j, 2 ) ) / ( 2 * dX ); // U_pert_hzeta
+      double U_eta = Yd * ( sol( i, j + 1, 2 ) - sol( i, j - 1, 2 ) ) / ( 2 * dY ); // U_pert_eta
       U_eta += base.get_interpolated_vars( eta )[ 1 ]; // + UBd
-      double U_hzeta = Xd * ( Rich_sol( i + 1, j, 2 ) - Rich_sol( i - 1, j, 2 ) ) / ( 2 * dX );*/
-
 
       // Laplacian coefficients for finite-differencing
 
@@ -243,9 +250,6 @@ int main()
 
     // eta = eta_inf boundary ( top boundary )
     j = M ;
-    //eta = ETA_NODES[ j ];
-    //Yd = SSI.mesh_Yd( eta );
-
     // P = 0
     A( row, i * N_eta + j ) = 1;
 
@@ -258,29 +262,28 @@ int main()
   for ( std::size_t j = 0; j < M + 1; ++j )
   {
     std::size_t i( N );
-
     // P = 0
     A( row, i * N_eta + j ) = 1;
     ++row;
 
   } // End of loop over nodes
 
-  A.output( "./A_mat.dat", 4 );
-  B.output( "./B_mat.dat", 4 );
+  //A.output( "./A_mat.dat", 4 );
+  //B.output( "./B_mat.dat", 4 );
 
   // Create the sparse eigenvalue problem
   Vector< std::complex<double> > lambdas;
-  SparseEigenSystem< std::complex<double> > system( &A, &B );
+  //SparseEigenSystem< std::complex<double> > system( &A, &B );
 
-  system.set_nev(1);
-  system.set_region(0.1,1.0,-1.0,1.0);
-  system.set_target( std::complex<double>(0.56,0.18) );
-  system.set_order( "EPS_TARGET_IMAGINARY" );
+  //system.set_nev(1);
+  //system.set_region(0.1,1.0,-1.0,1.0);
+  //system.set_target( std::complex<double>(0.56,0.18) );
+  //system.set_order( "EPS_TARGET_IMAGINARY" );
   //system.set_order( "EPS_TARGET_MAGNITUDE" );
 
   try
   {
-    //system.eigensolve();
+    system.eigensolve();
   }
   catch ( std::runtime_error )
   {

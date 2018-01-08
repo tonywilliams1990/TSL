@@ -1,7 +1,3 @@
-/// \file SparseLinearEigenSystem.cpp
-/// Implementation for the BandedLinearEigenSystem class
-/// This class links to ARPACK to perform the solver phase.
-
 #include <vector>
 #include <set>
 #include <algorithm>
@@ -17,8 +13,8 @@
 namespace TSL
 {
 
-  template <typename _Type>
-  SparseEigenSystem<_Type>::SparseEigenSystem( SparseMatrix<_Type >* Aptr, SparseMatrix<_Type >* Bptr )
+  template <typename T>
+  SparseEigenSystem<T>::SparseEigenSystem( SparseMatrix<T >* Aptr, SparseMatrix<T >* Bptr )
   {
     REGION_DEFINED = false;
     GUESS_DEFINED = false;
@@ -27,38 +23,44 @@ namespace TSL
     p_B = Bptr;
     NEV = 8; NCONV = 0;
     ORDER = (EPSWhich)7; // target magnitude is the default
-    // base class
-    CALC_EIGENVECTORS = true; // SLEPc methods *always* obtain eigenvecs.
+    //CALC_EIGENVECTORS = true; // SLEPc methods *always* obtain eigenvecs ???
+    CALC_EIGENVECTORS = false;
   }
 
-  template <typename _Type>
-  SparseEigenSystem<_Type>::~SparseEigenSystem()
+  template <typename T>
+  SparseEigenSystem<T>::~SparseEigenSystem()
   {
   }
 
-  template <typename _Type>
-  unsigned SparseEigenSystem<_Type>::get_nconv() const
+  template <typename T>
+  unsigned SparseEigenSystem<T>::get_nconv() const
   {
     return NCONV;
   }
 
-  template <typename _Type>
-  void SparseEigenSystem<_Type>::set_nev( unsigned n )
+  template <typename T>
+  void SparseEigenSystem<T>::set_nev( unsigned n )
   {
     NEV = n;
   }
 
-  template <typename _Type>
-  void SparseEigenSystem<_Type>::set_target( std::complex<double> target )
+  template <typename T>
+  void SparseEigenSystem<T>::set_target( std::complex<double> target )
   {
     // defaults to (0,0)
     SHIFT = target;
   }
 
-  template <typename _Type>
-  void SparseEigenSystem<_Type>::set_order( std::string order_string )
+  template <typename T>
+  void SparseEigenSystem<T>::set_order( std::string order_string )
   {
     int flag(0);
+    if ( order_string == "EPS_LARGEST_MAGNITUDE" ) { ORDER=(EPSWhich)1; flag=1; }
+    if ( order_string == "EPS_SMALLEST_MAGNITUDE" ) { ORDER=(EPSWhich)2; flag=1; }
+    if ( order_string == "EPS_LARGEST_REAL" ) { ORDER=(EPSWhich)3; flag=1; }
+    if ( order_string == "EPS_SMALLEST_REAL" ) { ORDER=(EPSWhich)4; flag=1; }
+    if ( order_string == "EPS_LARGEST_IMAGINARY" ) { ORDER=(EPSWhich)5; flag=1; }
+    if ( order_string == "EPS_SMALLEST_IMAGINARY" ) { ORDER=(EPSWhich)6; flag=1; }
     if ( order_string == "EPS_TARGET_MAGNITUDE" ) { ORDER=(EPSWhich)7; flag=1; }
     if ( order_string == "EPS_TARGET_REAL" ) { ORDER=(EPSWhich)8; flag=1; }
     if ( order_string == "EPS_TARGET_IMAGINARY" ) { ORDER=(EPSWhich)9; flag=1; }
@@ -71,45 +73,51 @@ namespace TSL
     }
   }
 
-  template <typename _Type>
-  bool& SparseEigenSystem<_Type>::region_defined()
+  template <typename T>
+  bool& SparseEigenSystem<T>::region_defined()
   {
     return REGION_DEFINED;
   }
 
-  template <typename _Type>
-  void SparseEigenSystem<_Type>::set_region( const double& a, const double& b, const double& c, const double& d )
+  template <typename T>
+  bool& SparseEigenSystem<T>::calc_eigenvectors()
   {
-    REGION_DEFINED = true;
-    REAL_L = a;
-    REAL_R = b;
-    IMAG_B = c;
-    IMAG_T = d;
+    return CALC_EIGENVECTORS;
   }
 
-  template <typename _Type>
-  bool& SparseEigenSystem<_Type>::guess_defined()
+  template <typename T>
+  void SparseEigenSystem<T>::set_region( const double& left, const double& right, const double& bottom, const double& top )
+  {
+    REGION_DEFINED = true;
+    REAL_L = left;
+    REAL_R = right;
+    IMAG_B = bottom;
+    IMAG_T = top;
+  }
+
+  template <typename T>
+  bool& SparseEigenSystem<T>::guess_defined()
   {
     return GUESS_DEFINED;
   }
 
-  template <typename _Type>
-  void SparseEigenSystem<_Type>::set_initial_guess( const Vector<_Type>& guess )
+  template <typename T>
+  void SparseEigenSystem<T>::set_initial_guess( const Vector<T>& guess )
   {
     GUESS_DEFINED = true;
     INITIAL_GUESS = guess;
   }
 
-  template <typename _Type>
-  void SparseEigenSystem<_Type >::eigensolve()
+  template <typename T>
+  void SparseEigenSystem<T >::eigensolve()
   {
     // only one method available: SLEPc's generalized shift-invert solver
     eigensolve_slepc();
   }
 
 
-  template <typename _Type>
-  void SparseEigenSystem<_Type>::eigensolve_slepc()
+  template <typename T>
+  void SparseEigenSystem<T>::eigensolve_slepc()
   {
 #ifndef SLEPC
     std::string problem;
@@ -355,7 +363,7 @@ namespace TSL
     {
 #ifdef PETSC_Z
       EPSGetEigenvalue(eps,i,&ALL_EIGENVALUES[i],NULL);
-      std::cout << ALL_EIGENVALUES[i] << "\n";
+      //std::cout << ALL_EIGENVALUES[i] << "\n";
 #endif
 #ifdef PETSC_D
       double lambda_r,lambda_i;
@@ -396,7 +404,6 @@ namespace TSL
 #endif
       }
     }
-
     /*
        Free work space
     */
