@@ -9,7 +9,7 @@ class mySelfSimInjection : public SelfSimInjection {
 public:
   double Phi_w_func( const double& hzeta ){
     //return this->injection();
-    return - K * exp( - hzeta * hzeta / 4 ) / sqrt( M_PI );
+    return - K * exp( - hzeta * hzeta );
   }
 }; // End of class mySelfSimInjection
 
@@ -59,7 +59,7 @@ int main()
   //cout << "U_eta(0,0) = " << SSI.shear_at_origin() << endl;
   //cout << "eta_half = " << SSI.eta_half() << endl;
 
-
+  if ( SSI.solved() ) { cout << "Solved" << endl; }
 
 	cout << "FINISHED" << endl;
 

@@ -13,7 +13,7 @@ class mySelfSimInjection : public SelfSimInjection {
 public:
   // Define the injection function
   double Phi_w_func( const double& hzeta ){
-    return - K * exp( - hzeta * hzeta / 4 ) / sqrt( M_PI );
+    return - K * exp( - hzeta * hzeta );
   }
 }; // End of class mySelfSimInjection
 
@@ -24,13 +24,13 @@ int main()
   // Define the domain + short scale injection parameters
   double hzeta_right( 30.0 );       // Size of the domain in the zeta_hat direction
   double eta_top( 30.0 );           // Size of the domain in the eta direction
-  const std::size_t N( 300 );       // Number of intervals in the zeta_hat direction
-  const std::size_t M( 300 );       // Number of intervals in the eta direction
+  const std::size_t N( 100 );       // Number of intervals in the zeta_hat direction
+  const std::size_t M( 100 );       // Number of intervals in the eta direction
   const std::size_t MB( M * 100 );  // Number of eta intervals in the base flow ODE
   double beta( 0.0 );               // Hartree parameter
   double zeta0( 1.0 );              // Transpiration width
-  double K( 8.0 );                  // Transpiration parameter ( +ve = blowing )
-  double alpha( 0.0 );              // Wavenumber (alpha hat)
+  double K( 4.0 );                  // Transpiration parameter ( +ve = blowing )
+  double alpha( 0.02 );              // Wavenumber (alpha hat)
 
   // Solve the self similar injection flow
   mySelfSimInjection SSI;
@@ -129,7 +129,7 @@ int main()
   system.set_region(0.1,1.0,-1.0,1.0);
   system.set_target( std::complex<double>(0.56,0.18) );
   system.set_order( "EPS_TARGET_IMAGINARY" );
-  system.calc_eigenvectors() = false;
+  system.calc_eigenvectors() = true;
 
   // Fill the sparse matrices
   std::size_t row( 0 );                               // Initialise row counter
@@ -292,6 +292,10 @@ int main()
   Vector< std::complex<double> > lambdas;
   lambdas = system.eigenvalues();
   cout << "lambdas = " << lambdas << endl;
+
+  Matrix< std::complex<double> > evecs;
+  evecs = system.eigenvectors();
+  //cout << "evecs = " << evecs << endl;
 
   SlepcFinalize();
 

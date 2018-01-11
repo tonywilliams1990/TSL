@@ -432,6 +432,9 @@ namespace TSL
       /// Return the mesh definition string
       std::string mesh() { return MESH; }
 
+      /// Return if the equations have been solved or not
+      bool solved() { return SOLVED; }
+
       /// Method to set the mesh definition string
       void set_mesh( std::string mesh )
       {

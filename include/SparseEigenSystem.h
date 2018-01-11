@@ -94,6 +94,12 @@ namespace TSL
       return ALL_EIGENVALUES;
     }
 
+    /// Return all the eigenvectors in a matrix
+    Matrix< std::complex<double> > eigenvectors() const
+    {
+      return ALL_EIGENVECTORS;
+    }
+
     /// Return the tagged eigenvalues TODO
     Vector< std::complex<double> > get_tagged_eigenvalues() const;
 

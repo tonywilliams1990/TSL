@@ -359,6 +359,7 @@ namespace TSL
     ALL_EIGENVALUES = Vector< std::complex<double> >( NCONV, 0.0 );
     // complex eigenvector matrix
     ALL_EIGENVECTORS = Matrix< std::complex<double> >( NCONV, n, 0.0 );
+
     //
     for ( unsigned i=0; i<NCONV; i++ )
     {
@@ -384,7 +385,8 @@ namespace TSL
         VecGetArray1d( xi, n, 0, &arrayi );
         for ( int j=0; j<n; ++j )
         {
-          ALL_EIGENVECTORS[i][j]=std::complex<double>( arrayr[j], arrayi[j] );
+          //ALL_EIGENVECTORS[i][j]=std::complex<double>( arrayr[j], arrayi[j] );
+          ALL_EIGENVECTORS( i, j ) = std::complex<double>( arrayr[j], arrayi[j] );
         }
         // documentation says to "restore", though it might not matter as we're done with it now
         VecRestoreArray1d( xr, n, 0, &arrayr );
@@ -398,8 +400,10 @@ namespace TSL
         VecGetArray1d( x, n, 0, &array );
         for ( int j=0; j<n; ++j )
         {
-          ALL_EIGENVECTORS[i][j]=array[j];
+          //ALL_EIGENVECTORS[i][j]=array[j];
+          ALL_EIGENVECTORS( i, j ) = array[j];
         }
+
         // documentation says to "restore", though it might not matter as we're done with it now
         VecRestoreArray1d( x, n, 0, &array );
 #endif
