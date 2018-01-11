@@ -22,13 +22,11 @@
 enum{ f, fd, fdd, g, gd, gdd };                               // Base ODE
 enum{ UB, UBd, PhiB, ThetaB, ThetaBd, PsiB };                 // Base ODE
 enum{ Phi, Psi, U, Theta };                                   // PDE
-enum{ oU, oUd, oPhi, oTheta, oThetad, oPsi };
 
 namespace TSL
 {
   class SelfSimInjection
   {
-  //private:
   protected:
       double HZETA_RIGHT;         // Size of the domain in the zeta_hat direction
       double ETA_TOP;             // Size of the domain in the eta direction
@@ -64,7 +62,7 @@ namespace TSL
       double U_ETA;                             // Shear stress at origin
       double ETA_HALF;                          // Value of eta on hzeta=0 at which U=1/2
 
-      /* ----- Methods (private) ----- */
+      /* ----- Methods ----- */
       void setup(){
         make_output_directory();
         mesh_setup();
@@ -575,6 +573,7 @@ namespace TSL
         return 4 * ( i * ( M + 1 ) + j ) + k;
       }
 
+      // Virtual function for defining the transpiration function
       virtual double Phi_w_func( const double& hzeta )
       {
         throw Error( "Phi_w function is not defined" );
@@ -1210,13 +1209,32 @@ namespace TSL
 
       void output(){
         if ( SOLVED ) {
-          // Convert ZETA0 to string
+          // Convert param to string
           std::stringstream ss;
           ss << ZETA0;
-          std::string zeta0_str = ss.str();
+          std::string str = ss.str();
+          Q_output.dump_gnu( OUTPUT_PATH + "Qout_" + str + ".dat" );
+          WALL_SHEAR.output( OUTPUT_PATH + "Wall_shear_" + str + ".dat" );
+        }
+        else { throw Error( "output() error equations have not been solved." ); }
+      }
 
-          Q_output.dump_gnu( OUTPUT_PATH + "Qout_" + zeta0_str + ".dat" );
-          WALL_SHEAR.output( OUTPUT_PATH + "Wall_shear_zeta0_" + zeta0_str + ".dat" );
+      void output( std::string param ){
+        if ( SOLVED ) {
+          // Convert param to string
+          std::stringstream ss;
+          if ( param == "K" )
+          {
+            ss << K;
+          }
+          if ( param == "ZETA0" )
+          {
+            ss << ZETA0;
+          }
+          std::string str = ss.str();
+
+          Q_output.dump_gnu( OUTPUT_PATH + "Qout_" + str + ".dat" );
+          WALL_SHEAR.output( OUTPUT_PATH + "Wall_shear_" + str + ".dat" );
         }
         else { throw Error( "output() error equations have not been solved." ); }
       }
@@ -1239,7 +1257,7 @@ namespace TSL
         do {
           solve_perturbation_eqns();
           metric.update();
-          output();
+          output( "ZETA0" );
           std::cout << "  * zeta0 = " << ZETA0 << ", A = " << A_PARAM << std::endl;
           ZETA0 += step;
         }while ( ZETA0 <= max );
@@ -1264,7 +1282,7 @@ namespace TSL
         do {
           solve_perturbation_eqns();
           metric.update();
-          output();
+          output( "K" );
           std::cout << "  * K = " << K << ", A = " << A_PARAM << std::endl;
           K += step;
         }while ( K <= max );

@@ -24,8 +24,8 @@ int main()
   // Define the domain + short scale injection parameters
   double hzeta_right( 30.0 );       // Size of the domain in the zeta_hat direction
   double eta_top( 30.0 );           // Size of the domain in the eta direction
-  const std::size_t N( 200 );       // Number of intervals in the zeta_hat direction
-  const std::size_t M( 200 );       // Number of intervals in the eta direction
+  const std::size_t N( 300 );       // Number of intervals in the zeta_hat direction
+  const std::size_t M( 300 );       // Number of intervals in the eta direction
   const std::size_t MB( M * 100 );  // Number of eta intervals in the base flow ODE
   double beta( 0.0 );               // Hartree parameter
   double zeta0( 1.0 );              // Transpiration width
@@ -42,12 +42,23 @@ int main()
   SSI.hartree() = beta;
   SSI.injection_width() = zeta0;
   SSI.injection() = K;
-  SSI.set_mesh( "UNIFORM" );
+  SSI.set_mesh( "NONUNIFORM" );
   SSI.set_base_flow( "2D" );
   SSI.speed_up( false );
 
   cout << "*** Solving the self similar injection base flow ***" << endl;
-  SSI.solve();
+  Timer timer;
+  timer.start();
+
+  try
+  {
+    SSI.solve();
+  }
+  catch ( std::runtime_error )
+  {
+    cout << " \033[1;31;48m  * FAILED THROUGH EXCEPTION BEING RAISED (SSI) \033[0m\n";
+    assert( false );
+  }
   SSI.output();
   TwoD_node_mesh<double> sol = SSI.solution();
 
@@ -133,9 +144,9 @@ int main()
     double eta( ETA_NODES[ j ] );
 
     // P_hzeta = 0
-    A( row, i * N_eta + j )      = -3 * Xd / ( 2 * dX );
-    A( row, (i+1) * N_eta + j )  =  4 * Xd / ( 2 * dX );
-    A( row, (i+2) * N_eta + j )  = -1 * Xd / ( 2 * dX );
+    A( row, i * N_eta + j )           = -3 * Xd / ( 2 * dX );
+    A( row, ( i + 1 ) * N_eta + j )   =  4 * Xd / ( 2 * dX );
+    A( row, ( i + 2 ) * N_eta + j )   = -1 * Xd / ( 2 * dX );
 
     ++row;
 
@@ -193,16 +204,16 @@ int main()
       // Laplacian coefficients for finite-differencing
 
       // X(i,j-1)
-      double laplace_1 =  ( Yd*Yd/(dY*dY) - Ydd/ (2.*dY) ) ;
+      double laplace_1 =  ( Yd*Yd / (dY*dY) - Ydd / (2.*dY) ) ;
       // X(i-1,j)
-      double laplace_3 = ( Xd*Xd/(dX*dX) - Xdd/(2.*dX) ) / ( zeta0 * zeta0 );
+      double laplace_3 = ( Xd*Xd / (dX*dX) - Xdd / (2.*dX) ) / ( zeta0 * zeta0 );
       // X(i,j)
       double laplace_4 = -2.*( Yd*Yd / (dY*dY)
-                         + Xd*Xd/( zeta0 * zeta0 * dX * dX ) );
+                         + Xd*Xd / ( zeta0 * zeta0 * dX * dX ) );
       // X(i+1,j)
-      double laplace_5 = ( Xdd/(2.*dX) + Xd*Xd/(dX*dX) ) / ( zeta0 * zeta0 );
+      double laplace_5 = ( Xdd / (2.*dX) + Xd*Xd / (dX*dX) ) / ( zeta0 * zeta0 );
       // X(i,j+1)
-      double laplace_7 = ( Yd*Yd/(dY*dY) + Ydd/ (2.*dY) );
+      double laplace_7 = ( Yd*Yd / (dY*dY) + Ydd / (2.*dY) );
 
       //////////////////////////
       // 2D Rayleigh equation //
@@ -224,13 +235,9 @@ int main()
       A( row, i * N_eta + j + 1 )   += -2 * U_eta * ( Yd / ( 2 * dY ) );
       A( row, i * N_eta + j - 1 )   +=  2 * U_eta * ( Yd / ( 2 * dY ) );
 
-      //cout << "2 * U_eta * Yd / ( 2 * dY ) = " << 2 * U_eta * Yd / ( 2 * dY ) << endl;
-
       // - 2 * U_hzeta * P_hzeta / zeta0^2
       A( row, (i + 1) * N_eta + j ) += -2 * U_hzeta * Xd / ( 2 * dX * zeta0 * zeta0 );
       A( row, (i - 1) * N_eta + j ) +=  2 * U_hzeta * Xd / ( 2 * dX * zeta0 * zeta0 );
-
-      //cout << "2 * U_hzeta * Xd / ( 2 * dX * zeta0 * zeta0 ) = " << 2 * U_hzeta * Xd / ( 2 * dX * zeta0 * zeta0 ) << endl;
 
       // B matrix
 
@@ -271,30 +278,25 @@ int main()
   //A.output( "./A_mat.dat", 4 );
   //B.output( "./B_mat.dat", 4 );
 
-  // Create the sparse eigenvalue problem
-  Vector< std::complex<double> > lambdas;
-  //SparseEigenSystem< std::complex<double> > system( &A, &B );
-
-  //system.set_nev(1);
-  //system.set_region(0.1,1.0,-1.0,1.0);
-  //system.set_target( std::complex<double>(0.56,0.18) );
-  //system.set_order( "EPS_TARGET_IMAGINARY" );
-  //system.set_order( "EPS_TARGET_MAGNITUDE" );
-
+  // Solve the sparse eigenvalue problem
   try
   {
     system.eigensolve();
   }
   catch ( std::runtime_error )
   {
-    cout << " \033[1;31;48m  * FAILED THROUGH EXCEPTION BEING RAISED \033[0m\n";
+    cout << " \033[1;31;48m  * FAILED THROUGH EXCEPTION BEING RAISED (EIGENSYS) \033[0m\n";
     assert( false );
   }
 
+  Vector< std::complex<double> > lambdas;
   lambdas = system.eigenvalues();
   cout << "lambdas = " << lambdas << endl;
 
   SlepcFinalize();
+
+  timer.print();
+  timer.stop();
 
 	cout << "FINISHED" << endl;
 

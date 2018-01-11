@@ -318,7 +318,7 @@ namespace TSL
     // NEV = (unsigned)nev; // is this always the same as the input nev?
 
     // Optional: Get some information from the solver and display it
-//#ifdef DEBUG
+/*  // DEBUG
     PetscInt its, lits, maxit;
     EPSType type;
     PetscReal tol;
@@ -337,6 +337,7 @@ namespace TSL
     PetscPrintf(PETSC_COMM_WORLD,"[DEBUG] Number of requested eigenvalues: %D\n",NEV);
     EPSGetTolerances(eps,&tol,&maxit);
     PetscPrintf(PETSC_COMM_WORLD,"[DEBUG] Stopping condition: tol=%.4g, maxit=%D\n",(double)tol,maxit);
+*/
     /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
                       Display solution and clean up
        - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */

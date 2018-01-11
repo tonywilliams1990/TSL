@@ -707,47 +707,21 @@ int main()
       double eta( eta_nodes[ j ] );
       double Yd( Mesh::Yd(eta) );
 
-      /*
-      // Phi = Phi_w
-      A( row, col( i, j, Phi ) )        =   1;
-      B[ row ]                          = - Q( i, j, Phi ) - Q_old( i, j, Phi )
-                                          + Phi_w + Phi_w_old;
-      ++row;
-      // Psi = 0
-      A( row, col( i, j, Psi ) )        =   1;
-      B[ row ]                          = - Q( i, j, Psi ) - Q_old( i, j, Psi );
-      ++row;
-      // U = 0
-      A( row, col( i, j, U ) )          =   1;
-      B[ row ]                          = - Q( i, j, U ) - Q_old( i, j, U );
-      ++row;
-      // Theta - Psi_eta = -( 1 / ( zeta0^2 ) ) * Phi_w_hzeta
-      A( row, col( i, j, Theta ) )      =  1;
-      A( row, col( i, j, Psi ) )        =  3 * Yd / ( 2 * dY );
-      A( row, col( i, j + 1, Psi ) )    = -4 * Yd / ( 2 * dY );
-      A( row, col( i, j + 2, Psi ) )    =  1 * Yd / ( 2 * dY );
-      B[ row ]        = - Q( i, j, Theta ) + Yd * ( -3 * Q( i, j, Psi )
-                        + 4 * Q( i, j + 1, Psi ) - Q( i, j + 2, Psi ) )
-                        / ( 2 * dY )
-                        - Q_old( i, j, Theta ) + Yd * ( -3 * Q_old( i, j, Psi )
-                        + 4 * Q_old( i, j + 1, Psi ) - Q_old( i, j + 2, Psi ) )
-                        / ( 2 * dY )
-                        - ( 1. / ( Param::zeta0_2 ) ) * Phi_w_hzeta
-                        - ( 1. / ( Param::zeta0_2 ) ) * Phi_w_old_hzeta;
-      ++row;*/
-
       // Phi = Phi_w
       A( row, col( i, j, Phi ) )        =  1.;
       B[ row ]                          = -Q( i, j, Phi ) + Phi_w;
       ++row;
+
       // Psi = 0
       A( row, col( i, j, Psi ) )        =  1.;
       B[ row ]                          = -Q( i, j, Psi );
       ++row;
+
       // U = 0
       A( row, col( i, j, U ) )          =  1.;
       B[ row ]                          = -Q( i, j, U );
       ++row;
+
       // Theta - Psi_eta = -( 1 / ( zeta0^2 ) ) * Phi_w_hzeta
       A( row, col( i, j, Theta ) )      =  1.;
       A( row, col( i, j, Psi ) )        =  3.*Yd / ( 2 * dY );

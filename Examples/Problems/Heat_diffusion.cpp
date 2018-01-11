@@ -1,6 +1,3 @@
-/// \file IBVP_diffusion.cpp
-/// \ingroup Examples
-/// \ingroup IBVP
 /// Solving the heat diffusion equation
 /// \f[ f_t = f_{yy} \f]
 /// subject to \f$ f(0) = 0 \f$ and \f$ f(1) = 0 \f$
@@ -46,7 +43,7 @@ namespace TSL
       }
 
       /// To speed things up we'll overload this to say the mass matrix is constant
-      void get_jacobian_of_matrix0_mult_vector( const Vector<double> &state, 
+      void get_jacobian_of_matrix0_mult_vector( const Vector<double> &state,
                                     const Vector<double> &vec, Matrix<double> &h  ) const
       {
         // blank definition leads to a zero result
@@ -57,14 +54,14 @@ namespace TSL
       {
         m( 1, 0 ) = -1.0;
       }
-      
+
       /// To speed things up we'll overload this to say the mass matrix is constant
-      void get_jacobian_of_matrix1_mult_vector( const Vector<double> &state, 
+      void get_jacobian_of_matrix1_mult_vector( const Vector<double> &state,
                                     const Vector<double> &vec, Matrix<double> &h  ) const
       {
         // blank definition leads to a zero result
       }
-      
+
     };
 
     class Diff_both_BC : public Residual_with_coords<double>
@@ -144,7 +141,7 @@ int main()
     {
       en += 2;
       correction = 8 / ( std::pow( en * M_PI, 3 ) )
-                   * std::exp( -std::pow( en * M_PI, 2 ) 
+                   * std::exp( -std::pow( en * M_PI, 2 )
                    * heat.coord() ) * std::sin( en * M_PI * y );
       u += correction;
     }
