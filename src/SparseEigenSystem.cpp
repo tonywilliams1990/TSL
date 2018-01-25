@@ -64,6 +64,7 @@ namespace TSL
     if ( order_string == "EPS_TARGET_MAGNITUDE" ) { ORDER=(EPSWhich)7; flag=1; }
     if ( order_string == "EPS_TARGET_REAL" ) { ORDER=(EPSWhich)8; flag=1; }
     if ( order_string == "EPS_TARGET_IMAGINARY" ) { ORDER=(EPSWhich)9; flag=1; }
+    if ( order_string == "EPS_ALL" ) { ORDER=(EPSWhich)10; flag=1; }
     if (flag==0)
     {
       std::string problem;

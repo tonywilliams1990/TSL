@@ -1,5 +1,7 @@
 #include <sstream>
 #include <string>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #include "Vector.h"
 
@@ -24,6 +26,9 @@ namespace TSL
 
     /// Return a double value as a string
     std::string stringify( const double &val, int p, std::string str="" );
+
+    /// Check if a file exists
+    bool file_exists( const std::string& name );
 
   } // End of namespace Utility
 } // End of namespace TSL

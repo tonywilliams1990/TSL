@@ -30,5 +30,12 @@ namespace TSL
       return temp.str();
     }
 
+    /// Check if a file exists
+    bool file_exists( const std::string& name )
+    {
+      std::ifstream f( name.c_str() );
+      return f.good();
+    }
+
   } // End of namespace Utility
 } // End of namespace TSL

@@ -401,7 +401,7 @@ namespace TSL
   {
     std::ofstream dump;
     dump.open( filename.c_str() );
-    dump.precision( 9 );
+    dump.precision( 15 );
     dump.setf( std::ios::showpoint );
     dump.setf( std::ios::showpos );
     dump.setf( std::ios::scientific );
@@ -422,7 +422,32 @@ namespace TSL
     dump.close();
   }
 
-  //TODO complex version of above 419 TwoD_Node_Mesh.cpp
+  template <>
+  void TwoD_node_mesh< std::complex<double> >::dump_gnu( std::string filename ) const
+  {
+    std::ofstream dump;
+    dump.open( filename.c_str() );
+    dump.precision( 15 );
+    dump.setf( std::ios::showpoint );
+    dump.setf( std::ios::showpos );
+    dump.setf( std::ios::scientific );
+    //
+    for ( std::size_t i = 0; i < NX; ++i )
+    {
+      for ( std::size_t j = 0; j < NY; ++j )
+      {
+        dump << X_NODES[ i ] << " " << Y_NODES[ j ] << " ";
+        for ( std::size_t var = 0; var < NV; ++var )
+        {
+          dump << real(VARS[ ( i * NY + j ) * NV + var ]) << " ";
+          dump << imag(VARS[ ( i * NY + j ) * NV + var ]) << " ";
+        }
+        dump << "\n";
+      }
+      dump << "\n";
+    }
+    dump.close();
+  }
 
   template<class T>
   void TwoD_node_mesh<T>::dump_var( std::string filename, const std::size_t var ) const
@@ -468,7 +493,7 @@ namespace TSL
     }
   }
 
-  template<class T>
+  /*template<class T>
   void TwoD_node_mesh<T>::read( std::string filename, bool reset )
   {
     std::ifstream dump;
@@ -513,7 +538,58 @@ namespace TSL
         }
       }
     }
+  }*/
+
+  template<>
+  void TwoD_node_mesh<double>::read( std::string filename, const bool reset )
+  {
+    std::ifstream inFile;
+    inFile.open( filename.c_str() );
+    inFile.precision( 15 );
+    inFile.setf( std::ios::showpoint );
+    inFile.setf( std::ios::showpos );
+    inFile.setf( std::ios::scientific );
+    if (!inFile) {
+      throw Error( "TwoD_node_mesh unable to open file" );
+    }
+
+    double x, y;
+    Vector<double> vals( NV );
+
+    for ( std::size_t i=0; i<NX; ++i )
+    {
+      for ( std::size_t j=0; j<NY; ++j )
+      {
+        inFile >> x;
+        inFile >> y;
+        std::size_t offset( ( i * NY + j ) * NV );
+        for ( std::size_t v=0; v < NV; ++v )
+        {
+          inFile >> vals[ v ];
+          VARS[ offset++ ] = vals[ v ];
+        }
+        // Check the mesh
+        if ( !reset )
+  			{
+  				if ( ( std::abs( x - X_NODES[ i ] ) > 1.e-6 ) || ( std::abs( y - Y_NODES[ j ] ) > 1.e-6 ) )
+  				{
+  					std::cout << " Read x = " << x << " Expected x = " << X_NODES[ i ] << std::endl;
+            std::cout << " Read y = " << y << " Expected y = " << Y_NODES[ i ] << std::endl;
+  					throw Error( "TwoD_node_mesh trying to read from file with different nodal points." );
+  				}
+  			}
+  			else
+  			{
+  				X_NODES[ i ] = x;
+          Y_NODES[ j ] = y;
+  			}
+      }
+    }
+
+    inFile.close();
   }
+
+  //TODO complex version of read function
 
   template<class T>
   T TwoD_node_mesh<T>::integral2D( std::size_t var ) const

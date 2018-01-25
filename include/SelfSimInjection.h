@@ -54,6 +54,7 @@ namespace TSL
       Vector<double> X_NODES, Y_NODES;
       // Nodal positions in the original zeta-eta domain
       Vector<double> ETA_NODES, HZETA_NODES;
+      Vector<double> BASE_ETA_NODES;
       OneD_node_mesh<double> BASE_SOLUTION;     // Base flow ODE solution
       TwoD_node_mesh<double> Q;                 // Current guess mesh
       TwoD_node_mesh<double> Q_output;          // Output mesh
@@ -61,6 +62,7 @@ namespace TSL
       double A_PARAM;                           // Mass flux parameter
       double U_ETA;                             // Shear stress at origin
       double ETA_HALF;                          // Value of eta on hzeta=0 at which U=1/2
+      double INT_U_SQUARED;                     // Integral of U^2 over cross section
 
       /* ----- Methods ----- */
       void setup(){
@@ -78,70 +80,6 @@ namespace TSL
         std::cout << "  * Output directory " + OUTPUT_PATH +
                 " has been made successfully." << std::endl;
         }
-      }
-
-      /* ----- Setup the mesh ----- */
-
-      void mesh_setup()
-      {
-        // Define the remapped (non-uniform mesh) domain
-        double left   = mesh_X( 0.0 );
-        double right  = mesh_X( HZETA_RIGHT );
-        double bottom = mesh_Y( 0.0 );
-        double top    = mesh_Y( ETA_TOP );
-
-        // Nodal positions in the remapped domain (spanned by X,Y)
-        X_NODES.linspace( left, right, N + 1 );
-        Y_NODES.linspace( bottom, top, M + 1 );
-
-        // Vectors for writing data on the original zeta-eta domain
-        HZETA_NODES.linspace( 0.0, HZETA_RIGHT, N + 1 );
-        ETA_NODES.linspace( 0.0, ETA_TOP, M + 1 );
-
-        // To find eta=eta(Y) and zeta=zeta(X) we will use Newton iteration
-        invert_eta find_eta;
-        find_eta.mesh = MESH;
-        Newton<double> newton_eta( &find_eta );
-        for ( unsigned j = 0; j < M + 1; ++j )
-        {
-          unsigned kmin(0); double min(99);
-          for ( unsigned k = 0; k < M + 1; ++k )
-          {
-            if ( std::abs( mesh_Y( ETA_NODES[k] ) - Y_NODES[j] ) < min )
-            {
-              min = std::abs( mesh_Y( ETA_NODES[k] ) - Y_NODES[j] );
-              kmin = k;
-            }
-          }
-          find_eta.Y0 = Y_NODES[ j ];
-          Vector<double> guess( 1, 1.0 );
-          guess[ 0 ] = ETA_NODES[ kmin ];
-          newton_eta.iterate( guess );
-          ETA_NODES[j] = guess[ 0 ];
-        }
-
-        invert_zeta find_zeta;
-        find_zeta.mesh = MESH;
-        Newton<double> newton_zeta( &find_zeta );
-        //
-        for ( unsigned i = 0; i < N + 1; ++i )
-        {
-          unsigned kmin(0); double min(99);
-          for ( unsigned k = 0; k < N + 1; ++k )
-          {
-            if ( std::abs( mesh_X( HZETA_NODES[k] ) - X_NODES[i] ) < min )
-            {
-              min = std::abs( mesh_X( HZETA_NODES[k] ) - X_NODES[i] );
-              kmin = k;
-            }
-          }
-          find_zeta.X0 = X_NODES[ i ];
-          Vector<double> guess( 1, 1.0 );
-          guess[ 0 ] = HZETA_NODES[ kmin ];
-          newton_zeta.iterate( guess );
-          HZETA_NODES[ i ] = guess[ 0 ];
-        }
-
       }
 
       /* ----- Calculate the base flow solution ----- */
@@ -238,8 +176,8 @@ namespace TSL
       void solve_base_flow()
       {
         std::cout << "*** Solving the base flow ODE ***" << std::endl;
-        Vector<double> eta_nodes;
-        eta_nodes.linspace( 0.0, ETA_TOP, MB + 1 );
+        Vector<double> eta_nodes( BASE_ETA_NODES );
+        //eta_nodes.linspace( 0.0, ETA_TOP, MB + 1 );
 
         if ( BASE_FLOW=="2D" )
         {
@@ -432,6 +370,9 @@ namespace TSL
       /// Return the mesh definition string
       std::string mesh() { return MESH; }
 
+      /// Method to set the SOLVED variable (useful if reading solution from file)
+      void set_solved( bool solved ){ SOLVED = solved; }
+
       /// Return if the equations have been solved or not
       bool solved() { return SOLVED; }
 
@@ -451,6 +392,9 @@ namespace TSL
       /// Return the base flow definition string
       std::string base_flow() { return BASE_FLOW; }
 
+      /// Return the output path string
+      std::string output_path() { return OUTPUT_PATH; }
+
       /// Method to set the base flow definition string
       void set_base_flow( std::string base_flow )
       {
@@ -469,6 +413,9 @@ namespace TSL
 
       /// Return the base flow solution
       OneD_node_mesh<double> base_flow_solution() { return BASE_SOLUTION; }
+
+      /// Return BASE_ETA_NODES
+      Vector<double> base_eta_nodes(){ return BASE_ETA_NODES; }
 
       /// Return the ETA_NODES
       Vector<double> eta_nodes(){ return ETA_NODES; }
@@ -567,6 +514,73 @@ namespace TSL
           f[ 0 ] = SSI.mesh_X( z[0] ) - X0;
         }
       };
+
+      /* ----- Setup the mesh ----- */
+
+      void mesh_setup()
+      {
+        // Define the remapped (non-uniform mesh) domain
+        double left   = mesh_X( 0.0 );
+        double right  = mesh_X( HZETA_RIGHT );
+        double bottom = mesh_Y( 0.0 );
+        double top    = mesh_Y( ETA_TOP );
+
+        // Base flow ODE eta nodes
+        BASE_ETA_NODES.linspace( 0.0, ETA_TOP, MB + 1 );
+
+        // Nodal positions in the remapped domain (spanned by X,Y)
+        X_NODES.linspace( left, right, N + 1 );
+        Y_NODES.linspace( bottom, top, M + 1 );
+
+        // Vectors for writing data on the original zeta-eta domain
+        HZETA_NODES.linspace( 0.0, HZETA_RIGHT, N + 1 );
+        ETA_NODES.linspace( 0.0, ETA_TOP, M + 1 );
+
+        // To find eta=eta(Y) and zeta=zeta(X) we will use Newton iteration
+        invert_eta find_eta;
+        find_eta.mesh = MESH;
+        Newton<double> newton_eta( &find_eta );
+        for ( unsigned j = 0; j < M + 1; ++j )
+        {
+          unsigned kmin(0); double min(99);
+          for ( unsigned k = 0; k < M + 1; ++k )
+          {
+            if ( std::abs( mesh_Y( ETA_NODES[k] ) - Y_NODES[j] ) < min )
+            {
+              min = std::abs( mesh_Y( ETA_NODES[k] ) - Y_NODES[j] );
+              kmin = k;
+            }
+          }
+          find_eta.Y0 = Y_NODES[ j ];
+          Vector<double> guess( 1, 1.0 );
+          guess[ 0 ] = ETA_NODES[ kmin ];
+          newton_eta.iterate( guess );
+          ETA_NODES[j] = guess[ 0 ];
+        }
+
+        invert_zeta find_zeta;
+        find_zeta.mesh = MESH;
+        Newton<double> newton_zeta( &find_zeta );
+        //
+        for ( unsigned i = 0; i < N + 1; ++i )
+        {
+          unsigned kmin(0); double min(99);
+          for ( unsigned k = 0; k < N + 1; ++k )
+          {
+            if ( std::abs( mesh_X( HZETA_NODES[k] ) - X_NODES[i] ) < min )
+            {
+              min = std::abs( mesh_X( HZETA_NODES[k] ) - X_NODES[i] );
+              kmin = k;
+            }
+          }
+          find_zeta.X0 = X_NODES[ i ];
+          Vector<double> guess( 1, 1.0 );
+          guess[ 0 ] = HZETA_NODES[ kmin ];
+          newton_zeta.iterate( guess );
+          HZETA_NODES[ i ] = guess[ 0 ];
+        }
+
+      }
 
       /* ----- Methods for solving the perturbation problem ----- */
 
@@ -1181,19 +1195,37 @@ namespace TSL
         ETA_HALF =  ( 0.5 - Q_output(0,lower,U+4) ) * ( ETA_NODES[upper] - ETA_NODES[lower] )
                   / ( Q_output(0,upper,U+4) - Q_output(0,lower,U+4)  ) + ETA_NODES[lower];
 
+        // Integral of U^2 over the cross-section
+        INT_U_SQUARED = Q_output.square_integral2D( U );
+
         SOLVED = true;
 
       } // End of solve_perturbation_eqns function
 
       /* ----- Output solution data ----- */
+
+      /// Return the solution mesh
       TwoD_node_mesh<double> solution() {
         if ( SOLVED ){ return Q_output; }
         else { throw Error( "solution() error equations have not been solved." ); }
       }
 
+      /// Return the wall shear solution mesh
       OneD_node_mesh<double> solution_wall_shear() {
         if ( SOLVED ){ return WALL_SHEAR; }
         else { throw Error( "solution_wall_shear() error equations have not been solved." ); }
+      }
+
+      /// Reset the solution mesh from an external mesh
+      void set_solution( TwoD_node_mesh<double> sol ){
+        if ( SOLVED ){ Q_output = sol; }
+        else { throw Error( "set_solution() error equations have not been solved." ); }
+      }
+
+      /// Reset the base flow solution mesh from an external mesh
+      void set_base_solution( OneD_node_mesh<double> base_sol ){
+        if ( SOLVED ){ BASE_SOLUTION = base_sol; }
+        else { throw Error( "set_base_solution() error equations have not been solved." ); }
       }
 
       /// Return the mass flux parameter
@@ -1255,6 +1287,7 @@ namespace TSL
         metric.push_ptr( &A_PARAM, "A" );
         metric.push_ptr( &U_ETA, "U_eta(0,0)");
         metric.push_ptr( &ETA_HALF, "eta at which U=1/2 on zeta=0" );
+        metric.push_ptr( &INT_U_SQUARED, "integral U^2 over the cross-section");
         metric.header();
 
         do {
@@ -1280,6 +1313,7 @@ namespace TSL
         metric.push_ptr( &A_PARAM, "A" );
         metric.push_ptr( &U_ETA, "U_eta(0,0)");
         metric.push_ptr( &ETA_HALF, "eta at which U=1/2 on zeta=0" );
+        metric.push_ptr( &INT_U_SQUARED, "integral U^2 over the cross-section");
         metric.header();
 
         do {
@@ -1291,12 +1325,17 @@ namespace TSL
         }while ( K <= max );
       }
 
-      void solve()
+      void set_output_path()
       {
         std::ostringstream ss;
         ss << "./DATA/K_" << K << "_zeta0_" << ZETA0 << "_beta_" << BETA << "_" << N + 1
            << "x" << M + 1 << "_" << HZETA_RIGHT << "_" << ETA_TOP << "/";
         OUTPUT_PATH = ss.str();
+      }
+
+      void solve()
+      {
+        set_output_path();
         setup();
         solve_perturbation_eqns();
       }

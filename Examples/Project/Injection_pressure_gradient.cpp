@@ -14,8 +14,10 @@ public:
   // Define the injection function
   double Phi_w_func( const double& hzeta ){
     // Top-hat injection
-    return - K * 0.5 * ( tanh( GAMMA * ( hzeta - 1. ) )
-           - tanh( GAMMA * ( hzeta - 2. ) ) );
+    //return - K * 0.5 * ( tanh( GAMMA * ( hzeta - 1. ) )
+    //       - tanh( GAMMA * ( hzeta - 2. ) ) );
+    // Gaussian
+    return - K * exp( - hzeta * hzeta );
   }
 }; // End of class mySelfSimInjection
 
@@ -23,14 +25,14 @@ int main()
 {
   // Define the domain + short scale injection parameters
   double hzeta_right( 16.0 );       // Size of the domain in the zeta_hat direction
-  double eta_top( 128.0 );          // Size of the domain in the eta direction
+  double eta_top( 64.0 );          // Size of the domain in the eta direction
   const std::size_t N( 200 );       // Number of intervals in the zeta_hat direction
   const std::size_t M( 200 );       // Number of intervals in the eta direction
   const std::size_t MB( M * 100 );  // Number of eta intervals in the base flow ODE
   double beta( 0.0 );               // Hartree parameter
   double zeta0( 1.0 );              // Injection width ( initial )
-  double K( 2.0 );                  // Injection parameter ( +ve = blowing )
-  double zeta0_max( 4.0 );          // Maximum value of the injection width
+  double K( 2.5 );                  // Injection parameter ( +ve = blowing )
+  double zeta0_max( 1.0 );          // Maximum value of the injection width
   double zeta0_step( 1.0 );         // Increment when iterating
 
   // Setup the problem

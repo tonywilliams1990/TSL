@@ -30,7 +30,7 @@ int main()
   double beta( 0.0 );               // Hartree parameter
   double zeta0( 1.0 );              // Transpiration width
   double K( 4.0 );                  // Transpiration parameter ( +ve = blowing )
-  double alpha( 0.02 );              // Wavenumber (alpha hat)
+  double alpha( 0.3 );              // Wavenumber (alpha hat)
 
   // Solve the self similar injection flow
   mySelfSimInjection SSI;
@@ -50,72 +50,62 @@ int main()
   Timer timer;
   timer.start();
 
+  SSI.set_output_path();
+  SSI.mesh_setup();
+  Vector<double> ETA_NODES      = SSI.eta_nodes();
+  Vector<double> HZETA_NODES    = SSI.hzeta_nodes();
+  Vector<double> X_NODES        = SSI.x_nodes();
+  Vector<double> Y_NODES        = SSI.y_nodes();
+  Vector<double> BASE_ETA_NODES = SSI.base_eta_nodes();
+
+  TwoD_node_mesh<double> sol( HZETA_NODES, ETA_NODES, 8 ); // Mesh for storing the solution
+  OneD_node_mesh<double> base( BASE_ETA_NODES, 6 );
+
+  // Don't bother solving it all again if the solution file already exists
+  bool exists;
+  exists = Utility::file_exists( SSI.output_path() + "Qout_" + Utility::stringify( zeta0 ) + ".dat" );
+  bool base_exists;
+  base_exists = Utility::file_exists( SSI.output_path() + "Base_soln.dat" );
+
   try
   {
-    SSI.solve();
+    if ( !exists || !base_exists ){
+      SSI.solve();
+      SSI.output();
+      SSI.output_base_solution();
+      sol = SSI.solution();
+      base = SSI.base_flow_solution();
+      cout << "  * zeta0 = " << SSI.injection_width() << ", A = " << SSI.mass_flux() << endl;
+     }
+    if ( exists ){
+      cout << "--- Reading solution from file" << endl;
+      sol.read( SSI.output_path() + "Qout_" + Utility::stringify( zeta0 ) + ".dat" );
+      cout << "--- Finished reading" << endl;
+    }
+
+    if ( base_exists ){
+      base.read( SSI.output_path() + "Base_soln.dat" );
+      std::cout << "  * UB'(eta=0) =" << base( 0, 1 ) << std::endl;
+    }
+
+    if ( exists && base_exists ){
+      SSI.set_solved( true );
+      SSI.set_solution( sol );
+      SSI.set_base_solution( base );
+    }
   }
   catch ( std::runtime_error )
   {
     cout << " \033[1;31;48m  * FAILED THROUGH EXCEPTION BEING RAISED (SSI) \033[0m\n";
     assert( false );
   }
-  SSI.output();
-  TwoD_node_mesh<double> sol = SSI.solution();
-
-  OneD_node_mesh<double> base = SSI.base_flow_solution();
-  cout << "  * zeta0 = " << SSI.injection_width() << ", A = " << SSI.mass_flux() << endl;
-
-  Vector<double> ETA_NODES   = SSI.eta_nodes();
-  Vector<double> HZETA_NODES = SSI.hzeta_nodes();
-  Vector<double> X_NODES     = SSI.x_nodes();
-  Vector<double> Y_NODES     = SSI.y_nodes();
 
   const double dY( Y_NODES[ 1 ] - Y_NODES[ 0 ] );
   const double dX( X_NODES[ 1 ] - X_NODES[ 0 ] );
 
-  /*
-  // Read from file
-  TwoD_node_mesh<double> Rich_sol( X_NODES, Y_NODES, 4 );
-  cout << "--- Reading from file" << endl;
-
-  ifstream inFile;
-  inFile.open( "./DATA/Q_8_1.dat" );
-  if (!inFile) {
-    cerr << "Unable to open file.";
-    exit(1);
-  }
-  double x, y;
-  Vector<double> vals( 4 );
-
-  for ( std::size_t i=0; i<X_NODES.size(); ++i )
-  {
-    for ( std::size_t j=0; j<Y_NODES.size(); ++j )
-    {
-      inFile >> x;
-      inFile >> y;
-      for ( std::size_t v=0; v<vals.size(); ++v )
-      {
-        inFile >> vals[v];
-      }
-
-      Rich_sol.set_nodes_vars( i, j, vals );
-      //cout << "x = " << x << ", y = " << y << endl;
-      //cout << "vals = " << vals << endl;
-    }
-  }
-
-  inFile.close();
-
-  //Rich_sol.read( "./DATA/Q_8_1.dat", true );
-  cout << "--- Finished reading" << endl;
-
-  // Check data read from file
-  Rich_sol.dump_gnu( "Test_out.dat" );
-  */
-
   // Setup the generalised eigenvalue problem A p = c B p (solved using SLEPc)
   cout << "*** Setting up the generalised eigenvalue problem ***" << endl;
-
+  cout << "--- K = " << K << ", alpha = " << alpha << endl;
   SlepcInitialize(NULL,NULL,(char*)0,(char*)0);
 
   std::size_t N_hzeta = N + 1;
@@ -125,9 +115,10 @@ int main()
   SparseMatrix< std::complex<double> > B( N_eta * N_hzeta, N_eta * N_hzeta );
 
   SparseEigenSystem< std::complex<double> > system( &A, &B );
-  system.set_nev(1);
+  system.set_nev(5);
   system.set_region(0.1,1.0,-1.0,1.0);
   system.set_target( std::complex<double>(0.56,0.18) );
+  //system.set_target( std::complex<double>(0.45,0.001) );
   system.set_order( "EPS_TARGET_IMAGINARY" );
   system.calc_eigenvectors() = true;
 
@@ -179,21 +170,6 @@ int main()
       double eta( ETA_NODES[ j ] );
       double Yd( SSI.mesh_Yd( eta ) );
       double Ydd( SSI.mesh_Ydd( eta ) );
-
-      // Use Rich's solution
-
-      /*double U = Rich_sol( i, j, 2 );
-      //double U_eta = Yd * ( Rich_sol( i, j + 1, 2 ) - Rich_sol( i, j - 1, 2 ) ) / ( 2 * dY );
-      double U_hzeta = Xd * ( Rich_sol( i + 1, j, 2 ) - Rich_sol( i - 1, j, 2 ) ) / ( 2 * dX );
-
-      double U_pert = U - base.get_interpolated_vars( eta )[ 0 ];
-      double eta_jp1( ETA_NODES[ j + 1 ] );
-      double eta_jm1( ETA_NODES[ j - 1 ] );
-      double U_pert_jp1 = Rich_sol( i, j + 1, 2 ) - base.get_interpolated_vars( eta_jp1 )[ 0 ];
-      double U_pert_jm1 = Rich_sol( i, j - 1, 2 ) - base.get_interpolated_vars( eta_jm1 )[ 0 ];
-
-      double U_eta = Yd * ( U_pert_jp1 - U_pert_jm1 ) / ( 2 * dY );
-      U_eta += base.get_interpolated_vars( eta )[ 1 ];*/
 
       // Self similar solution
       double U = sol( i, j, 6 ); // UB + U_pert
@@ -257,8 +233,20 @@ int main()
 
     // eta = eta_inf boundary ( top boundary )
     j = M ;
-    // P = 0
-    A( row, i * N_eta + j ) = 1;
+    eta = ETA_NODES[ j ];
+    Yd = SSI.mesh_Yd( eta );
+
+    // P = 0 (Dirichlet)
+    //A( row, i * N_eta + j ) = 1;
+
+    // Robin condition (P_eta + alpha*P = 0)
+    // P_eta
+    A( row, i * N_eta + j )        =  3 * Yd / ( 2 * dY );
+    A( row, i * N_eta + j - 1 )    = -4 * Yd / ( 2 * dY );
+    A( row, i * N_eta + j - 2 )    =  1 * Yd / ( 2 * dY );
+
+    // + alpha * P
+    A( row, i * N_eta + j )       += alpha;
 
     ++row;
 
@@ -291,11 +279,33 @@ int main()
 
   Vector< std::complex<double> > lambdas;
   lambdas = system.eigenvalues();
-  cout << "lambdas = " << lambdas << endl;
+  //cout << "lambdas = " << lambdas << endl;
+  lambdas.output( SSI.output_path() + "alpha_"
+                + Utility::stringify( alpha, 3 ) + "_evals.dat", 15 );
+
 
   Matrix< std::complex<double> > evecs;
   evecs = system.eigenvectors();
-  //cout << "evecs = " << evecs << endl;
+
+  std::size_t nev( system.get_nconv() ); // Number of converged eigenvalues
+
+  // Convert matrix to 2D node mesh (complex)
+  TwoD_node_mesh< std::complex<double> > output( HZETA_NODES, ETA_NODES, nev );
+  // Push the data back into the unmapped domain
+  for ( std::size_t n = 0; n < nev; ++n )
+  {
+    for ( std::size_t i = 0; i < N_hzeta; ++i )
+    {
+      for ( std::size_t j = 0; j < N_eta; ++j )
+      {
+        output( i, j, n ) = evecs( n, i * N_eta + j );
+      }
+    }
+  }
+
+  // Output mesh to file
+  output.dump_gnu( SSI.output_path() + "alpha_"
+                 + Utility::stringify( alpha, 3 ) + "_evecs.dat" );
 
   SlepcFinalize();
 

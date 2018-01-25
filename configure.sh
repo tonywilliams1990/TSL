@@ -25,3 +25,14 @@ echo "export LD_LIBRARY_PATH=$home/lib:$PETSC_DIR/$PETSC_ARCH/lib:$SLEPC_DIR/$PE
 
 # update shell
 source ~/.bash_profile
+
+# uncomment stuff below if bashrc profile is different
+
+# put new variables in bashrc
+#echo "export PETSC_DIR=$home/petsc-3.8.2" >> ~/.bashrc
+#echo "export SLEPC_DIR=$home/slepc-3.8.2" >> ~/.bashrc
+#echo "export PETSC_ARCH=x86_64-linux-gnu-complex" >> ~/.bashrc
+#echo "export LD_LIBRARY_PATH=$home/lib:$PETSC_DIR/$PETSC_ARCH/lib:$SLEPC_DIR/$PETSC_ARCH/lib" >> ~/.bashrc
+
+# update shell
+#source ~/.bashrc

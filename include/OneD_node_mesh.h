@@ -9,6 +9,7 @@
 #include <fstream>
 #include <iostream>
 #include <iomanip>
+#include <cassert>
 
 #include "Vector.h"
 #include "Error.h"
@@ -16,11 +17,11 @@
 
 namespace TSL
 {
-  
+
 
 	/// A templated class
 	template <class T, class X = double>
-	
+
 	class OneD_node_mesh
 	{
 
@@ -38,18 +39,18 @@ namespace TSL
       }
 
       /// Constructor (given nodal distribution)
-      OneD_node_mesh( const Vector<X>& nodes, const std::size_t& nvars ) : 
+      OneD_node_mesh( const Vector<X>& nodes, const std::size_t& nvars ) :
           NV( nvars ), NODES( nodes )
       {
         // set the contents to zero
         VARS = Vector<T>( NV * NODES.size(), T(0.0) );
-      } 
-    
+      }
+
       /// Destructor
       virtual ~OneD_node_mesh() {}
 
       /* ----- Operator overloading ----- */
-    
+
       /// Read only access of a variable at a given node
       const T& operator()( const std::size_t i, const std::size_t var ) const
       {
@@ -63,7 +64,7 @@ namespace TSL
       }
 
       /* ----- Methods ----- */
-      
+
       /// Read only access of the nodal value
       const X& coord( const std::size_t& node ) const
       {
@@ -85,7 +86,7 @@ namespace TSL
           VARS[ node * NV + var ] = u[ var ];
         }
       }
-      
+
       /// Get the variables stored at a specific node
 		  Vector<T> get_nodes_vars( const std::size_t& node ) const
       {
@@ -103,7 +104,7 @@ namespace TSL
 
       /// Get the variable data at an interpolated position using a first order scheme.
       Vector<T> get_interpolated_vars( const X& pos ) const;
-      
+
       /// Return the number of nodal points in the mesh
       std::size_t get_nnodes() const { return NODES.size(); }
 
@@ -114,7 +115,10 @@ namespace TSL
       const Vector<X>& nodes() const { return NODES; }
 
       /// Output data to a file
-      void output( std::string filename, int precision = 10 ) const;
+      void output( std::string filename, int precision = 15 ) const;
+
+			/// Read data from a file
+			void read( std::string filename, const bool reset=false );
 
       /// Return a vector of the variables stored in the mesh
       const Vector<T>& vars_as_vector() const { return VARS; }
@@ -122,12 +126,12 @@ namespace TSL
       /// Set the variables of this mesh from a vector
       void set_vars_from_vector( const Vector<T>& vec )
       {
-        if ( vec.size() != NV * NODES.size() ) 
+        if ( vec.size() != NV * NODES.size() )
         { throw Error( "Mesh error: set_vars_from_vector sizes do not agree." ); }
         VARS = vec;
       }
 
-      /// Integrate a given variable over the domain 
+      /// Integrate a given variable over the domain
       T integral2( std::size_t var = 0 ) const;
 
 	}; // End of class OneD_node_mesh
