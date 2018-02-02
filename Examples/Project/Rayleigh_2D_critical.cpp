@@ -1,5 +1,9 @@
-// Test the SelfSimInjection class
+// Solve the 2D Rayleigh pressure equation
+#include <cassert>
+#include <fstream>
+
 #include "Core"
+#include "Eigenvalue"
 #include "SelfSimInjection.h"
 #include "Rayleigh_2D.h"
 
@@ -8,16 +12,15 @@ using namespace TSL;
 
 class mySelfSimInjection : public SelfSimInjection {
 public:
+  // Define the injection function
   double Phi_w_func( const double& hzeta ){
-    //return this->injection();
     return - K * exp( - hzeta * hzeta );
   }
 }; // End of class mySelfSimInjection
 
-
 int main()
 {
-  cout << "----- TESTING Rayleigh_2D -----" << endl;
+  cout << "*** ------- Approximating the critical alpha at which c_i=0 ------- ***" << endl;
 
   // Define the domain + short scale injection parameters
   double hzeta_right( 30.0 );       // Size of the domain in the zeta_hat direction
@@ -27,8 +30,9 @@ int main()
   const std::size_t MB( M * 100 );  // Number of eta intervals in the base flow ODE
   double beta( 0.0 );               // Hartree parameter
   double zeta0( 1.0 );              // Transpiration width
-  double K( 3.5 );                  // Transpiration parameter ( +ve = blowing )
+  double K( 4.0 );                  // Transpiration parameter ( +ve = blowing )
   double alpha( 0.5 );              // Wavenumber (alpha hat)
+  double epsilon( 1e-4 );           // Tolerance (keep iterating while c_i > epsilon)
 
   // Solve the self similar injection flow
   mySelfSimInjection SSI;
@@ -98,29 +102,27 @@ int main()
     assert( false );
   }
 
-  // Test Rayleigh_2D constructor
+  // Setup the generalised eigenvalue problem A p = c B p (solved using SLEPc)
+  cout << "*** Setting up the generalised eigenvalue problem ***" << endl;
+  cout << "--- K = " << K << ", alpha = " << alpha << endl;
+
+  // Create the Rayleigh_2D object
   std::size_t nev( 1 );
   Rayleigh_2D rayleigh_2D( SSI, alpha, nev );
 
-  // setup
+  // Setup
   rayleigh_2D.set_region(0.1,1.0,-1.0,1.0);
-  //rayleigh_2D.set_target( std::complex<double>(0.45,0.001) );
   rayleigh_2D.set_target( std::complex<double>(0.45,0.01) );
   rayleigh_2D.set_order( "EPS_TARGET_IMAGINARY" );
-  rayleigh_2D.calc_eigenvectors() = true;
+  rayleigh_2D.calc_eigenvectors() = false;
 
   // Solve
-  //rayleigh_2D.solve_evp();
-  //rayleigh_2D.output();
-
-  //rayleigh_2D.step_in_alpha( 0.01, 0.65 );
-
-  double epsilon( 1e-3 ); // Tolerance
-
   rayleigh_2D.iterate_to_neutral( epsilon );
   double alpha_crit( rayleigh_2D.alpha() );
   cout << "Critical wavenumber = " << alpha_crit << endl;
 
+  timer.print();
+  timer.stop();
 
 	cout << "FINISHED" << endl;
 

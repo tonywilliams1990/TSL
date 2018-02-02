@@ -44,6 +44,8 @@ namespace TSL
       double x( 0.0 );                  // Current downstream x location
       double x_d( 5.0 );                // Downstream location of the injection
       double a( 0.01 );                 // Rate of downstream injection
+      int N_out( 10 );                  // Output solution every nth step
+      bool output_shear( false );       // Should we output the wall shear?
       //TODO change the output description at the start + include more info
 
     } // End of namespace Param
@@ -64,12 +66,14 @@ namespace TSL
         double e_x = exp( - ( x - Param::x_d ) * ( x - Param::x_d ) );
         double e_z = exp( - ( 2. - Param::beta ) * x_pow * Param::zeta0_2 * hzeta * hzeta );
         return - Param::K * sqrt( ( 2. - Param::beta ) * x_pow ) * e_x * e_z;*/
-        /*return - Param::K * sqrt( 2 * x )
-              * exp( - 2 * x * Param::zeta0_2 * hzeta * hzeta )
-              * exp( - ( x - Param::x_d ) * ( x - Param::x_d ) );*/
+
+        // Isolated injection
+        return - Param::K * sqrt( 2 * x )
+              * exp( - 2 * x * hzeta * hzeta )
+              * exp( - ( x - Param::x_d ) * ( x - Param::x_d ) );
         // Gaussian (self-sim for large x?)
-        return - Param::K * ( 1. - exp( - x * x ) )
-                          * exp( - hzeta * hzeta );
+        /*return - Param::K * ( 1. - exp( - x * x ) )
+                          * exp( - hzeta * hzeta );*/
         // Top-hat (self-sim for large x?)
         /*return - Param::K * 0.5 * ( 1. - exp( - Param::a * x * x ) )
                           * ( 1. - tanh( Param::gamma * ( hzeta - 1. ) ) );*/
@@ -80,9 +84,11 @@ namespace TSL
       {
         /*double x_pow = pow( x, 2. * ( 1. - Param::beta ) / ( 2. - Param::beta ) );
         return - 2 * ( 2. - Param::beta ) * x_pow * Param::zeta0_2 * hzeta * Example::Phi_w( hzeta, x );*/
-        /*return - 4 * x * Param::zeta0_2 * hzeta * Example::Phi_w( hzeta, x );*/
+
+        // Isolated injection
+        return - 4 * x * hzeta * Example::Phi_w( hzeta, x );
         // Gaussian (self-sim for large x?)
-        return - 2 * hzeta * Example::Phi_w( hzeta, x );
+        /*return - 2 * hzeta * Example::Phi_w( hzeta, x );*/
         // Top-hat (self-sim for large x?)
         /*double sech_squared = pow( cosh( Param::gamma * ( hzeta - 1. ) ) , -2. );
         return Param::K * 0.5 * Param::gamma * sech_squared * ( 1. - exp( - Param::a * x * x ) );*/
@@ -353,7 +359,7 @@ int main()
 
   /* ----- Make the output directory ----- */
   std::ostringstream ss;
-  ss << "./DATA/Marching_K_" << Param::K << "_beta_" << Param::beta << "_"
+  ss << "./DATA/Isolated_Marching_K_" << Param::K << "_beta_" << Param::beta << "_"
      << Param::N_x << "x" << Param::N + 1 << "x" << Param::M + 1 << "_"
      << Param::x_max << "_" << Param::hzeta_right << "_" << Param::eta_top << "/";
   Example::output_path = ss.str();
@@ -588,6 +594,7 @@ int main()
 
   // Vector for the RHS of the matrix problem
   Vector<double> B( 4 * N_eta * N_hzeta, 0.0 );
+  int counter( 0 );
 
   do                                                    // Iterate over values of zeta_0
   {
@@ -1359,9 +1366,12 @@ int main()
       }
     }
     // Output data
-    Q_output.dump_gnu( Example::output_path + "Qout_"
-                     + Utility::stringify( Param::zeta0, 3 ) + "_x_"
-                     + Utility::stringify( Param::x, 3 ) + ".dat" );
+    if ( counter % Param::N_out == 0 )
+    {
+      Q_output.dump_gnu( Example::output_path + "Qout_"
+                       + Utility::stringify( Param::zeta0, 3 ) + "_x_"
+                       + Utility::stringify( Param::x, 3 ) + ".dat" );
+    }
 
     Vector<double> Base( Base_soln.get_interpolated_vars( 0.0 ) );
     U_eta = -( 3 * Q_output(0,0,U+4) - 4 * Q_output(0,1,U+4)
@@ -1393,9 +1403,12 @@ int main()
             + Q_output(i,2,U+4) ) * Mesh::Yd(0.0)/(2*dY);
     }
 
-    wall_shear.output( Example::output_path + "Wall_shear_zeta0_"
-                     + Utility::stringify( Param::zeta0, 3 ) + "_x_"
-                     + Utility::stringify( Param::x, 3 ) + ".dat" );
+    if ( counter % Param::N_out == 0 && Param::output_shear )
+    {
+      wall_shear.output( Example::output_path + "Wall_shear_zeta0_"
+                       + Utility::stringify( Param::zeta0, 3 ) + "_x_"
+                       + Utility::stringify( Param::x, 3 ) + ".dat" );
+    }
 
     // Put the current solution into Q_old for next iteration
     for ( std::size_t i = 0; i < N_hzeta; ++i )
@@ -1412,6 +1425,7 @@ int main()
     // Increment x
     cout << "  * x = " << Param::x << ", A = " << Param::A << endl;
     Param::x += Param::x_step;
+    counter++;
 
   }while( Param::x < Param::x_max );
 

@@ -4,8 +4,8 @@ import matplotlib.mlab as mlab
 import matplotlib.pyplot as plt
 from itertools import cycle
 
-hide_axis_labels = False
-save_fig = False
+hide_axis_labels = True
+save_fig = True
 show_plots = True
 beta=0
 zeta0 = 1
@@ -22,7 +22,8 @@ x_max = 100
 for K in K_vals :
 
     #data = np.loadtxt("./DATA/Marching_K_"+ str(K) + "_beta_" + str(beta) + "_1000x201x201_100_30_30/A_file.dat")
-    data = np.loadtxt("./DATA/Marching_DATA_1000x201x201_100_16_64/Marching_K_"+ str(K) + "_zeta0_" + str(zeta0) + "/A_file.dat")
+    data = np.loadtxt("./DATA/Marching_DATA_1000x401x401_100_16_128/Marching_K_"+ str(K) + "_zeta0_" + str(zeta0) + "/A_file.dat")
+    #data = np.loadtxt("./DATA/Marching_DATA_1000x201x201_100_16_64/Marching_K_"+ str(K) + "_zeta0_" + str(zeta0) + "/A_file.dat")
 
     #zeta0 = data[:,0]
     A = data[:,1]
