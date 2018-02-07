@@ -23,6 +23,14 @@ int main()
   cout << "A_matrix.size() = " << A_matrix.size() << endl;
   cout << "A_matrix.numel() = " << A_matrix.numel() << endl;
 
+  //A_matrix(33, 100) = 2.0;
+
+  cout << "A_matrix.numel_row( 33 ) = " << A_matrix.numel_row( 33 ) << endl;
+
+  // Test copy constructor
+  TSL::SparseMatrix<double> A_copy( A_matrix );
+  cout << "A_copy.numel() = " << A_copy.numel() << endl;
+
   TSL::Vector<double> B_vector(N,0.435);
   TSL::Vector<double> X_vector(N,0.0);
 
@@ -38,9 +46,13 @@ int main()
   timer.print();
   timer.stop();
 
+  cout << "A_matrix( 10, 10 ) = " << A_matrix( 10, 10 ) << endl;
   A_matrix.clear();
+  cout << "A_matrix( 10, 10 ) = " << A_matrix( 10, 10 ) << endl;
   A_matrix.eye();
+  cout << "A_matrix( 10, 10 ) = " << A_matrix( 10, 10 ) << endl;
   A_matrix.scale( 2.0 );
+  cout << "A_matrix( 10, 10 ) = " << A_matrix( 10, 10 ) << endl;
   //A_matrix.print();
 
   TSL::SparseMatrix<double> B_matrix(N,N);
@@ -54,6 +66,12 @@ int main()
   C_matrix(1,0) = 5.0; C_matrix(1,1) =  8.0; C_matrix(1,2) = -1.0;
   //C_matrix(2,0) = 2.0;
   C_matrix(2,1) =  1.0; C_matrix(2,2) =  1.0;
+  C_matrix.print();
+  C_matrix.output( "./C_matrix" );
+
+  //B_matrix = C_matrix;
+  //cout << "B_matrix = ";
+  //B_matrix.print();
 
   TSL::SparseMatrix<double> D_matrix(N,N);
   Eigen::SparseMatrix<double, Eigen::ColMajor, long long> C_matrix_Eigen(3,3);

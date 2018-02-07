@@ -15,6 +15,7 @@
 
 #include "Error.h"
 #include "Vector.h"
+#include "SparseVector.h"
 
 #if defined(PETSC_D) || defined(PETSC_Z)
 #include "petscsys.h"
@@ -32,17 +33,21 @@ namespace TSL
 
   class SparseMatrix
   {
-    typedef std::map<std::size_t, std::map<std::size_t , T> > s_mat;
-    typedef typename s_mat::const_iterator row_iter;
-    typedef std::map<std::size_t, T> s_col;
-    typedef typename s_col::const_iterator col_iter;
+    //typedef std::map<std::size_t, std::map<std::size_t , T> > s_mat;
+    //typedef typename s_mat::const_iterator row_iter;
+    //typedef std::map<std::size_t, T> s_col;
+    //typedef typename s_col::const_iterator col_iter;
     typedef Eigen::SparseMatrix<T, Eigen::ColMajor, long long> SpMat;
     typedef Eigen::Triplet<T> Triplet;
 
+    typedef typename std::map< std::size_t, T >::const_iterator citer;
+    typedef typename std::map< std::size_t, T >::iterator iter;
+
     private:
-      s_mat CONTAINER;                              // Sparse container
+
       std::size_t ROWS;                             // Number of rows
       std::size_t COLS;                             // Number of columns
+      std::vector< SparseVector<T> > MATRIX;        // STL vector of SparseVectors
 
     public:
 
@@ -56,9 +61,11 @@ namespace TSL
       /// Copy constructor
 			SparseMatrix( const SparseMatrix<T>& source )
 			{
-				CONTAINER = source.CONTAINER;
+				//CONTAINER = source.CONTAINER;
         ROWS = source.ROWS;
         COLS = source.COLS;
+        MATRIX.reserve( ROWS );
+        MATRIX = source.MATRIX;
 			}
 
       /// Constructor for a matrix of specified size
@@ -66,6 +73,12 @@ namespace TSL
       {
         ROWS = rows;
         COLS = cols;
+        MATRIX.reserve( ROWS );
+        SparseVector<T> sparse_row( COLS );
+        for ( std::size_t i = 0; i < ROWS; ++i )
+        {
+          MATRIX.push_back( sparse_row );
+        }
       }
 
 			/// Destructor
@@ -84,6 +97,18 @@ namespace TSL
 
       /* ----- Methods ----- */
 
+      /// Return a SparseVector containing the specified row
+      SparseVector<T> get_row( const std::size_t& row ) const
+      {
+        return MATRIX[ row ];
+      }
+
+      /// Set a specified row of the SparseMatrix using a SparseVector
+      void set_row( const std::size_t& row, const SparseVector<T>& row_vector )
+      {
+        MATRIX[row] = row_vector;
+      }
+
       /// Return the number of rows in the matrix
       std::size_t rows() const { return ROWS; }
 
@@ -96,61 +121,53 @@ namespace TSL
       /// Return the number of non zero elements
       std::size_t numel() const
       {
-        std::size_t sum( 0 );
-        row_iter ii;
-        // Loop over the rows and add up the size of the columns
-        for(ii=this->CONTAINER.begin(); ii!=this->CONTAINER.end(); ii++)
+        std::size_t nelts( 0 );
+        for ( std::size_t row = 0; row < ROWS; ++row )
         {
-          sum += (*ii).second.size();
+          nelts += MATRIX[ row ].nelts();
         }
-        return sum;
+        return nelts;
       }
 
-      /// Return the number of non zero elements in a specified rows
+      /// Return the number of non zero elements in a specified row
       std::size_t numel_row( std::size_t row ) const
       {
-        std::size_t sum( 0 );
-        row_iter ii;
-        // Loop over the rows and add up the size of the columns
-        for(ii=this->CONTAINER.begin(); ii!=this->CONTAINER.end(); ii++)
-        {
-          if ( (*ii).first == row )
-          {
-            sum += (*ii).second.size();
-          }
-        }
-        return sum;
+        return MATRIX[ row ].nelts();
       }
 
       /// Clear all the elements
       void clear()
       {
-        CONTAINER.clear();
+        //CONTAINER.clear();
+        MATRIX.clear();
+        MATRIX.reserve( ROWS );
+        SparseVector<T> sparse_row( COLS );
+        for ( std::size_t i = 0; i < ROWS; ++i )
+        {
+          MATRIX.push_back( sparse_row );
+        }
       }
 
       /// Set the matrix to the identity matrix
       void eye()
       {
-        CONTAINER.clear();
+        this->clear();
         for ( std::size_t i=0; i < ROWS; ++i )
         {
-          CONTAINER[ i ][ i ] = 1.0;
+          MATRIX[ i ][ i ] = 1.0;
         }
       }
 
       /// Scale the matrix by m
       void scale( const T& m )
       {
-        row_iter ii;
-        col_iter jj;
-        for(ii=this->CONTAINER.begin(); ii!=this->CONTAINER.end(); ii++)
+        for ( std::size_t row = 0; row < ROWS; ++row )
         {
-          for(jj=(*ii).second.begin(); jj!=(*ii).second.end(); jj++)
+          for ( citer pos = MATRIX[row].begin(); pos != MATRIX[row].end(); ++pos )
           {
-            std::size_t i = (*ii).first;
-            std::size_t j = (*jj).first;
-            T elem = (*jj).second;
-            CONTAINER[ i ][ j ] = elem * m ;
+            std::size_t col = pos -> first;
+            T elem = pos -> second;
+            MATRIX[ row ][ col ] = elem * m;
           }
         }
       }
@@ -171,23 +188,23 @@ namespace TSL
       /// Print the matrix to screen
       void print()
       {
-        row_iter ii;
-        col_iter jj;
-        for(ii=this->CONTAINER.begin(); ii!=this->CONTAINER.end(); ii++)
+        for ( std::size_t row = 0; row < ROWS; ++row )
         {
-          for(jj=(*ii).second.begin(); jj!=(*ii).second.end(); jj++)
+          for ( citer pos = MATRIX[row].begin(); pos != MATRIX[row].end(); ++pos )
           {
-            std::cout << "( " << (*ii).first << ", "
-                      << (*jj).first << ", "
-                      << (*jj).second << " ), ";
+            //std::size_t col = pos -> first;
+            //T elem = pos -> second;
+
+            std::cout << "( " << row << ", "
+                      << pos -> first << ", "
+                      << pos -> second << " ), ";
           }
         }
         std::cout << std::endl;
-
       }
 
       /// Output the matrix to a file
-      void output( std::string filename, int precision = 10 ) const
+      void output( std::string filename, int precision = 10 ) const //TODO
       {
         std::ofstream dump;
         dump.open( filename.c_str() );
@@ -195,19 +212,17 @@ namespace TSL
         dump.setf( std::ios::showpoint );
         dump.setf( std::ios::showpos );
         //dump.setf( std::ios::scientific );
-        row_iter ii;
-        col_iter jj;
-        for(ii=this->CONTAINER.begin(); ii!=this->CONTAINER.end(); ii++)
+        for ( std::size_t row = 0; row < ROWS; ++row )
         {
-          dump << "row " << (*ii).first << " : ";
-          for(jj=(*ii).second.begin(); jj!=(*ii).second.end(); jj++)
+          dump << "row " << row << " : ";
+          for ( citer pos = MATRIX[row].begin(); pos != MATRIX[row].end(); ++pos )
           {
-            dump << "[ " << (*jj).first << " ] = "
-                 << (*jj).second << " ";
+            dump << "[ " << pos -> first << " ] = "
+                 << pos -> second << " ";
           }
-          dump << "\n";
+          dump << std::endl;
         }
-        dump << "\n";
+        dump << std::endl;
         dump.close();
       }
 
@@ -237,18 +252,18 @@ namespace TSL
         SpMat S_mat( ROWS, COLS );
         // Fill Eigen sparse matrix
         std::vector<Triplet> tripletList;             // Vector of triplets
-        row_iter ii;
-        col_iter jj;
-        for(ii=this->CONTAINER.begin(); ii!=this->CONTAINER.end(); ii++)
+
+        for ( std::size_t row = 0; row < ROWS; ++row )
         {
-          for(jj=(*ii).second.begin(); jj!=(*ii).second.end(); jj++)
+          for ( citer pos = MATRIX[row].begin(); pos != MATRIX[row].end(); ++pos )
           {
-            std::size_t i = (*ii).first;
-            std::size_t j = (*jj).first;
-            T elem = (*jj).second;
-            tripletList.push_back( Triplet(i, j, elem) );
+            std::size_t col = pos -> first;
+            T elem = pos -> second;
+            tripletList.push_back( Triplet( row, col, elem  ) );
           }
         }
+
+
         S_mat.setFromTriplets( tripletList.begin(), tripletList.end() );
         S_mat.makeCompressed();
 
@@ -289,14 +304,15 @@ namespace TSL
     // Range check
     if ( i<0 || ROWS<=i )	{ throw Error( "Matrix range error: dimension 1" );}
     if ( j<0 || COLS<=j )	{ throw Error( "Matrix range error: dimension 2" );}
-    return CONTAINER[ i ][ j ];
+    return MATRIX[ i ][ j ];
   }
 
   /// Assignment
   template <class T>
   inline SparseMatrix<T>& SparseMatrix<T>::operator=( const SparseMatrix<T>& original )
   {
-    CONTAINER = original.CONTAINER;
+    //CONTAINER = original.CONTAINER;
+    MATRIX = original.MATRIX;
     ROWS = original.ROWS;
     COLS = original.COLS;
     return *this;

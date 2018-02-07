@@ -381,6 +381,9 @@ namespace TSL
     metric.push_ptr( &first_eval, "1st eigenvalue" );
     metric.header();
 
+    Timer timer;
+    timer.start();
+
     do {
       std::cout << "*** alpha = " << ALPHA << std::endl;
       solve_evp();
@@ -390,12 +393,18 @@ namespace TSL
       if ( CALC_EIGENVECTORS ){ output_eigenvectors(); }
       TARGET = first_eval;
       ALPHA += step;
+
+      timer.print();
+      timer.stop();
+      timer.reset();
+      timer.start();
+
     }while ( ALPHA <= max );
   }
 
   void Rayleigh_2D::iterate_to_neutral( const double& epsilon )
   {
-    std::cout << "*** Finding the critical wavenumber for K = " << SSI.injection() << std::endl; 
+    std::cout << "*** Finding the critical wavenumber for K = " << SSI.injection() << std::endl;
     double delta( 1.e-8 );
     do
     {

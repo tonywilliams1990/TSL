@@ -2,8 +2,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 K = 4
+beta = 0
 
-data = np.loadtxt("./DATA/K_"+ str(K) + "_zeta0_1_beta_0_251x251_30_30/First_eval.dat")
+data = np.loadtxt("./DATA/K_"+ str(K) + "_zeta0_1_beta_"+ str(beta) + "_301x301_30_30/First_eval.dat")
 
 alpha = data[:,0]
 c_real = data[:,1]

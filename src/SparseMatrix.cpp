@@ -20,32 +20,26 @@ namespace TSL
     template <>
     void SparseMatrix<std::complex<double> >::get_row_petsc( PetscInt row, PetscScalar* storage, PetscInt* cols )
     {
-      row_iter ii;
-      row_iter iter;
-      // Find the required row iterator
-      for(iter=this->CONTAINER.begin(); iter!=this->CONTAINER.end(); iter++)
-      {
-        if( (*iter).first == row )
-        {
-          ii = iter;
-        }
-      }
-
-      col_iter jj;
+      citer pos;
       std::size_t i(0);
-      if ( this->numel_row( row ) > 0 )
+
+      if ( MATRIX[ row ].nelts() > 0 )
       {
-        for(jj=(*ii).second.begin(); jj!=(*ii).second.end(); jj++)
+        // start at the begining of this row
+        pos = MATRIX[ row ].begin();
+        do
         {
           // for each non-zero elt in the row
           PetscScalar elt;
-          elt = std::real( (*jj).second ) + PETSC_i * std::imag( (*jj).second );
-          int col( (*jj).first );
+          elt = std::real(pos -> second) + PETSC_i * std::imag(pos -> second);
+          int col( pos -> first );
           storage[ i ] = elt;
           // +1 to return FORTRAN indexing
           cols[ i ] = col;
+          ++pos;
           ++i;
         }
+        while ( pos != MATRIX[ row ].end() );
       }
     }
 #endif

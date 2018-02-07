@@ -25,13 +25,13 @@ int main()
   // Define the domain + short scale injection parameters
   double hzeta_right( 30.0 );       // Size of the domain in the zeta_hat direction
   double eta_top( 30.0 );           // Size of the domain in the eta direction
-  const std::size_t N( 250 );       // Number of intervals in the zeta_hat direction
-  const std::size_t M( 250 );       // Number of intervals in the eta direction
+  const std::size_t N( 300 );       // Number of intervals in the zeta_hat direction
+  const std::size_t M( 300 );       // Number of intervals in the eta direction
   const std::size_t MB( M * 100 );  // Number of eta intervals in the base flow ODE
   double beta( 0.0 );               // Hartree parameter
   double zeta0( 1.0 );              // Transpiration width
   double K( 4.0 );                  // Transpiration parameter ( +ve = blowing )
-  double alpha( 0.05 );              // Wavenumber (alpha hat)
+  double alpha( 0.05 );             // Wavenumber (alpha hat)
 
   // Solve the self similar injection flow
   mySelfSimInjection SSI;
@@ -111,7 +111,7 @@ int main()
 
   // Setup
   rayleigh_2D.set_region(0.1,1.0,-1.0,1.0);
-  rayleigh_2D.set_target( std::complex<double>(0.2,0.04) );
+  rayleigh_2D.set_target( std::complex<double>(0.2,0.05) );
   rayleigh_2D.set_order( "EPS_TARGET_IMAGINARY" );
   rayleigh_2D.calc_eigenvectors() = true;
 
@@ -119,7 +119,7 @@ int main()
   //rayleigh_2D.solve_evp();
   //rayleigh_2D.output();
 
-  rayleigh_2D.step_in_alpha( 0.01, 0.75 );
+  rayleigh_2D.step_in_alpha( 0.01, 0.78 );
 
 
   timer.print();
