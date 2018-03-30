@@ -1,11 +1,11 @@
-// Solve the 2D Rayleigh pressure equation
+// Solve the 2D Orr-Sommerfeld equation
 #include <cassert>
 #include <fstream>
 
 #include "Core"
 #include "Eigenvalue"
 #include "SelfSimInjection.h"
-#include "Rayleigh_2D.h"
+#include "OrrSommerfeld_2D.h"
 
 using namespace std;
 using namespace TSL;
@@ -17,12 +17,13 @@ public:
     //return - K * exp( - hzeta * hzeta );
     // Rich's function
     return - K * exp( - 0.1 * hzeta * hzeta ) * ( 1. - 2 * 0.1 * hzeta * hzeta );
+
   }
 }; // End of class mySelfSimInjection
 
 int main()
 {
-  cout << "*** ------- Solving the 2D Rayleigh equation (EVP) ------- ***" << endl;
+  cout << "*** ------- Solving the 2D OrrSommerfeld equation (EVP) ------- ***" << endl;
 
   // Define the domain + short scale injection parameters
   double hzeta_right( 30.0 );       // Size of the domain in the zeta_hat direction
@@ -33,7 +34,8 @@ int main()
   double beta( 0.0 );               // Hartree parameter
   double zeta0( 1.0 );              // Transpiration width
   double K( 10.0 );                  // Transpiration parameter ( +ve = blowing )
-  double alpha( 0.5 );             // Wavenumber (alpha hat)
+  double alpha( 0.85 );              // Wavenumber (alpha hat)
+  double Rx( 1500 * 1500 );                 // Local Reynolds number
 
   // Solve the self similar injection flow
   mySelfSimInjection SSI;
@@ -105,24 +107,23 @@ int main()
 
   // Setup the generalised eigenvalue problem A p = c B p (solved using SLEPc)
   cout << "*** Setting up the generalised eigenvalue problem ***" << endl;
-  cout << "--- K = " << K << ", alpha = " << alpha << endl;
+  cout << "--- K = " << K << ", alpha = " << alpha << ", Rx^1/2 = " << sqrt(Rx) << endl;
 
-  // Create the Rayleigh_2D object
+  // Create the OrrSommerfeld_2D object
   std::size_t nev( 1 );
-  Rayleigh_2D rayleigh_2D( SSI, alpha, nev );
+  OrrSommerfeld_2D orrsommerfeld_2D( SSI, alpha, Rx, nev );
 
   // Setup
-  rayleigh_2D.set_region(0.1,1.0,-1.0,1.0);
-  rayleigh_2D.set_target( std::complex<double>(0.42,0.15) );
-  rayleigh_2D.set_order( "EPS_TARGET_IMAGINARY" );
-  rayleigh_2D.calc_eigenvectors() = true;
+  orrsommerfeld_2D.set_region(0.1,1.0,-1.0,1.0);
+  orrsommerfeld_2D.set_target( std::complex<double>(0.4187,0.14688) );
+  orrsommerfeld_2D.set_order( "EPS_TARGET_IMAGINARY" );
+  orrsommerfeld_2D.calc_eigenvectors() = true;
 
   // Solve
-  rayleigh_2D.solve_evp();
-  //rayleigh_2D.output();
+  orrsommerfeld_2D.solve_evp();
+  orrsommerfeld_2D.output();
 
-  //rayleigh_2D.step_in_alpha( 0.01, 0.5 );
-
+  //orrsommerfeld_2D.step_in_alpha( 0.01, 0.5 );
 
   timer.print();
   timer.stop();

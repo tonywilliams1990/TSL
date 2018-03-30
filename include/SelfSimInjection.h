@@ -327,9 +327,9 @@ namespace TSL
                             ZETA0( 1.0 ), K( 0.0 ), MESH( "UNIFORM" ),
                             BASE_FLOW( "2D" ), SPEED_UP( false ), SOLVED( false )
       {
-        a1 = 10.0;//0.1;
+        a1 = 60.0;//10.0;//0.1;
         a2 = 4.0;//0.5;
-        b1 = 10.0;//0.3;
+        b1 = 60.0;//10.0;//0.3;
         b2 = 4.0;//0.3;
         GAMMA = 20.0;
         N_TRANSP = 1;

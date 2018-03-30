@@ -3,14 +3,18 @@ import numpy as np
 import matplotlib.mlab as mlab
 import matplotlib.pyplot as plt
 
+save_fig = True
 
 zeta0 = 1
 beta = 0
-K = 3
-x = 2
+K = 1
+x = 100
 # change the levels in the VW plot to see more detail (line 85)
 
-data = np.loadtxt("./DATA/Marching_K_"+ str(K) + "_beta_" + str(beta) + "_1000x201x201_100_30_30/Qout_" + str(zeta0) + "_x_" + str( x ) + ".dat")
+#data = np.loadtxt("./DATA/Marching_K_"+ str(K) + "_beta_" + str(beta) + "_1000x201x201_100_30_30/Qout_" + str(zeta0) + "_x_" + str( x ) + ".dat")
+#data = np.loadtxt("./DATA/Isolated_Marching_K_" + str(K) + "_beta_0_1000x201x201_100_16_64/Qout_" + str(zeta0) + "_x_" + str( x ) + ".dat")
+#data = np.loadtxt("./DATA/Isolated_Marching_K_" + str(K) + "_beta_0_1000x401x401_100_16_128/Qout_" + str(zeta0) + "_x_" + str( x ) + ".dat")
+data = np.loadtxt("./DATA/Marching_K_" + str(K) + "_zeta0_" + str(zeta0) + "_1000x401x401_100_16_128/Qout_" + str(zeta0) + "_x_" + str( x ) + ".dat")
 
 zeta_hat = data[:,0]
 eta = data[:,1]
@@ -34,11 +38,11 @@ U[U > 1.0] = 1.0
 
 min_x = np.min(zeta_hat)
 #max_x = np.max(zeta_hat)
-max_x = 2
+max_x = 4
 min_y = np.min(eta)
 #max_y = np.max(eta)
 #max_y = max_x * zeta0
-max_y=5
+max_y=4
 
 npts = 500
 
@@ -81,7 +85,8 @@ axes.set_xlim([0,max_x])
 #plt.xticks(np.arange(0, max_x + 0.5, 0.5))
 axes.set_ylim([0,max_y])
 
-plt.savefig('U_contour_K_' + str(K) + "_beta_" + str(beta) + "_zeta0_" + str(zeta0) + "_x_" + str(x) + ".eps", format='eps', dpi=1000)
+if save_fig:
+    plt.savefig('./figs/U_contour_K_' + str(K) + "_beta_" + str(beta) + "_zeta0_" + str(zeta0) + "_x_" + str(x) + ".eps", format='eps', dpi=1000)
 
 plt.figure()
 
@@ -113,6 +118,7 @@ axes.set_xlim([0,max_x])
 #plt.xticks(np.arange(0, max_x + 0.5, 0.5))
 axes.set_ylim([0,max_y])
 
-plt.savefig('VW_stream_K_' + str(K) + "_beta_" + str(beta) + "_zeta0_" + str(zeta0) + "_x_" + str(x) + ".eps", format='eps', dpi=1000)
+if save_fig:
+    plt.savefig('./figs/VW_stream_K_' + str(K) + "_beta_" + str(beta) + "_zeta0_" + str(zeta0) + "_x_" + str(x) + ".eps", format='eps', dpi=1000)
 
 plt.show()

@@ -19,6 +19,8 @@ enum{ Phi, Psi, U, Theta };                                   // PDE
 // Either NO_SPEED_UP for normal or SPEED_UP for reusing the factorised matrix
 #define NO_SPEED_UP
 
+//TODO this code is fine if beta = 0 but incorrect for non-zero beta
+
 namespace TSL
 {
     namespace Param
@@ -67,10 +69,17 @@ namespace TSL
         double e_z = exp( - ( 2. - Param::beta ) * x_pow * Param::zeta0_2 * hzeta * hzeta );
         return - Param::K * sqrt( ( 2. - Param::beta ) * x_pow ) * e_x * e_z;*/
 
+        // Constant width slot
+        /*return - Param::K * 0.5 * sqrt( 2 * x )
+              * ( 1. - exp( - Param::a * x * x ) )
+              * ( 1. - tanh( Param::gamma * ( sqrt( 2 * x ) * hzeta - 1. ) ) );*/
+        return - Param::K * sqrt( 2 * x ) * ( 1. - exp( - Param::a * x * x ) )
+              * exp( - 2 * x * hzeta * hzeta );
+
         // Isolated injection
-        return - Param::K * sqrt( 2 * x )
+        /*return - Param::K * sqrt( 2 * x )
               * exp( - 2 * x * hzeta * hzeta )
-              * exp( - ( x - Param::x_d ) * ( x - Param::x_d ) );
+              * exp( - ( x - Param::x_d ) * ( x - Param::x_d ) );*/
         // Gaussian (self-sim for large x?)
         /*return - Param::K * ( 1. - exp( - x * x ) )
                           * exp( - hzeta * hzeta );*/
@@ -85,8 +94,15 @@ namespace TSL
         /*double x_pow = pow( x, 2. * ( 1. - Param::beta ) / ( 2. - Param::beta ) );
         return - 2 * ( 2. - Param::beta ) * x_pow * Param::zeta0_2 * hzeta * Example::Phi_w( hzeta, x );*/
 
-        // Isolated injection
+        // Constant width slot
+        /*double sech_squared = pow( cosh( Param::gamma * ( sqrt( 2 * x ) * hzeta - 1. ) ) , -2. );
+        return Param::K * x * ( 1. - exp( - Param::a * x * x ) )
+                * Param::gamma * sech_squared;*/
+
         return - 4 * x * hzeta * Example::Phi_w( hzeta, x );
+
+        // Isolated injection
+        /*return - 4 * x * hzeta * Example::Phi_w( hzeta, x );*/
         // Gaussian (self-sim for large x?)
         /*return - 2 * hzeta * Example::Phi_w( hzeta, x );*/
         // Top-hat (self-sim for large x?)
@@ -359,7 +375,7 @@ int main()
 
   /* ----- Make the output directory ----- */
   std::ostringstream ss;
-  ss << "./DATA/Isolated_Marching_K_" << Param::K << "_beta_" << Param::beta << "_"
+  ss << "./DATA/Marching_K_" << Param::K << "_beta_" << Param::beta << "_"
      << Param::N_x << "x" << Param::N + 1 << "x" << Param::M + 1 << "_"
      << Param::x_max << "_" << Param::hzeta_right << "_" << Param::eta_top << "/";
   Example::output_path = ss.str();
