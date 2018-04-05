@@ -249,14 +249,6 @@ namespace TSL
 
       ++row;
 
-      // w_{hzeta hzeta} = 0
-      /*A( row, col( i, j, w ) )      +=   2 * Xd * Xd / ( dX * dX ) - 3 * Xdd / ( 2 * dX );
-      A( row, col( i + 1, j, w ) )   = - 5 * Xd * Xd / ( dX * dX ) + 4 * Xdd / ( 2 * dX );
-      A( row, col( i + 2, j, w ) )   =   4 * Xd * Xd / ( dX * dX ) - 1 * Xdd / ( 2 * dX );
-      A( row, col( i + 3, j, w ) )   = - 1 * Xd * Xd / ( dX * dX );
-
-      ++row;*/
-
       // s = 0
       A( row, col( 0, j, s ) ) = 1;
 
@@ -304,8 +296,12 @@ namespace TSL
       ++row;
 
       //q - (i / (alpha*Rx^(1/2))) * v_{eta eta} = 0
+      //A( row, col( i, 0, q ) )    =   1;
+      //A( row, col( i, 1, v ) )    = - 2. * iaR * Yd * Yd / ( dY * dY );
       A( row, col( i, 0, q ) )    =   1;
-      A( row, col( i, 1, v ) )    = - 2. * iaR * Yd * Yd / ( dY * dY );
+      A( row, col( i, 1, v ) )    = - 6. * iaR * Yd * Yd / ( dY * dY );
+      A( row, col( i, 2, v ) )    =   ( 3. / 2. ) * iaR * Yd * Yd / ( dY * dY );
+      A( row, col( i, 3, v ) )    = - ( 2. / 9. ) * iaR * Yd * Yd / ( dY * dY );
 
       ++row;
 
@@ -369,14 +365,14 @@ namespace TSL
         A( row, col( i, j + 1, v ) )     = iaR * laplace_7;
 
         // + (1 - i / (alpha*Rx^(1/2)) ) * U * v
-        A( row, col( i, j, v ) )        +=  U;
-        //A( row, col( i, j, v ) )        += ( 1.0 - iaR ) * U;
+        //A( row, col( i, j, v ) )        +=  U;
+        A( row, col( i, j, v ) )        += ( 1.0 - iaR ) * U;
 
         // - ((1 + beta) / Rx) * v
-        //A( row, col( i, j, v ) )        += - ( 1.0 + beta ) / RX;
+        A( row, col( i, j, v ) )        += - ( 1.0 + beta ) / RX;
 
         // + (beta - 1) * ( i / alpha * Rx^(3/2) ) * v
-        //A( row, col( i, j, v ) )        += ( beta - 1.0 ) * iaR / RX;
+        A( row, col( i, j, v ) )        += ( beta - 1.0 ) * iaR / RX;
 
         // - q
         A( row, col( i, j, q ) )         = - 1.;
@@ -401,14 +397,14 @@ namespace TSL
         A( row, col( i, j + 1, w ) )     = iaR * laplace_7;
 
         // + (1 - i / (alpha*Rx^(1/2)) ) * U * w
-        A( row, col( i, j, w ) )        +=  U;
-        //A( row, col( i, j, w ) )        += ( 1.0 - iaR ) * U;
+        //A( row, col( i, j, w ) )        +=  U;
+        A( row, col( i, j, w ) )        += ( 1.0 - iaR ) * U;
 
         // - ((1 + beta) / Rx) * w
-        //A( row, col( i, j, w ) )        += - ( 1.0 + beta ) / RX;
+        A( row, col( i, j, w ) )        += - ( 1.0 + beta ) / RX;
 
         // + (beta - 1) * ( i / alpha * Rx^(3/2) ) * w
-        //A( row, col( i, j, w ) )        += ( beta - 1.0 ) * iaR / RX;
+        A( row, col( i, j, w ) )        += ( beta - 1.0 ) * iaR / RX;
 
         // - s
         A( row, col( i, j, s ) )         = - 1.;
@@ -431,8 +427,8 @@ namespace TSL
         A( row, col( i, j + 1, q ) )      =   Yd * Yd / ( dY * dY ) + Ydd / ( 2 * dY ) ;
 
         // + ( i * alpha + Rx^(-1/2) )^2 * q
-        A( row, col( i, j, q ) )         += - ALPHA * ALPHA;
-        //A( row, col( i, j, q ) )         += Ralpha * Ralpha;
+        //A( row, col( i, j, q ) )         += - ALPHA * ALPHA;
+        A( row, col( i, j, q ) )         += Ralpha * Ralpha;
 
         // + ( 1 / zeta0 ) * s_{hzeta eta}
         A( row, col( i + 1, j + 1, s ) )  =   Xd * Yd / ( 4 * dX * dY * zeta0 );
@@ -441,24 +437,24 @@ namespace TSL
         A( row, col( i - 1, j + 1, s ) )  = - Xd * Yd / ( 4 * dX * dY * zeta0 );
 
         // + (1 - i / (alpha*Rx^(1/2)) ) * ( 1 / zeta0 ) * U_{eta} * w_{hzeta}
-        //A( row, col( i + 1, j, w ) )     =   ( 1.0 - iaR ) * U_eta * Xd / ( 2 * dX * zeta0 );
-        //A( row, col( i - 1, j, w ) )     = - ( 1.0 - iaR ) * U_eta * Xd / ( 2 * dX * zeta0 );
-        A( row, col( i + 1, j, w ) )     =   U_eta * Xd / ( 2 * dX * zeta0 );
-        A( row, col( i - 1, j, w ) )     = - U_eta * Xd / ( 2 * dX * zeta0 );
+        A( row, col( i + 1, j, w ) )     =   ( 1.0 - iaR ) * U_eta * Xd / ( 2 * dX * zeta0 );
+        A( row, col( i - 1, j, w ) )     = - ( 1.0 - iaR ) * U_eta * Xd / ( 2 * dX * zeta0 );
+        //A( row, col( i + 1, j, w ) )     =   U_eta * Xd / ( 2 * dX * zeta0 );
+        //A( row, col( i - 1, j, w ) )     = - U_eta * Xd / ( 2 * dX * zeta0 );
 
         // - (1 - i / (alpha*Rx^(1/2)) ) * ( 1 / zeta0 ) * U_{hzeta} * w_{eta}
-        //A( row, col( i, j + 1, w ) )     = - ( 1.0 - iaR ) * U_hzeta * Yd / ( 2 * dY * zeta0 );
-        //A( row, col( i, j - 1, w ) )     =   ( 1.0 - iaR ) * U_hzeta * Yd / ( 2 * dY * zeta0 );
-        A( row, col( i, j + 1, w ) )     = - U_hzeta * Yd / ( 2 * dY * zeta0 );
-        A( row, col( i, j - 1, w ) )     =   U_hzeta * Yd / ( 2 * dY * zeta0 );
+        A( row, col( i, j + 1, w ) )     = - ( 1.0 - iaR ) * U_hzeta * Yd / ( 2 * dY * zeta0 );
+        A( row, col( i, j - 1, w ) )     =   ( 1.0 - iaR ) * U_hzeta * Yd / ( 2 * dY * zeta0 );
+        //A( row, col( i, j + 1, w ) )     = - U_hzeta * Yd / ( 2 * dY * zeta0 );
+        //A( row, col( i, j - 1, w ) )     =   U_hzeta * Yd / ( 2 * dY * zeta0 );
 
         // - (1 - i / (alpha*Rx^(1/2)) ) * ( 1 / zeta0 ) * U_{hzeta eta} * w
-        //A( row, col( i, j, w ) )         = - ( 1.0 - iaR ) * U_eta_hzeta / zeta0;
-        A( row, col( i, j, w ) )         = - U_eta_hzeta / zeta0;
+        A( row, col( i, j, w ) )         = - ( 1.0 - iaR ) * U_eta_hzeta / zeta0;
+        //A( row, col( i, j, w ) )         = - U_eta_hzeta / zeta0;
 
         // - (1 - i / (alpha*Rx^(1/2)) ) * U_{eta eta} * v
-        //A( row, col( i, j, v ) )          = - ( 1.0 - iaR ) * U_eta_eta;
-        A( row, col( i, j, v ) )          = - U_eta_eta;
+        A( row, col( i, j, v ) )          = - ( 1.0 - iaR ) * U_eta_eta;
+        //A( row, col( i, j, v ) )          = - U_eta_eta;
 
 /*
         // Rich's version
@@ -498,8 +494,8 @@ namespace TSL
                                             / ( zeta0 * zeta0 );
 
         // + ( i * alpha + Rx^(-1/2) )^2 * s
-        A( row, col( i, j, s ) )         += - ALPHA * ALPHA;
-        //A( row, col( i, j, s ) )         += Ralpha * Ralpha;
+        //A( row, col( i, j, s ) )         += - ALPHA * ALPHA;
+        A( row, col( i, j, s ) )         += Ralpha * Ralpha;
 
         // + ( 1 / zeta0 ) * q_{hzeta eta}
         A( row, col( i + 1, j + 1, q ) )  =   Xd * Yd / ( 4 * dX * dY * zeta0 );
@@ -508,24 +504,24 @@ namespace TSL
         A( row, col( i - 1, j + 1, q ) )  = - Xd * Yd / ( 4 * dX * dY * zeta0 );
 
         // + (1 - i / (alpha*Rx^(1/2)) ) * ( 1 / zeta0 ) * U_{hzeta} * v_{eta}
-        //A( row, col( i, j + 1, v ) )     =   ( 1.0 - iaR ) * U_hzeta * Yd / ( 2 * dY * zeta0 );
-        //A( row, col( i, j - 1, v ) )     = - ( 1.0 - iaR ) * U_hzeta * Yd / ( 2 * dY * zeta0 );
-        A( row, col( i, j + 1, v ) )     =   U_hzeta * Yd / ( 2 * dY * zeta0 );
-        A( row, col( i, j - 1, v ) )     = - U_hzeta * Yd / ( 2 * dY * zeta0 );
+        A( row, col( i, j + 1, v ) )     =   ( 1.0 - iaR ) * U_hzeta * Yd / ( 2 * dY * zeta0 );
+        A( row, col( i, j - 1, v ) )     = - ( 1.0 - iaR ) * U_hzeta * Yd / ( 2 * dY * zeta0 );
+        //A( row, col( i, j + 1, v ) )     =   U_hzeta * Yd / ( 2 * dY * zeta0 );
+        //A( row, col( i, j - 1, v ) )     = - U_hzeta * Yd / ( 2 * dY * zeta0 );
 
         // - (1 - i / (alpha*Rx^(1/2)) ) * ( 1 / zeta0 ) * U_{eta} * v_{hzeta}
-        //A( row, col( i + 1, j, v ) )     = - ( 1.0 - iaR ) * U_eta * Xd / ( 2 * dX * zeta0 );
-        //A( row, col( i - 1, j, v ) )     =   ( 1.0 - iaR ) * U_eta * Xd / ( 2 * dX * zeta0 );
-        A( row, col( i + 1, j, v ) )     = - U_eta * Xd / ( 2 * dX * zeta0 );
-        A( row, col( i - 1, j, v ) )     =   U_eta * Xd / ( 2 * dX * zeta0 );
+        A( row, col( i + 1, j, v ) )     = - ( 1.0 - iaR ) * U_eta * Xd / ( 2 * dX * zeta0 );
+        A( row, col( i - 1, j, v ) )     =   ( 1.0 - iaR ) * U_eta * Xd / ( 2 * dX * zeta0 );
+        //A( row, col( i + 1, j, v ) )     = - U_eta * Xd / ( 2 * dX * zeta0 );
+        //A( row, col( i - 1, j, v ) )     =   U_eta * Xd / ( 2 * dX * zeta0 );
 
         // - (1 - i / (alpha*Rx^(1/2)) ) * ( 1 / zeta0 ) * U_{eta hzeta} * v
-        //A( row, col( i, j, v ) )         = - ( 1.0 - iaR ) * U_eta_hzeta / zeta0;
-        A( row, col( i, j, v ) )         = - U_eta_hzeta / zeta0;
+        A( row, col( i, j, v ) )         = - ( 1.0 - iaR ) * U_eta_hzeta / zeta0;
+        //A( row, col( i, j, v ) )         = - U_eta_hzeta / zeta0;
 
         // - (1 - i / (alpha*Rx^(1/2)) ) * ( 1 / zeta0^2 ) * U_{hzeta hzeta} * w
-        //A( row, col( i, j, w ) )         = - ( 1.0 - iaR ) * U_hzeta_hzeta / ( zeta0 * zeta0 );
-        A( row, col( i, j, w ) )         = - U_hzeta_hzeta / ( zeta0 * zeta0 );
+        A( row, col( i, j, w ) )         = - ( 1.0 - iaR ) * U_hzeta_hzeta / ( zeta0 * zeta0 );
+        //A( row, col( i, j, w ) )         = - U_hzeta_hzeta / ( zeta0 * zeta0 );
 
 /*
         // Rich's version
@@ -577,8 +573,12 @@ namespace TSL
       ++row;
 
       // q - (i / (alpha*Rx^(1/2))) * v_{eta eta} = 0
+      //A( row, col( i, j, q ) )        =   1;
+      //A( row, col( i, j - 1, v ) )    = - 2. * iaR * Yd * Yd / ( dY * dY );
       A( row, col( i, j, q ) )        =   1;
-      A( row, col( i, j - 1, v ) )    = - 2. * iaR * Yd * Yd / ( dY * dY );
+      A( row, col( i, j - 1, v ) )    = - 6. * iaR * Yd * Yd / ( dY * dY );
+      A( row, col( i, j - 2, v ) )    =   ( 3. / 2. ) * iaR * Yd * Yd / ( dY * dY );
+      A( row, col( i, j - 3, v ) )    = - ( 2. / 9. ) * iaR * Yd * Yd / ( dY * dY );
 
       ++row;
 
@@ -618,8 +618,12 @@ namespace TSL
       ++row;
 
       // s - (1/zeta0^2) * (i / (alpha*Rx^(1/2))) * w_{hzeta hzeta} = 0
+      //A( row, col( i, j, s ) )        =   1;
+      //A( row, col( i - 1, j, w ) )    = - 2. * iaR * Xd * Xd / ( dX * dX * zeta0 * zeta0 );
       A( row, col( i, j, s ) )        =   1;
-      A( row, col( i - 1, j, w ) )    = - 2. * iaR * Xd * Xd / ( dX * dX * zeta0 * zeta0 );
+      A( row, col( i - 1, j, w ) )    = - 6. * iaR * Xd * Xd / ( dX * dX * zeta0 * zeta0 );
+      A( row, col( i - 2, j, w ) )    =   ( 3. / 2. ) * iaR * Xd * Xd / ( dX * dX * zeta0 * zeta0 );
+      A( row, col( i - 3, j, w ) )    = - ( 2. / 9. ) * iaR * Xd * Xd / ( dX * dX * zeta0 * zeta0 );
 
       ++row;
 
