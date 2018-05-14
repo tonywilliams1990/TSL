@@ -44,6 +44,7 @@ env.Program( 'Project/Injection_pressure_gradient.out' , ['Project/Injection_pre
 env.Program( 'Project/Injection_K_step.out' , ['Project/Injection_K_step.cpp'] , OPTS = opts, LIBS = libs )
 env.Program( 'Project/Rayleigh_2D_critical.out' , ['Project/Rayleigh_2D_critical.cpp'] , OPTS = opts, LIBS = libs )
 env.Program( 'Project/OrrSommerfeld_2D.out' , ['Project/OrrSommerfeld_2D.cpp'] , OPTS = opts, LIBS = libs )
+env.Program( 'Project/VWI.out' , ['Project/VWI.cpp'] , OPTS = opts, LIBS = libs )
 
 # Example Problem codes
 

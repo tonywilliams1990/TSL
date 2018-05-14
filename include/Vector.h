@@ -216,6 +216,16 @@ namespace TSL
         return real_part;
       }
 
+      /// Return the conjugate of the vector
+      Vector<T> conjugate() const
+      {
+         Vector<T> temp( *this );
+         Vector<T> conj;
+         conj.VECTOR = temp.VECTOR.conjugate();
+         conj.SIZE = temp.SIZE;
+         return conj;
+      }
+
       /// Swap elements i and j
       void swap( const std::size_t& i, const std::size_t& j )
       {

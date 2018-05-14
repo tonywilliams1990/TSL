@@ -305,7 +305,8 @@ namespace TSL
     PCSetType(pc,PCLU);
     // solve using the SUPERLU_DIST library
     //PCFactorSetMatSolverPackage(pc,MATSOLVERSUPERLU_DIST);
-    PCFactorSetMatSolverPackage(pc,MATSOLVERMUMPS);
+    //PCFactorSetMatSolverPackage(pc,MATSOLVERMUMPS);
+    PCFactorSetMatSolverType(pc,MATSOLVERMUMPS); // Updated in PETSC 3.9.1
 
 
     /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

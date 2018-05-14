@@ -365,14 +365,19 @@ namespace TSL
         A( row, col( i, j + 1, v ) )     = iaR * laplace_7;
 
         // + (1 - i / (alpha*Rx^(1/2)) ) * U * v
-        //A( row, col( i, j, v ) )        +=  U;
-        A( row, col( i, j, v ) )        += ( 1.0 - iaR ) * U;
+        //A( row, col( i, j, v ) )        += ( 1.0 - iaR ) * U;
+
+        // + U * v
+        A( row, col( i, j, v ) )        +=  U;
 
         // - ((1 + beta) / Rx) * v
-        A( row, col( i, j, v ) )        += - ( 1.0 + beta ) / RX;
+        //A( row, col( i, j, v ) )        += - ( 1.0 + beta ) / RX;
+
+        // + ((1 - beta) / Rx) * v
+        A( row, col( i, j, v ) )        +=  ( 1.0 - beta ) / RX;
 
         // + (beta - 1) * ( i / alpha * Rx^(3/2) ) * v
-        A( row, col( i, j, v ) )        += ( beta - 1.0 ) * iaR / RX;
+        //A( row, col( i, j, v ) )        += ( beta - 1.0 ) * iaR / RX;
 
         // - q
         A( row, col( i, j, q ) )         = - 1.;
@@ -397,14 +402,19 @@ namespace TSL
         A( row, col( i, j + 1, w ) )     = iaR * laplace_7;
 
         // + (1 - i / (alpha*Rx^(1/2)) ) * U * w
-        //A( row, col( i, j, w ) )        +=  U;
-        A( row, col( i, j, w ) )        += ( 1.0 - iaR ) * U;
+        //A( row, col( i, j, w ) )        += ( 1.0 - iaR ) * U;
+
+        // + U * w
+        A( row, col( i, j, w ) )        +=  U;
 
         // - ((1 + beta) / Rx) * w
-        A( row, col( i, j, w ) )        += - ( 1.0 + beta ) / RX;
+        //A( row, col( i, j, w ) )        += - ( 1.0 + beta ) / RX;
+
+        // + ((1 - beta) / Rx) * w
+        A( row, col( i, j, w ) )        +=  ( 1.0 - beta ) / RX;
 
         // + (beta - 1) * ( i / alpha * Rx^(3/2) ) * w
-        A( row, col( i, j, w ) )        += ( beta - 1.0 ) * iaR / RX;
+        //A( row, col( i, j, w ) )        += ( beta - 1.0 ) * iaR / RX;
 
         // - s
         A( row, col( i, j, s ) )         = - 1.;
@@ -427,8 +437,10 @@ namespace TSL
         A( row, col( i, j + 1, q ) )      =   Yd * Yd / ( dY * dY ) + Ydd / ( 2 * dY ) ;
 
         // + ( i * alpha + Rx^(-1/2) )^2 * q
-        //A( row, col( i, j, q ) )         += - ALPHA * ALPHA;
-        A( row, col( i, j, q ) )         += Ralpha * Ralpha;
+        //A( row, col( i, j, q ) )         += Ralpha * Ralpha;
+
+        // - alpha^2 * q
+        A( row, col( i, j, q ) )         += - ALPHA * ALPHA;
 
         // + ( 1 / zeta0 ) * s_{hzeta eta}
         A( row, col( i + 1, j + 1, s ) )  =   Xd * Yd / ( 4 * dX * dY * zeta0 );
@@ -437,47 +449,33 @@ namespace TSL
         A( row, col( i - 1, j + 1, s ) )  = - Xd * Yd / ( 4 * dX * dY * zeta0 );
 
         // + (1 - i / (alpha*Rx^(1/2)) ) * ( 1 / zeta0 ) * U_{eta} * w_{hzeta}
-        A( row, col( i + 1, j, w ) )     =   ( 1.0 - iaR ) * U_eta * Xd / ( 2 * dX * zeta0 );
-        A( row, col( i - 1, j, w ) )     = - ( 1.0 - iaR ) * U_eta * Xd / ( 2 * dX * zeta0 );
-        //A( row, col( i + 1, j, w ) )     =   U_eta * Xd / ( 2 * dX * zeta0 );
-        //A( row, col( i - 1, j, w ) )     = - U_eta * Xd / ( 2 * dX * zeta0 );
+        //A( row, col( i + 1, j, w ) )     =   ( 1.0 - iaR ) * U_eta * Xd / ( 2 * dX * zeta0 );
+        //A( row, col( i - 1, j, w ) )     = - ( 1.0 - iaR ) * U_eta * Xd / ( 2 * dX * zeta0 );
+
+        // + ( 1 / zeta0 ) * U_{eta} * w_{hzeta}
+        A( row, col( i + 1, j, w ) )     =   U_eta * Xd / ( 2 * dX * zeta0 );
+        A( row, col( i - 1, j, w ) )     = - U_eta * Xd / ( 2 * dX * zeta0 );
 
         // - (1 - i / (alpha*Rx^(1/2)) ) * ( 1 / zeta0 ) * U_{hzeta} * w_{eta}
-        A( row, col( i, j + 1, w ) )     = - ( 1.0 - iaR ) * U_hzeta * Yd / ( 2 * dY * zeta0 );
-        A( row, col( i, j - 1, w ) )     =   ( 1.0 - iaR ) * U_hzeta * Yd / ( 2 * dY * zeta0 );
-        //A( row, col( i, j + 1, w ) )     = - U_hzeta * Yd / ( 2 * dY * zeta0 );
-        //A( row, col( i, j - 1, w ) )     =   U_hzeta * Yd / ( 2 * dY * zeta0 );
+        //A( row, col( i, j + 1, w ) )     = - ( 1.0 - iaR ) * U_hzeta * Yd / ( 2 * dY * zeta0 );
+        //A( row, col( i, j - 1, w ) )     =   ( 1.0 - iaR ) * U_hzeta * Yd / ( 2 * dY * zeta0 );
+
+        // - ( 1 / zeta0 ) * U_{hzeta} * w_{eta}
+        A( row, col( i, j + 1, w ) )     = - U_hzeta * Yd / ( 2 * dY * zeta0 );
+        A( row, col( i, j - 1, w ) )     =   U_hzeta * Yd / ( 2 * dY * zeta0 );
 
         // - (1 - i / (alpha*Rx^(1/2)) ) * ( 1 / zeta0 ) * U_{hzeta eta} * w
-        A( row, col( i, j, w ) )         = - ( 1.0 - iaR ) * U_eta_hzeta / zeta0;
-        //A( row, col( i, j, w ) )         = - U_eta_hzeta / zeta0;
+        //A( row, col( i, j, w ) )         = - ( 1.0 - iaR ) * U_eta_hzeta / zeta0;
+
+        // - ( 1 / zeta0 ) * U_{hzeta eta} * w
+        A( row, col( i, j, w ) )         = - U_eta_hzeta / zeta0;
 
         // - (1 - i / (alpha*Rx^(1/2)) ) * U_{eta eta} * v
-        A( row, col( i, j, v ) )          = - ( 1.0 - iaR ) * U_eta_eta;
-        //A( row, col( i, j, v ) )          = - U_eta_eta;
+        //A( row, col( i, j, v ) )          = - ( 1.0 - iaR ) * U_eta_eta;
 
-/*
-        // Rich's version
-        // + ( 1 / zeta0 ) * s_{hzeta eta}
-        A( row, col( i + 1, j + 1, s ) )  =   Xd * Yd / ( 4 * dX * dY * zeta0 );
-        A( row, col( i - 1, j - 1, s ) )  =   Xd * Yd / ( 4 * dX * dY * zeta0 );
-        A( row, col( i + 1, j - 1, s ) )  = - Xd * Yd / ( 4 * dX * dY * zeta0 );
-        A( row, col( i - 1, j + 1, s ) )  = - Xd * Yd / ( 4 * dX * dY * zeta0 );
+        // - U_{eta eta} * v
+        A( row, col( i, j, v ) )          = - U_eta_eta;
 
-        // - 2 * U_{hzeta} * w_{eta} / zeta0
-        A( row, col( i, j + 1, w ) )     = - 2 * U_hzeta * Yd / ( 2 * dY * zeta0 );
-        A( row, col( i, j - 1, w ) )     =   2 * U_hzeta * Yd / ( 2 * dY * zeta0 );
-
-        // - 2 * U_{eta} * v_{eta}
-        A( row, col( i, j + 1, w ) )     = - 2 * U_eta * Yd / ( 2 * dY );
-        A( row, col( i, j - 1, w ) )     =   2 * U_eta * Yd / ( 2 * dY );
-
-        // - 2 * U_{eta hzeta} * w / zeta0
-        A( row, col( i, j, w ) )         = - 2 * U_eta_hzeta / zeta0;
-
-        // - 2 * U_{eta eta} * v
-        A( row, col( i, j, v ) )         = - 2 * U_eta_eta;
-*/
         ++row;
 
         ////////////////
@@ -494,8 +492,10 @@ namespace TSL
                                             / ( zeta0 * zeta0 );
 
         // + ( i * alpha + Rx^(-1/2) )^2 * s
-        //A( row, col( i, j, s ) )         += - ALPHA * ALPHA;
-        A( row, col( i, j, s ) )         += Ralpha * Ralpha;
+        //A( row, col( i, j, s ) )         += Ralpha * Ralpha;
+
+        // - alpha^2 * s
+        A( row, col( i, j, s ) )         += - ALPHA * ALPHA;
 
         // + ( 1 / zeta0 ) * q_{hzeta eta}
         A( row, col( i + 1, j + 1, q ) )  =   Xd * Yd / ( 4 * dX * dY * zeta0 );
@@ -504,47 +504,33 @@ namespace TSL
         A( row, col( i - 1, j + 1, q ) )  = - Xd * Yd / ( 4 * dX * dY * zeta0 );
 
         // + (1 - i / (alpha*Rx^(1/2)) ) * ( 1 / zeta0 ) * U_{hzeta} * v_{eta}
-        A( row, col( i, j + 1, v ) )     =   ( 1.0 - iaR ) * U_hzeta * Yd / ( 2 * dY * zeta0 );
-        A( row, col( i, j - 1, v ) )     = - ( 1.0 - iaR ) * U_hzeta * Yd / ( 2 * dY * zeta0 );
-        //A( row, col( i, j + 1, v ) )     =   U_hzeta * Yd / ( 2 * dY * zeta0 );
-        //A( row, col( i, j - 1, v ) )     = - U_hzeta * Yd / ( 2 * dY * zeta0 );
+        //A( row, col( i, j + 1, v ) )     =   ( 1.0 - iaR ) * U_hzeta * Yd / ( 2 * dY * zeta0 );
+        //A( row, col( i, j - 1, v ) )     = - ( 1.0 - iaR ) * U_hzeta * Yd / ( 2 * dY * zeta0 );
+
+        // + ( 1 / zeta0 ) * U_{hzeta} * v_{eta}
+        A( row, col( i, j + 1, v ) )     =   U_hzeta * Yd / ( 2 * dY * zeta0 );
+        A( row, col( i, j - 1, v ) )     = - U_hzeta * Yd / ( 2 * dY * zeta0 );
 
         // - (1 - i / (alpha*Rx^(1/2)) ) * ( 1 / zeta0 ) * U_{eta} * v_{hzeta}
-        A( row, col( i + 1, j, v ) )     = - ( 1.0 - iaR ) * U_eta * Xd / ( 2 * dX * zeta0 );
-        A( row, col( i - 1, j, v ) )     =   ( 1.0 - iaR ) * U_eta * Xd / ( 2 * dX * zeta0 );
-        //A( row, col( i + 1, j, v ) )     = - U_eta * Xd / ( 2 * dX * zeta0 );
-        //A( row, col( i - 1, j, v ) )     =   U_eta * Xd / ( 2 * dX * zeta0 );
+        //A( row, col( i + 1, j, v ) )     = - ( 1.0 - iaR ) * U_eta * Xd / ( 2 * dX * zeta0 );
+        //A( row, col( i - 1, j, v ) )     =   ( 1.0 - iaR ) * U_eta * Xd / ( 2 * dX * zeta0 );
+
+        // - ( 1 / zeta0 ) * U_{eta} * v_{hzeta}
+        A( row, col( i + 1, j, v ) )     = - U_eta * Xd / ( 2 * dX * zeta0 );
+        A( row, col( i - 1, j, v ) )     =   U_eta * Xd / ( 2 * dX * zeta0 );
 
         // - (1 - i / (alpha*Rx^(1/2)) ) * ( 1 / zeta0 ) * U_{eta hzeta} * v
-        A( row, col( i, j, v ) )         = - ( 1.0 - iaR ) * U_eta_hzeta / zeta0;
-        //A( row, col( i, j, v ) )         = - U_eta_hzeta / zeta0;
+        //A( row, col( i, j, v ) )         = - ( 1.0 - iaR ) * U_eta_hzeta / zeta0;
+
+        // - ( 1 / zeta0 ) * U_{eta hzeta} * v
+        A( row, col( i, j, v ) )         = - U_eta_hzeta / zeta0;
 
         // - (1 - i / (alpha*Rx^(1/2)) ) * ( 1 / zeta0^2 ) * U_{hzeta hzeta} * w
-        A( row, col( i, j, w ) )         = - ( 1.0 - iaR ) * U_hzeta_hzeta / ( zeta0 * zeta0 );
-        //A( row, col( i, j, w ) )         = - U_hzeta_hzeta / ( zeta0 * zeta0 );
+        //A( row, col( i, j, w ) )         = - ( 1.0 - iaR ) * U_hzeta_hzeta / ( zeta0 * zeta0 );
 
-/*
-        // Rich's version
-        // + ( 1 / zeta0 ) * q_{hzeta eta}
-        A( row, col( i + 1, j + 1, q ) )  =   Xd * Yd / ( 4 * dX * dY * zeta0 );
-        A( row, col( i - 1, j - 1, q ) )  =   Xd * Yd / ( 4 * dX * dY * zeta0 );
-        A( row, col( i + 1, j - 1, q ) )  = - Xd * Yd / ( 4 * dX * dY * zeta0 );
-        A( row, col( i - 1, j + 1, q ) )  = - Xd * Yd / ( 4 * dX * dY * zeta0 );
+        // - ( 1 / zeta0^2 ) * U_{hzeta hzeta} * w
+        A( row, col( i, j, w ) )         = - U_hzeta_hzeta / ( zeta0 * zeta0 );
 
-        // - 2 * U_{hzeta} * w_{hzeta} / zeta0^2
-        A( row, col( i + 1, j, w ) )     = - 2 * U_hzeta * Xd / ( 2 * dX * zeta0 * zeta0 );
-        A( row, col( i - 1, j, w ) )     =   2 * U_hzeta * Xd / ( 2 * dX * zeta0 * zeta0 );
-
-        // - 2 * U_{eta} * v_{hzeta} / zeta0
-        A( row, col( i + 1, j, w ) )     = - 2 * U_eta * Xd / ( 2 * dX * zeta0 );
-        A( row, col( i - 1, j, w ) )     =   2 * U_eta * Xd / ( 2 * dX * zeta0 );
-
-        // - 2 * U_{eta hzeta} * v / zeta0
-        A( row, col( i, j, v ) )         = - 2 * U_eta_hzeta / zeta0;
-
-        // - 2 * U_{hzeta hzeta} * w / zeta0^2
-        A( row, col( i, j, w ) )         = - 2 * U_hzeta_hzeta / ( zeta0 * zeta0 );
-*/
         ++row;
 
       }

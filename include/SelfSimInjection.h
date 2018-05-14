@@ -43,6 +43,20 @@ namespace TSL
       std::string OUTPUT_PATH;    // Output path string
       bool SOLVED;                // True if equations have been solved
 
+      // Wave forcing terms
+      bool FORCING;                                       // True if forcing on
+      double SIGMA;                                       // Wave amplitude
+      double RX;                                          // Local Reynolds number
+      double ALPHA;                                       // Wavenumber
+      TwoD_node_mesh< std::complex<double> > u_WAVE;   // Streamwise wave velocity
+      TwoD_node_mesh< std::complex<double> > v_WAVE;      // Transverse wave velocity
+      TwoD_node_mesh< std::complex<double> > w_WAVE;      // Spanwise wave velocity
+      TwoD_node_mesh< std::complex<double> > v_WAVE_CONJ; // Transverse wave velocity conjugate
+      TwoD_node_mesh< std::complex<double> > w_WAVE_CONJ; // Spanwise wave velocity conjugate
+      TwoD_node_mesh< std::complex<double> > FORCE_1;   // U forcing = F
+      TwoD_node_mesh< std::complex<double> > FORCE_2;   // Theta forcing = G_zeta - H_eta
+      //TODO do we need u_WAVE, FORCE_1 and FORCE_2
+
       // Non-uniform mesh parameters
       double a1, a2, b1, b2;
 
@@ -64,11 +78,160 @@ namespace TSL
       double ETA_HALF;                          // Value of eta on hzeta=0 at which U=1/2
       double INT_U_SQUARED;                     // Integral of U^2 over cross section
 
-      /* ----- Methods ----- */
+      /* ----- Methods (protected)----- */
       void setup(){
         make_output_directory();
         mesh_setup();
         solve_base_flow();
+      }
+
+      double calculate_forcing_1( std::size_t i, std::size_t j )
+      {
+        const double dY( Y_NODES[ 1 ] - Y_NODES[ 0 ] );
+        const double dX( X_NODES[ 1 ] - X_NODES[ 0 ] );
+
+        // hzeta location
+        double hzeta( HZETA_NODES[ i ] );
+        double Xd( mesh_Xd( hzeta ) );
+        double Xdd( mesh_Xdd( hzeta ) );
+
+        // eta location
+        double eta( ETA_NODES[ j ] );
+        double Yd( mesh_Yd( eta ) );
+        double Ydd( mesh_Ydd( eta ) );
+
+        double F_1;
+
+        if ( FORCING ){
+          double v_real, v_imag, w_real, w_imag;
+          double u_real_eta, v_imag_eta_eta, w_imag_zeta_eta;
+          double u_imag_eta, v_real_eta_eta, w_real_zeta_eta;
+          double u_real_zeta, v_imag_eta_zeta, w_imag_zeta_zeta;
+          double u_imag_zeta, v_real_eta_zeta, w_real_zeta_zeta;
+
+          v_real = v_WAVE( i, j, 0 ).real();
+          v_imag = v_WAVE( i, j, 0 ).imag();
+          w_real = w_WAVE( i, j, 0 ).real();
+          w_imag = w_WAVE( i, j, 0 ).imag();
+
+          v_imag_eta_eta = Ydd * ( v_WAVE( i, j + 1, 0 ).imag() - v_WAVE( i, j - 1, 0 ).imag() ) / ( 2 * dY );
+          v_imag_eta_eta += Yd * Yd * ( v_WAVE( i, j + 1, 0 ).imag() - 2.0 * v_WAVE( i, j, 0 ).imag() + v_WAVE( i, j - 1, 0 ).imag() ) / ( dY * dY );
+          w_imag_zeta_eta = Xd * Yd * ( w_WAVE( i + 1, j + 1, 0 ).imag() + w_WAVE( i - 1, j - 1, 0 ).imag()
+                               - w_WAVE( i + 1, j - 1, 0 ).imag() - w_WAVE( i - 1, j + 1, 0 ).imag()  ) / ( 4. * dX * dY );
+          u_real_eta = - ( v_imag_eta_eta + w_imag_zeta_eta ) / ALPHA;
+
+          v_real_eta_eta = Ydd * ( v_WAVE( i, j + 1, 0 ).real() - v_WAVE( i, j - 1, 0 ).real() ) / ( 2 * dY );
+          v_real_eta_eta += Yd * Yd * ( v_WAVE( i, j + 1, 0 ).real() - 2.0 * v_WAVE( i, j, 0 ).real() + v_WAVE( i, j - 1, 0 ).real() ) / ( dY * dY );
+          w_real_zeta_eta = Xd * Yd * ( w_WAVE( i + 1, j + 1, 0 ).real() + w_WAVE( i - 1, j - 1, 0 ).real()
+                               - w_WAVE( i + 1, j - 1, 0 ).real() - w_WAVE( i - 1, j + 1, 0 ).real()  ) / ( 4. * dX * dY );
+          u_imag_eta = ( v_real_eta_eta + w_real_zeta_eta ) / ALPHA;
+
+          v_imag_eta_zeta = Xd * Yd * ( v_WAVE( i + 1, j + 1, 0 ).imag() + v_WAVE( i - 1, j - 1, 0 ).imag()
+                               - v_WAVE( i + 1, j - 1, 0 ).imag() - v_WAVE( i - 1, j + 1, 0 ).imag()  ) / ( 4. * dX * dY );
+          w_imag_zeta_zeta = Xdd * ( w_WAVE( i + 1, j, 0 ).imag() - w_WAVE( i - 1, j, 0 ).imag() ) / ( 2 * dX );
+          w_imag_zeta_zeta += Xd * Xd * ( w_WAVE( i + 1, j, 0 ).imag() - 2.0 * w_WAVE( i, j, 0 ).imag() + w_WAVE( i - 1, j, 0 ).imag() ) / ( dX * dX );
+          u_real_zeta = - ( v_imag_eta_zeta + w_imag_zeta_zeta ) / ALPHA;
+
+          v_real_eta_zeta = Xd * Yd * ( v_WAVE( i + 1, j + 1, 0 ).real() + v_WAVE( i - 1, j - 1, 0 ).real()
+                               - v_WAVE( i + 1, j - 1, 0 ).real() - v_WAVE( i - 1, j + 1, 0 ).real()  ) / ( 4. * dX * dY );
+          w_real_zeta_zeta = Xdd * ( w_WAVE( i + 1, j, 0 ).real() - w_WAVE( i - 1, j, 0 ).real() ) / ( 2 * dX );
+          w_real_zeta_zeta += Xd * Xd * ( w_WAVE( i + 1, j, 0 ).real() - 2.0 * w_WAVE( i, j, 0 ).real() + w_WAVE( i - 1, j, 0 ).real() ) / ( dX * dX );
+          u_imag_zeta = ( v_real_eta_zeta + w_real_zeta_zeta ) / ALPHA;
+
+          F_1 = 2 * ( v_real * u_real_eta + v_imag * u_imag_eta + w_real * u_real_zeta + w_imag * u_imag_zeta  );
+        } else {
+          F_1 = 0;
+        }
+        return F_1;
+      }
+
+      double calculate_forcing_2( std::size_t i, std::size_t j ){
+        const double dY( Y_NODES[ 1 ] - Y_NODES[ 0 ] );
+        const double dX( X_NODES[ 1 ] - X_NODES[ 0 ] );
+
+        // hzeta location
+        double hzeta( HZETA_NODES[ i ] );
+        double Xd( mesh_Xd( hzeta ) );
+        double Xdd( mesh_Xdd( hzeta ) );
+
+        // eta location
+        double eta( ETA_NODES[ j ] );
+        double Yd( mesh_Yd( eta ) );
+        double Ydd( mesh_Ydd( eta ) );
+
+        double F_2;
+
+        if( FORCING ){
+          double v_real, v_imag, w_real, w_imag;
+          double v_real_eta, v_imag_eta, w_real_eta, w_imag_eta;
+          double v_real_zeta, v_imag_zeta, w_real_zeta, w_imag_zeta;
+          double v_real_eta_eta, v_imag_eta_eta, w_real_eta_eta, w_imag_eta_eta;
+          double v_real_zeta_zeta, v_imag_zeta_zeta, w_real_zeta_zeta, w_imag_zeta_zeta;
+          double v_real_eta_zeta, v_imag_eta_zeta, w_real_eta_zeta, w_imag_eta_zeta;
+          double u_real_eta, u_imag_eta, u_real_zeta, u_imag_zeta;
+
+          v_real = v_WAVE( i, j, 0 ).real();
+          v_imag = v_WAVE( i, j, 0 ).imag();
+          w_real = w_WAVE( i, j, 0 ).real();
+          w_imag = w_WAVE( i, j, 0 ).imag();
+
+          v_real_eta = Yd * ( v_WAVE( i, j + 1, 0 ).real() - v_WAVE( i, j - 1, 0 ).real() ) / dY;
+          v_imag_eta = Yd * ( v_WAVE( i, j + 1, 0 ).imag() - v_WAVE( i, j - 1, 0 ).imag() ) / dY;
+          w_real_eta = Yd * ( w_WAVE( i, j + 1, 0 ).real() - w_WAVE( i, j - 1, 0 ).real() ) / dY;
+          w_imag_eta = Yd * ( w_WAVE( i, j + 1, 0 ).imag() - w_WAVE( i, j - 1, 0 ).imag() ) / dY;
+
+          v_real_zeta = Xd * ( v_WAVE( i + 1, j, 0 ).real() - v_WAVE( i - 1, j, 0 ).real() ) / dX;
+          v_imag_zeta = Xd * ( v_WAVE( i + 1, j, 0 ).imag() - v_WAVE( i - 1, j, 0 ).imag() ) / dX;
+          w_real_zeta = Xd * ( w_WAVE( i + 1, j, 0 ).real() - w_WAVE( i - 1, j, 0 ).real() ) / dX;
+          w_imag_zeta = Xd * ( w_WAVE( i + 1, j, 0 ).imag() - w_WAVE( i - 1, j, 0 ).imag() ) / dX;
+
+          v_real_eta_eta  = Ydd * ( v_WAVE( i, j + 1, 0 ).real() - v_WAVE( i, j - 1, 0 ).real() ) / ( 2 * dY );
+          v_real_eta_eta += Yd * Yd * ( v_WAVE( i, j + 1, 0 ).real() - 2.0 * v_WAVE( i, j, 0 ).real() + v_WAVE( i, j - 1, 0 ).real() ) / ( dY * dY );
+          v_imag_eta_eta  = Ydd * ( v_WAVE( i, j + 1, 0 ).imag() - v_WAVE( i, j - 1, 0 ).imag() ) / ( 2 * dY );
+          v_imag_eta_eta += Yd * Yd * ( v_WAVE( i, j + 1, 0 ).imag() - 2.0 * v_WAVE( i, j, 0 ).imag() + v_WAVE( i, j - 1, 0 ).imag() ) / ( dY * dY );
+          w_real_eta_eta  = Ydd * ( w_WAVE( i, j + 1, 0 ).real() - w_WAVE( i, j - 1, 0 ).real() ) / ( 2 * dY );
+          w_real_eta_eta += Yd * Yd * ( w_WAVE( i, j + 1, 0 ).real() - 2.0 * w_WAVE( i, j, 0 ).real() + w_WAVE( i, j - 1, 0 ).real() ) / ( dY * dY );
+          w_imag_eta_eta  = Ydd * ( w_WAVE( i, j + 1, 0 ).imag() - w_WAVE( i, j - 1, 0 ).imag() ) / ( 2 * dY );
+          w_imag_eta_eta += Yd * Yd * ( w_WAVE( i, j + 1, 0 ).imag() - 2.0 * w_WAVE( i, j, 0 ).imag() + w_WAVE( i, j - 1, 0 ).imag() ) / ( dY * dY );
+
+          v_real_zeta_zeta  = Xdd * ( v_WAVE( i + 1, j, 0 ).real() - v_WAVE( i - 1, j, 0 ).real() ) / ( 2 * dX );
+          v_real_zeta_zeta += Xd * Xd * ( v_WAVE( i + 1, j, 0 ).real() - 2.0 * v_WAVE( i, j, 0 ).real() + v_WAVE( i - 1, j, 0 ).real() ) / ( dX * dX );
+          v_imag_zeta_zeta  = Xdd * ( v_WAVE( i + 1, j, 0 ).imag() - v_WAVE( i - 1, j, 0 ).imag() ) / ( 2 * dX );
+          v_imag_zeta_zeta += Xd * Xd * ( v_WAVE( i + 1, j, 0 ).imag() - 2.0 * v_WAVE( i, j, 0 ).imag() + v_WAVE( i - 1, j, 0 ).imag() ) / ( dX * dX );
+          w_real_zeta_zeta  = Xdd * ( w_WAVE( i + 1, j, 0 ).real() - w_WAVE( i - 1, j, 0 ).real() ) / ( 2 * dX );
+          w_real_zeta_zeta += Xd * Xd * ( w_WAVE( i + 1, j, 0 ).real() - 2.0 * w_WAVE( i, j, 0 ).real() + w_WAVE( i - 1, j, 0 ).real() ) / ( dX * dX );
+          w_imag_zeta_zeta  = Xdd * ( w_WAVE( i + 1, j, 0 ).imag() - w_WAVE( i - 1, j, 0 ).imag() ) / ( 2 * dX );
+          w_imag_zeta_zeta += Xd * Xd * ( w_WAVE( i + 1, j, 0 ).imag() - 2.0 * w_WAVE( i, j, 0 ).imag() + w_WAVE( i - 1, j, 0 ).imag() ) / ( dX * dX );
+
+          v_real_eta_zeta = Xd * Yd * ( v_WAVE( i + 1, j + 1, 0 ).real() + v_WAVE( i - 1, j - 1, 0 ).real()
+                               - v_WAVE( i + 1, j - 1, 0 ).real() - v_WAVE( i - 1, j + 1, 0 ).real()  ) / ( 4. * dX * dY );
+          v_imag_eta_zeta = Xd * Yd * ( v_WAVE( i + 1, j + 1, 0 ).imag() + v_WAVE( i - 1, j - 1, 0 ).imag()
+                               - v_WAVE( i + 1, j - 1, 0 ).imag() - v_WAVE( i - 1, j + 1, 0 ).imag()  ) / ( 4. * dX * dY );
+          w_real_eta_zeta = Xd * Yd * ( w_WAVE( i + 1, j + 1, 0 ).real() + w_WAVE( i - 1, j - 1, 0 ).real()
+                               - w_WAVE( i + 1, j - 1, 0 ).real() - w_WAVE( i - 1, j + 1, 0 ).real()  ) / ( 4. * dX * dY );
+          w_imag_eta_zeta = Xd * Yd * ( w_WAVE( i + 1, j + 1, 0 ).imag() + w_WAVE( i - 1, j - 1, 0 ).imag()
+                               - w_WAVE( i + 1, j - 1, 0 ).imag() - w_WAVE( i - 1, j + 1, 0 ).imag()  ) / ( 4. * dX * dY );
+
+          u_real_eta = - ( v_imag_eta_eta + w_imag_eta_zeta ) / ALPHA;
+          u_imag_eta = ( v_real_eta_eta + w_real_eta_zeta ) / ALPHA;
+          u_real_zeta = - ( v_imag_eta_zeta + w_imag_zeta_zeta ) / ALPHA;
+          u_imag_zeta = ( v_real_eta_zeta + w_real_zeta_zeta ) / ALPHA;
+
+          F_2  = u_imag_zeta * v_real - u_real_zeta * v_imag;
+          F_2 += u_real_eta * w_imag - u_imag_eta * w_real;
+          F_2 *= ALPHA;
+          F_2 += 2 * ( v_real_eta + w_real_zeta ) * ( v_real_zeta - w_real_eta );
+          F_2 -= 2 * ( v_imag_eta + w_imag_zeta ) * ( w_imag_eta - v_imag_zeta );
+          F_2 += v_real * ( v_real_eta_zeta - w_real_eta_eta );
+          F_2 += v_imag * ( v_imag_eta_zeta - w_imag_eta_eta );
+          F_2 += w_real * ( v_real_zeta_zeta - w_real_eta_zeta );
+          F_2 += w_imag * ( v_imag_zeta_zeta - w_imag_eta_zeta );
+          F_2 *= 2;
+
+        } else {
+          F_2 = 0;
+        }
+        return F_2;
       }
 
       /* ----- Make the output directory ----- */
@@ -325,7 +488,8 @@ namespace TSL
       SelfSimInjection( ) : HZETA_RIGHT( 16.0 ), ETA_TOP( 128.0 ), N( 200 ),
                             M( 200 ), MB( 20000 ), BETA( 0.0 ), KB( 0.0 ),
                             ZETA0( 1.0 ), K( 0.0 ), MESH( "UNIFORM" ),
-                            BASE_FLOW( "2D" ), SPEED_UP( false ), SOLVED( false )
+                            BASE_FLOW( "2D" ), SPEED_UP( false ), SOLVED( false ),
+                            SIGMA( 0.0 ), RX( 0.0 ), FORCING( false )
       {
         a1 = 60.0;//10.0;//0.1;
         a2 = 4.0;//0.5;
@@ -367,13 +531,39 @@ namespace TSL
       /// Return a handle to the injection parameter
       double& injection() { return K; }
 
+      /// Return a handle to the wave amplitude
+      double& wave_amplitude() { return SIGMA; }
+
+      /// Return a handle to the local Reynold's Number
+      double& local_Reynolds() { return RX; }
+
+      /// Return a handle to the wavenumber
+      double& wavenumber() { return ALPHA; }
+
+      /// Set the transverse wave velocity
+      void set_v_wave( TwoD_node_mesh< std::complex<double> > v_wave )
+      {
+        v_WAVE = v_wave;
+        v_WAVE_CONJ = v_wave.conjugate();
+      }
+
+      /// Set the spanwise wave velocity
+      void set_w_wave( TwoD_node_mesh< std::complex<double> > w_wave )
+      {
+        w_WAVE = w_wave;
+        w_WAVE_CONJ = w_wave.conjugate();
+      }
+
+      /// Turn forcing on and off
+      void forcing( bool f ){ FORCING = f; }
+
       /// Return the mesh definition string
       std::string mesh() { return MESH; }
 
       /// Method to set the SOLVED variable (useful if reading solution from file)
       void set_solved( bool solved ){ SOLVED = solved; }
 
-      /// Return if the equations have been solved or not
+      /// Return whether the equations have been solved or not
       bool solved() { return SOLVED; }
 
       /// Method to set the mesh definition string
@@ -656,7 +846,6 @@ namespace TSL
       void solve_perturbation_eqns()
       {
         std::cout << "*** Solving the perturbation equations ***" << std::endl;
-        //std::cout << "  * Perturbation transpiration K = " << K << std::endl;
 
         TwoD_node_mesh<double> q( X_NODES, Y_NODES, 4 );
         TwoD_node_mesh<double> q_output( HZETA_NODES, ETA_NODES, 8 );
@@ -669,6 +858,7 @@ namespace TSL
 
         // Vector for the RHS of the matrix problem
         Vector<double> B( 4 * ( M + 1 ) * ( N + 1 ), 0.0 );
+        //TODO use Q to initialise B ? (only if forcing?)
 
         /* Iterate to a solution */
         double max_residual( 0.0 );             // Maximum residual
@@ -901,13 +1091,18 @@ namespace TSL
               // ( UB' + UG_eta ) * Phi
               A( row, col( i, j, Phi ) )          =    Base[ UBd ] + Guess_eta[ U ];
 
+              // Forcing 1
+              double F_1;
+              F_1 = calculate_forcing_1( i, j );
+
               // Residual
               B[ row ]        = - Guess_laplace[ U ]
                                 + BETA * ( 2. * Base[ UB ] + Guess[ U ] ) * Guess[ U ]
                                 - ( hzeta * Base[ PsiB ] + Guess[ Psi ] )
                                 * ( Guess_hzeta[ U ] )
                                 - ( Base[ PhiB ] + Guess[ Phi ] ) * Guess_eta[ U ]
-                                - Base[UBd] * Guess[Phi] ;
+                                - Base[UBd] * Guess[Phi]
+                                + std::pow( RX, -2.0/3.0 ) * SIGMA * SIGMA * F_1;
               ++row;
 
               ////////////////////
@@ -976,6 +1171,10 @@ namespace TSL
                                                      * ( hzeta * Base[ Theta ]
                                                      + Guess[ Theta ] );
 
+              // Forcing 2
+              double F_2;
+              F_2 = calculate_forcing_2( i, j );
+
               // Residual
               B[ row ]      = - Guess_laplace[ Theta ]
                               + 2.*( 1. - BETA )
@@ -989,7 +1188,8 @@ namespace TSL
                               - ( hzeta * Base[ PsiB ] + Guess[ Psi ] )
                               * ( Guess_hzeta[ Theta ] ) - Guess[ Psi ] * Base[ ThetaB ]
                               - ( 2. - BETA ) * ( ( Base[ UB ] + Guess[ U ] )
-                              * Guess[ Theta ] + hzeta * Base[ ThetaB ] * Guess[ U ] );
+                              * Guess[ Theta ] + hzeta * Base[ ThetaB ] * Guess[ U ] )
+                              + std::pow( RX, -1.0/6.0 ) * SIGMA * SIGMA * F_2;
               ++row;
             }
 

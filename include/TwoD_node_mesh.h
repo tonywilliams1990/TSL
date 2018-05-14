@@ -179,6 +179,15 @@ namespace TSL
         /// Integrate the square of the absolute value over the domain
         T square_integral2D( std::size_t var=0 ) const;
 
+				/// Return the complex conjugate of the 2D mesh
+				TwoD_node_mesh<T> conjugate() const
+				{
+					TwoD_node_mesh<T> temp( *this );
+          TwoD_node_mesh<T> conj( temp );
+          conj.VARS = temp.VARS.conjugate();
+          return conj;
+				}
+
 
 
 	}; // End of class TwoD_node_mesh
