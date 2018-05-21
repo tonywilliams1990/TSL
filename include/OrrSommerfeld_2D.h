@@ -123,6 +123,12 @@ namespace TSL
         return CALC_EIGENVECTORS;
       }
 
+      /// Update the SSI object
+      void update_SSI( SelfSimInjection& ssi )
+      {
+        SSI = ssi;
+      }
+
       /// Solve the sparse eigenvalue problem using SLEPc
       void solve_evp();
 

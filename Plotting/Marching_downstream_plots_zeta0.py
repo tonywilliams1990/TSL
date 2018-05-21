@@ -4,9 +4,9 @@ import matplotlib.mlab as mlab
 import matplotlib.pyplot as plt
 from itertools import cycle
 
-hide_axis_labels = False
-save_fig = False
-show_plots = True
+hide_axis_labels = True
+save_fig = True
+show_plots = False
 plot_lines = False
 beta=0
 #K = 2
@@ -28,7 +28,7 @@ for K in K_vals :
         #data = np.loadtxt("./DATA/Marching_DATA_1000x401x401_100_16_128/Marching_K_"+ str(K) + "_zeta0_" + str(zeta0) + "/A_file.dat")
         #data = np.loadtxt("./DATA/Isolated_Marching_K_" + str(K) + "_beta_0_1000x201x201_100_16_64/A_file.dat")
         #data = np.loadtxt("./DATA/Isolated_Marching_K_" + str(K) + "_beta_0_1000x401x401_100_16_128/A_file.dat")
-        data = np.loadtxt("./DATA/Marching_K_" + str(K) + "_zeta0_" + str(zeta0) + "_1000x201x201_100_16_64/A_file.dat")
+        data = np.loadtxt("./DATA/Marching_K_" + str(K) + "_zeta0_" + str(zeta0) + "_2000x401x401_100_16_128/A_file.dat")
 
         #zeta0 = data[:,0]
         A = data[:,1]

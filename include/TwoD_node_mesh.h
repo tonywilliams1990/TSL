@@ -66,6 +66,30 @@ namespace TSL
       const T& operator()( const std::size_t nodex, const std::size_t nodey,
                            const std::size_t var ) const;
 
+		  /// Assignment
+			TwoD_node_mesh& operator=( const TwoD_node_mesh& original )
+			{
+				NX = original.NX;
+				NY = original.NY;
+				NV = original.NV;
+				X_NODES = original.X_NODES; //TODO should we check if these are the same instead?
+				Y_NODES =  original.Y_NODES;
+				VARS = original.VARS;
+				return *this;
+			}
+
+			/// Binary -
+			TwoD_node_mesh<T> operator-( const TwoD_node_mesh<T>& m_minus ) const
+			{
+				if ( m_minus.NX != NX ) { throw Error( "TwoD_node_mesh error: dimension 1 " );}
+				if ( m_minus.NY != NY ) { throw Error( "TwoD_node_mesh error: dimension 2 " );}
+				if ( m_minus.NV != NV ) { throw Error( "TwoD_node_mesh error: number of vars" );}
+				//TODO check X_NODES & Y_NODES
+				TwoD_node_mesh<T> temp( *this );
+		    temp.VARS -= m_minus.VARS;
+		    return temp;
+			}
+
       /* ----- Methods ----- */
 
       /// Return the spatial position of a given given node as a pair
@@ -187,6 +211,9 @@ namespace TSL
           conj.VARS = temp.VARS.conjugate();
           return conj;
 				}
+
+				/// Return the VARS vector
+				Vector<T> get_vars() { return VARS; }
 
 
 

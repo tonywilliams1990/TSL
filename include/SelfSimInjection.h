@@ -489,7 +489,7 @@ namespace TSL
                             M( 200 ), MB( 20000 ), BETA( 0.0 ), KB( 0.0 ),
                             ZETA0( 1.0 ), K( 0.0 ), MESH( "UNIFORM" ),
                             BASE_FLOW( "2D" ), SPEED_UP( false ), SOLVED( false ),
-                            SIGMA( 0.0 ), RX( 0.0 ), FORCING( false )
+                            SIGMA( 0.0 ), RX( 1.0 ), FORCING( false )
       {
         a1 = 60.0;//10.0;//0.1;
         a2 = 4.0;//0.5;
@@ -1294,7 +1294,7 @@ namespace TSL
 
           max_residual = B.norm_inf();
           std::cout << "***                                              Maximum residual = "
-               << B.norm_inf() << std::endl;
+                    << B.norm_inf() << std::endl;
 
           Vector<double> x;
           if( SPEED_UP )

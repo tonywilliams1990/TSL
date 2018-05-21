@@ -45,6 +45,7 @@ int main()
   SSI.hartree() = beta;
   SSI.injection_width() = zeta0;
   SSI.injection() = K;
+  SSI.wavenumber() = alpha;
   SSI.set_mesh( "NONUNIFORM" );
   SSI.set_base_flow( "2D" );
   SSI.speed_up( false );
