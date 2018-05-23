@@ -42,20 +42,17 @@ namespace TSL
       bool SPEED_UP;              // Reuse the factorised matrix for speed gains
       std::string OUTPUT_PATH;    // Output path string
       bool SOLVED;                // True if equations have been solved
+      bool OUTPUT;                // Output solution if True
 
       // Wave forcing terms
       bool FORCING;                                       // True if forcing on
       double SIGMA;                                       // Wave amplitude
       double RX;                                          // Local Reynolds number
       double ALPHA;                                       // Wavenumber
-      TwoD_node_mesh< std::complex<double> > u_WAVE;   // Streamwise wave velocity
       TwoD_node_mesh< std::complex<double> > v_WAVE;      // Transverse wave velocity
       TwoD_node_mesh< std::complex<double> > w_WAVE;      // Spanwise wave velocity
-      TwoD_node_mesh< std::complex<double> > v_WAVE_CONJ; // Transverse wave velocity conjugate
-      TwoD_node_mesh< std::complex<double> > w_WAVE_CONJ; // Spanwise wave velocity conjugate
-      TwoD_node_mesh< std::complex<double> > FORCE_1;   // U forcing = F
-      TwoD_node_mesh< std::complex<double> > FORCE_2;   // Theta forcing = G_zeta - H_eta
-      //TODO do we need u_WAVE, FORCE_1 and FORCE_2
+      //TwoD_node_mesh< std::complex<double> > v_WAVE_CONJ; // Transverse wave velocity conjugate
+      //TwoD_node_mesh< std::complex<double> > w_WAVE_CONJ; // Spanwise wave velocity conjugate
 
       // Non-uniform mesh parameters
       double a1, a2, b1, b2;
@@ -80,7 +77,10 @@ namespace TSL
 
       /* ----- Methods (protected)----- */
       void setup(){
-        make_output_directory();
+        if ( OUTPUT )
+        {
+          make_output_directory();
+        }
         mesh_setup();
         solve_base_flow();
       }
@@ -489,7 +489,7 @@ namespace TSL
                             M( 200 ), MB( 20000 ), BETA( 0.0 ), KB( 0.0 ),
                             ZETA0( 1.0 ), K( 0.0 ), MESH( "UNIFORM" ),
                             BASE_FLOW( "2D" ), SPEED_UP( false ), SOLVED( false ),
-                            SIGMA( 0.0 ), RX( 1.0 ), FORCING( false )
+                            SIGMA( 0.0 ), RX( 1.0 ), FORCING( false ), OUTPUT( true )
       {
         a1 = 60.0;//10.0;//0.1;
         a2 = 4.0;//0.5;
@@ -540,18 +540,21 @@ namespace TSL
       /// Return a handle to the wavenumber
       double& wavenumber() { return ALPHA; }
 
+      /// Set whether to output the solution
+      void set_output( bool output ){ OUTPUT = output; }
+
       /// Set the transverse wave velocity
       void set_v_wave( TwoD_node_mesh< std::complex<double> > v_wave )
       {
         v_WAVE = v_wave;
-        v_WAVE_CONJ = v_wave.conjugate();
+        //v_WAVE_CONJ = v_wave.conjugate();
       }
 
       /// Set the spanwise wave velocity
       void set_w_wave( TwoD_node_mesh< std::complex<double> > w_wave )
       {
         w_WAVE = w_wave;
-        w_WAVE_CONJ = w_wave.conjugate();
+        //w_WAVE_CONJ = w_wave.conjugate();
       }
 
       /// Turn forcing on and off
@@ -1535,7 +1538,10 @@ namespace TSL
 
       void solve()
       {
-        set_output_path();
+        if ( OUTPUT )
+        {
+          set_output_path();
+        }
         setup();
         solve_perturbation_eqns();
       }

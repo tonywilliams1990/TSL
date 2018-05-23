@@ -38,7 +38,7 @@ int main()
   double Rx( 500 * 500 );            // Local Reynolds number
   double Sigma( 0.0 );              // Wave amplitude
 
-  double K_min( 7.0 );
+  double K_min( 8.0 );
   double K_step( 0.1 );
   double Sigma_step( 10.0 );
 
@@ -58,6 +58,7 @@ int main()
   SSI.wave_amplitude() = Sigma;
   SSI.local_Reynolds() = Rx;
   SSI.wavenumber() = alpha;
+  SSI.set_output( false );
 
   Timer timer;
   timer.start();
@@ -77,8 +78,8 @@ int main()
   cout << "*** Solving the streak equations (no forcing) ***" << endl;
 
   SSI.solve();
-  SSI.output();
-  SSI.output_base_solution();
+  //SSI.output();
+  //SSI.output_base_solution();
   sol = SSI.solution();
   base = SSI.base_flow_solution();
   cout << "  * zeta0 = " << SSI.injection_width() << ", A = " << SSI.mass_flux() << endl;
@@ -182,6 +183,12 @@ int main()
     }
 
   }while( SSI.injection() > K_min );
+
+  // Now output the solution (after solving once more)
+  SSI.set_output( true );
+  SSI.solve();
+  SSI.output();
+  SSI.output_base_solution();
 
   timer.print();
   timer.stop();
