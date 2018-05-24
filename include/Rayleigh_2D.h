@@ -71,7 +71,7 @@ namespace TSL
       }
 
       /// Return a pointer to the wavenumber
-      double& alpha()
+      double& wavenumber()
       {
         return ALPHA;
       }
@@ -109,6 +109,12 @@ namespace TSL
 
       /// Solve the eigenvalue problem for whilst stepping in ALPHA
       void step_in_alpha( const double& step, const double& max );
+
+      /// Solve the eigenvalue problem for whilst stepping in ALPHA while c_i > tol
+      void step_alpha_tol( const double& step, const double& tol );
+
+      /// Solve the eigenvalue problem for whilst stepping (backwards) in ALPHA while c_i > tol
+      void step_back_alpha_tol( const double& step, const double& tol );
 
       /// Iterate on the wavenumber to drive first eigenvalue to neutral
       void iterate_to_neutral( const double& epsilon = 1e-3 );
@@ -400,6 +406,70 @@ namespace TSL
       timer.start();
 
     }while ( ALPHA <= max );
+  }
+
+  void Rayleigh_2D::step_alpha_tol( const double& step, const double& tol )
+  {
+    std::cout << "*** Iterating on the wavenumber ***" << std::endl;
+    make_output_directory();
+
+    TrackerFile metric( OUTPUT_PATH + "First_eval.dat" );
+    std::complex<double> first_eval;
+    metric.push_ptr( &ALPHA, "Wavenumber (alpha)");
+    metric.push_ptr( &first_eval, "1st eigenvalue" );
+    metric.header();
+
+    Timer timer;
+    timer.start();
+
+    do {
+      std::cout << "*** alpha = " << ALPHA << std::endl;
+      solve_evp();
+      first_eval = EIGENVALUES[ 0 ];
+      metric.update();
+      output_eigenvalues();
+      if ( CALC_EIGENVECTORS ){ output_eigenvectors(); }
+      TARGET = first_eval;
+      ALPHA += step;
+
+      timer.print();
+      timer.stop();
+      timer.reset();
+      timer.start();
+
+    }while ( first_eval.imag() > tol );
+  }
+
+  void Rayleigh_2D::step_back_alpha_tol( const double& step, const double& tol )
+  {
+    std::cout << "*** Iterating on the wavenumber ***" << std::endl;
+    make_output_directory();
+
+    TrackerFile metric( OUTPUT_PATH + "First_eval_back.dat" );
+    std::complex<double> first_eval;
+    metric.push_ptr( &ALPHA, "Wavenumber (alpha)");
+    metric.push_ptr( &first_eval, "1st eigenvalue" );
+    metric.header();
+
+    Timer timer;
+    timer.start();
+
+    do {
+      std::cout << "*** alpha = " << ALPHA << std::endl;
+      solve_evp();
+      first_eval = EIGENVALUES[ 0 ];
+      metric.update();
+      output_eigenvalues();
+      if ( CALC_EIGENVECTORS ){ output_eigenvectors(); }
+      TARGET = first_eval;
+      ALPHA -= step;
+
+      timer.print();
+      timer.stop();
+      timer.reset();
+      timer.start();
+
+    }while ( first_eval.imag() > tol && ALPHA >= 0.0 );
   }
 
   void Rayleigh_2D::iterate_to_neutral( const double& epsilon )

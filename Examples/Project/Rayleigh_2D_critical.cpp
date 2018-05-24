@@ -23,15 +23,15 @@ int main()
   cout << "*** ------- Approximating the critical alpha at which c_i=0 ------- ***" << endl;
 
   // Define the domain + short scale injection parameters
-  double hzeta_right( 30.0 );       // Size of the domain in the zeta_hat direction
-  double eta_top( 30.0 );           // Size of the domain in the eta direction
+  double hzeta_right( 32.0 );       // Size of the domain in the zeta_hat direction
+  double eta_top( 32.0 );           // Size of the domain in the eta direction
   const std::size_t N( 300 );       // Number of intervals in the zeta_hat direction
   const std::size_t M( 300 );       // Number of intervals in the eta direction
   const std::size_t MB( M * 100 );  // Number of eta intervals in the base flow ODE
   double beta( 0.0 );               // Hartree parameter
   double zeta0( 1.0 );              // Transpiration width
-  double K( 3.0 );                  // Transpiration parameter ( +ve = blowing )
-  double alpha( 0.4 );              // Wavenumber (alpha hat)
+  double K( 5.0 );                  // Transpiration parameter ( +ve = blowing )
+  double alpha( 0.5 );              // Wavenumber (alpha hat)
   double epsilon( 1e-3 );           // Tolerance (keep iterating while c_i > epsilon)
 
   // Solve the self similar injection flow
@@ -118,7 +118,7 @@ int main()
 
   // Solve
   rayleigh_2D.iterate_to_neutral( epsilon );
-  double alpha_crit( rayleigh_2D.alpha() );
+  double alpha_crit( rayleigh_2D.wavenumber() );
   cout << "Critical wavenumber = " << alpha_crit << endl;
 
   timer.print();

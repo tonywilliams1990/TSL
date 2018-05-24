@@ -38,7 +38,7 @@ int main()
   double Rx( 500 * 500 );            // Local Reynolds number
   double Sigma( 0.0 );              // Wave amplitude
 
-  double K_min( 8.0 );
+  double K_min( 7.0 );
   double K_step( 0.1 );
   double Sigma_step( 10.0 );
 

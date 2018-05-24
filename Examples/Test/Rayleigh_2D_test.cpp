@@ -118,7 +118,7 @@ int main()
   double epsilon( 1e-3 ); // Tolerance
 
   rayleigh_2D.iterate_to_neutral( epsilon );
-  double alpha_crit( rayleigh_2D.alpha() );
+  double alpha_crit( rayleigh_2D.wavenumber() );
   cout << "Critical wavenumber = " << alpha_crit << endl;
 
 

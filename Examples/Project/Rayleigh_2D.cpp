@@ -14,9 +14,9 @@ class mySelfSimInjection : public SelfSimInjection {
 public:
   // Define the injection function
   double Phi_w_func( const double& hzeta ){
-    //return - K * exp( - hzeta * hzeta );
+    return - K * exp( - hzeta * hzeta );
     // Rich's function
-    return - K * exp( - 0.1 * hzeta * hzeta ) * ( 1. - 2 * 0.1 * hzeta * hzeta );
+    //return - K * exp( - 0.1 * hzeta * hzeta ) * ( 1. - 2 * 0.1 * hzeta * hzeta );
   }
 }; // End of class mySelfSimInjection
 
@@ -25,15 +25,17 @@ int main()
   cout << "*** ------- Solving the 2D Rayleigh equation (EVP) ------- ***" << endl;
 
   // Define the domain + short scale injection parameters
-  double hzeta_right( 30.0 );       // Size of the domain in the zeta_hat direction
-  double eta_top( 30.0 );           // Size of the domain in the eta direction
+  double hzeta_right( 32.0 );       // Size of the domain in the zeta_hat direction
+  double eta_top( 32.0 );           // Size of the domain in the eta direction
   const std::size_t N( 300 );       // Number of intervals in the zeta_hat direction
   const std::size_t M( 300 );       // Number of intervals in the eta direction
   const std::size_t MB( M * 100 );  // Number of eta intervals in the base flow ODE
-  double beta( 0.0 );               // Hartree parameter
+  double beta( 0.5 );               // Hartree parameter
   double zeta0( 1.0 );              // Transpiration width
-  double K( 10.0 );                  // Transpiration parameter ( +ve = blowing )
-  double alpha( 0.5 );             // Wavenumber (alpha hat)
+  double K( 12.0 );                  // Transpiration parameter ( +ve = blowing )
+  double alpha( 0.0 );             // Wavenumber (alpha hat)
+  std::complex<double> target(0.8,0.07); // Target for eigensolver
+  double tol( 1e-3 );               // Tolerance at c_i = 0 (approx)
 
   // Solve the self similar injection flow
   mySelfSimInjection SSI;
@@ -114,20 +116,29 @@ int main()
 
   // Setup
   rayleigh_2D.set_region(0.1,1.0,-1.0,1.0);
-  rayleigh_2D.set_target( std::complex<double>(0.42,0.15) );
+  rayleigh_2D.set_target( target );
   rayleigh_2D.set_order( "EPS_TARGET_IMAGINARY" );
   rayleigh_2D.calc_eigenvectors() = true;
 
   // Solve
-  rayleigh_2D.solve_evp();
+  //rayleigh_2D.solve_evp();
   //rayleigh_2D.output();
 
-  //rayleigh_2D.step_in_alpha( 0.01, 0.5 );
+  // Step in alpha
+  //rayleigh_2D.step_in_alpha( 0.01, 0.6 );
 
+  rayleigh_2D.step_alpha_tol( 0.01, tol );
+
+  // Step backwards in alpha
+  /*Rayleigh_2D rayleigh_2D_back( SSI, alpha, nev );
+  rayleigh_2D_back.set_region(0.1,1.0,-1.0,1.0);
+  rayleigh_2D_back.set_target( target );
+  rayleigh_2D_back.set_order( "EPS_TARGET_IMAGINARY" );
+  rayleigh_2D_back.calc_eigenvectors() = true;
+  rayleigh_2D_back.step_back_alpha_tol( 0.01, tol );*/
 
   timer.print();
   timer.stop();
 
 	cout << "FINISHED" << endl;
-
 }
