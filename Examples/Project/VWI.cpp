@@ -14,9 +14,9 @@ class mySelfSimInjection : public SelfSimInjection {
 public:
   // Define the injection function
   double Phi_w_func( const double& hzeta ){
-    //return - K * exp( - hzeta * hzeta );
+    return - K * exp( - hzeta * hzeta );
     // Rich's function
-    return - K * exp( - 0.1 * hzeta * hzeta ) * ( 1. - 2 * 0.1 * hzeta * hzeta );
+    //return - K * exp( - 0.1 * hzeta * hzeta ) * ( 1. - 2 * 0.1 * hzeta * hzeta );
 
   }
 }; // End of class mySelfSimInjection
@@ -26,21 +26,21 @@ int main()
   cout << "*** ------- Vortex-wave interaction ------- ***" << endl;
 
   // Define the domain + short scale injection parameters
-  double hzeta_right( 30.0 );       // Size of the domain in the zeta_hat direction
-  double eta_top( 30.0 );           // Size of the domain in the eta direction
-  const std::size_t N( 200 );       // Number of intervals in the zeta_hat direction
-  const std::size_t M( 200 );       // Number of intervals in the eta direction
+  double hzeta_right( 32.0 );       // Size of the domain in the zeta_hat direction
+  double eta_top( 32.0 );           // Size of the domain in the eta direction
+  const std::size_t N( 300 );       // Number of intervals in the zeta_hat direction
+  const std::size_t M( 300 );       // Number of intervals in the eta direction
   const std::size_t MB( M * 100 );  // Number of eta intervals in the base flow ODE
   double beta( 0.5 );               // Hartree parameter
   double zeta0( 1.0 );              // Transpiration width
-  double K( 8.0 );                  // Transpiration parameter ( +ve = blowing )
-  double alpha( 0.05 );              // Wavenumber (alpha hat)
+  double K( 9.0 );                  // Transpiration parameter ( +ve = blowing )
+  double alpha( 0.15 );              // Wavenumber (alpha hat)
   double Rx( 500 * 500 );            // Local Reynolds number
   double Sigma( 0.0 );              // Wave amplitude
 
-  double K_min( 7.0 );
+  double K_min( 0.0 );
   double K_step( 0.1 );
-  double Sigma_step( 10.0 );
+  double Sigma_step( 0.1 );
 
   // Solve the self similar injection flow
   mySelfSimInjection SSI;
@@ -125,14 +125,25 @@ int main()
       TwoD_node_mesh< std::complex<double> > v( evecs.xnodes(), evecs.ynodes(), 1 );
       TwoD_node_mesh< std::complex<double> > w( evecs.xnodes(), evecs.ynodes(), 1 );
 
-      //TODO normalise the eigenvectors ?
-
       for ( std::size_t i=0; i<evecs.xnodes().size(); ++i )
       {
         for ( std::size_t j=0; j<evecs.ynodes().size(); ++j )
         {
           v( i, j, 0 ) = evecs( i, j, 0 );
           w( i, j, 0 ) = evecs( i, j, 1 );
+        }
+      }
+
+      // Normalise the eigenvectors
+      double norm;
+      norm = real( v.square_integral2D() + w.square_integral2D() );
+
+      for ( std::size_t i=0; i<evecs.xnodes().size(); ++i )
+      {
+        for ( std::size_t j=0; j<evecs.ynodes().size(); ++j )
+        {
+          v( i, j, 0 ) = v( i, j, 0 ) / norm;
+          w( i, j, 0 ) = w( i, j, 0 ) / norm;
         }
       }
 
@@ -165,21 +176,17 @@ int main()
     cout << "  * Sigma = " << SSI.wave_amplitude() << endl;
     cout << "  * K = " << SSI.injection() << endl;
     // Decide how to vary K and Sigma and then resolve self-similar eqns
-    if ( c_i > 0.01 )
+    if ( c_i > 0.0 )
     {
       SSI.injection() -= K_step;
       cout << "*** Stepping in K ***" << endl;
       SSI.solve();
     }
-    else if ( c_i < 0.01 && c_i > 0.0 )
+    else
     {
       SSI.wave_amplitude() += Sigma_step;
       cout << "*** Stepping in sigma ***" << endl;
       SSI.solve();
-    }
-    else
-    {
-      break;
     }
 
   }while( SSI.injection() > K_min );

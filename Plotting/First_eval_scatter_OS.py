@@ -8,13 +8,14 @@ hide_axis_labels = False
 legend = True
 legend_text_colour = "red"
 
-K_vals = [1, 2, 3, 4, 5]
-#K_vals = [8, 9, 10, 11, 12]
-N = 601
-beta = 0
+R = 3000 * 3000
+K_vals = [9]
+N = 301
+beta = 0.5
 zeta0 = 1
 markers = [".", "^", "o", "*", "v", "+", "D"]
 markercycler = cycle(markers)
+
 
 back_data = True
 
@@ -25,7 +26,7 @@ print "K\talpha_max\tmax_growth_rate"
 
 for K in K_vals :
 
-    data = np.loadtxt("./DATA/K_"+ str(K) + "_zeta0_1_beta_"+ str(beta) + "_" + str(N) + "x" + str(N) + "_32_32/First_eval.dat")
+    data = np.loadtxt("./DATA/K_"+ str(K) + "_zeta0_1_beta_"+ str(beta) + "_" + str(N) + "x" + str(N) + "_32_32/First_eval_R_" + str(R) + ".dat")
 
     alpha = data[:,0]
     c_real = data[:,1]
@@ -36,10 +37,10 @@ for K in K_vals :
     alpha_max_growth = alpha[index]
 
     marker = next(markercycler)
-    plt.scatter(alpha, c_imag, c="black", marker=marker, clip_on=False, label=" K = " + str(K) )
+    plt.scatter(alpha, c_imag, c="black", marker=marker, clip_on=False, label=" K = " + str(K) + ", Rx^1/2 = " + str(R**0.5) )
 
     if back_data:
-        data_back = np.loadtxt("./DATA/K_"+ str(K) + "_zeta0_1_beta_"+ str(beta) + "_" + str(N) + "x" + str(N) + "_32_32/First_eval_back.dat")
+        data_back = np.loadtxt("./DATA/K_"+ str(K) + "_zeta0_1_beta_"+ str(beta) + "_" + str(N) + "x" + str(N) + "_32_32/First_eval_back_R_" + str(R) + ".dat")
         alpha_back = data_back[:,0]
         c_real_back = data_back[:,1]
         c_imag_back = data_back[:,2]
@@ -55,7 +56,7 @@ for K in K_vals :
 
 axes = plt.gca()
 axes.set_xlim([0,0.65])
-axes.set_ylim([0,0.12])
+axes.set_ylim([-0.05,0.05])
 axes.set_axisbelow(True)
 plt.grid(True)
 
@@ -68,6 +69,6 @@ if hide_axis_labels:
     axes.xaxis.set_ticklabels([])
     axes.yaxis.set_ticklabels([])
 if save_fig:
-    plt.savefig("./figs/First_eval_scatter_beta_" + str(beta) + "_zeta0_" + str(zeta0) + ".eps", format='eps', dpi=1000)
+    plt.savefig("./figs/First_eval_scatter_beta_" + str(beta) + "_R_" + str(R) + ".eps", format='eps', dpi=1000)
 
 plt.show()

@@ -14,9 +14,9 @@ class mySelfSimInjection : public SelfSimInjection {
 public:
   // Define the injection function
   double Phi_w_func( const double& hzeta ){
-    //return - K * exp( - hzeta * hzeta );
+    return - K * exp( - hzeta * hzeta );
     // Rich's function
-    return - K * exp( - 0.1 * hzeta * hzeta ) * ( 1. - 2 * 0.1 * hzeta * hzeta );
+    //return - K * exp( - 0.1 * hzeta * hzeta ) * ( 1. - 2 * 0.1 * hzeta * hzeta );
 
   }
 }; // End of class mySelfSimInjection
@@ -26,16 +26,20 @@ int main()
   cout << "*** ------- Solving the 2D OrrSommerfeld equation (EVP) ------- ***" << endl;
 
   // Define the domain + short scale injection parameters
-  double hzeta_right( 30.0 );       // Size of the domain in the zeta_hat direction
-  double eta_top( 30.0 );           // Size of the domain in the eta direction
-  const std::size_t N( 300 );       // Number of intervals in the zeta_hat direction
-  const std::size_t M( 300 );       // Number of intervals in the eta direction
+  double hzeta_right( 32.0 );       // Size of the domain in the zeta_hat direction
+  double eta_top( 32.0 );           // Size of the domain in the eta direction
+  const std::size_t N( 600 );       // Number of intervals in the zeta_hat direction
+  const std::size_t M( 600 );       // Number of intervals in the eta direction
   const std::size_t MB( M * 100 );  // Number of eta intervals in the base flow ODE
   double beta( 0.5 );               // Hartree parameter
   double zeta0( 1.0 );              // Transpiration width
-  double K( 8.0 );                  // Transpiration parameter ( +ve = blowing )
-  double alpha( 0.05 );              // Wavenumber (alpha hat)
-  double Rx( 500 * 500 );           // Local Reynolds number
+  double K( 9.0 );                  // Transpiration parameter ( +ve = blowing )
+  double alpha( 0.1 );              // Wavenumber (alpha hat)
+  double Rx( 5000 * 5000 );           // Local Reynolds number
+
+  std::complex<double> target(0.8,0.03); // Target for eigensolver
+  double alpha_max( 0.5 );
+  double alpha_min( 0.01 );
 
   // Solve the self similar injection flow
   mySelfSimInjection SSI;
@@ -118,15 +122,23 @@ int main()
 
   // Setup
   orrsommerfeld_2D.set_region(0.1,1.0,-1.0,1.0);
-  orrsommerfeld_2D.set_target( std::complex<double>(0.46,0.01) );
+  orrsommerfeld_2D.set_target( target );
   orrsommerfeld_2D.set_order( "EPS_TARGET_IMAGINARY" );
   orrsommerfeld_2D.calc_eigenvectors() = true;
 
   // Solve
-  orrsommerfeld_2D.solve_evp();
-  orrsommerfeld_2D.output();
+  //orrsommerfeld_2D.solve_evp();
+  //orrsommerfeld_2D.output();
 
-  //orrsommerfeld_2D.step_in_alpha( 0.01, 0.5 );
+  orrsommerfeld_2D.step_in_alpha( 0.01, alpha_max );
+
+  // Step backwards in alpha
+  OrrSommerfeld_2D orrsommerfeld_2D_back( SSI, alpha, Rx, nev );
+  orrsommerfeld_2D_back.set_region(0.1,1.0,-1.0,1.0);
+  orrsommerfeld_2D_back.set_target( target );
+  orrsommerfeld_2D_back.set_order( "EPS_TARGET_IMAGINARY" );
+  orrsommerfeld_2D_back.calc_eigenvectors() = true;
+  orrsommerfeld_2D_back.step_back_in_alpha( 0.01, alpha_min );
 
   timer.print();
   timer.stop();

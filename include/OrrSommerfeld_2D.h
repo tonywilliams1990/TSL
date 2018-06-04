@@ -132,8 +132,11 @@ namespace TSL
       /// Solve the sparse eigenvalue problem using SLEPc
       void solve_evp();
 
-      /// Solve the eigenvalue problem for whilst stepping in ALPHA
+      /// Solve the eigenvalue problem whilst stepping in ALPHA
       void step_in_alpha( const double& step, const double& max );
+
+      /// Solve the eigenvalue problem whilst stepping (backwards) in ALPHA
+      void step_back_in_alpha( const double& step, const double& min );
 
       /// Iterate on the wavenumber to drive first eigenvalue to neutral
       void iterate_to_neutral( const double& epsilon = 1e-3 );
@@ -151,7 +154,8 @@ namespace TSL
       /// Output the eigenvalues to a directory
       void output_eigenvalues()
       {
-        std::string eval_output_path( OUTPUT_PATH + "eigenvalues/" );
+        std::string eval_output_path( OUTPUT_PATH + "eigenvalues_R_"
+                      + Utility::stringify( RX, 10 ) + "/" );
         EIGENVALUES.output( eval_output_path + "alpha_"
                       + Utility::stringify( ALPHA, 3 ) + "_evals.dat", 15 );
       }
@@ -159,7 +163,8 @@ namespace TSL
       /// Output the eigenvectors to a directory
       void output_eigenvectors()
       {
-        std::string evec_output_path( OUTPUT_PATH + "eigenvectors/" );
+        std::string evec_output_path( OUTPUT_PATH + "eigenvectors_R_"
+                      + Utility::stringify( RX, 10 ) + "/" );
 
         EIGENVECTORS.dump_gnu( evec_output_path + "alpha_"
                       + Utility::stringify( ALPHA, 3 ) + "_evecs.dat" );
@@ -169,14 +174,16 @@ namespace TSL
       void make_output_directory()
       {
         // Make eigenvalue directory
-        std::string eval_output_path( OUTPUT_PATH + "eigenvalues/" );
+        std::string eval_output_path( OUTPUT_PATH + "eigenvalues_R_"
+                      + Utility::stringify( RX, 10 ) + "/" );
         int status = mkdir( eval_output_path.c_str(), S_IRWXU );
         if ( status == 0 ) {
         std::cout << "  * Eigenvalue directory created successfully" << std::endl;
         }
         // Make eigenvector directory
         if ( CALC_EIGENVECTORS ){
-          std::string evec_output_path( OUTPUT_PATH + "eigenvectors/" );
+          std::string evec_output_path( OUTPUT_PATH + "eigenvectors_R_"
+                        + Utility::stringify( RX, 10 ) + "/" );
           int status = mkdir( evec_output_path.c_str(), S_IRWXU );
           if ( status == 0 ) {
           std::cout << "  * Eigenvector directory created successfully" << std::endl;
@@ -793,7 +800,7 @@ namespace TSL
     std::cout << "*** Iterating on the wavenumber ***" << std::endl;
     make_output_directory();
 
-    TrackerFile metric( OUTPUT_PATH + "First_eval.dat" );
+    TrackerFile metric( OUTPUT_PATH + "First_eval_R_" + Utility::stringify( RX, 10 ) + ".dat" );
     std::complex<double> first_eval;
     metric.push_ptr( &ALPHA, "Wavenumber (alpha)");
     metric.push_ptr( &first_eval, "1st eigenvalue" );
@@ -818,6 +825,38 @@ namespace TSL
       timer.start();
 
     }while ( ALPHA <= max );
+  }
+
+  void OrrSommerfeld_2D::step_back_in_alpha( const double& step, const double& min )
+  {
+    std::cout << "*** Iterating on the wavenumber ***" << std::endl;
+    make_output_directory();
+
+    TrackerFile metric( OUTPUT_PATH + "First_eval_back_R_" + Utility::stringify( RX, 10 ) + ".dat" );
+    std::complex<double> first_eval;
+    metric.push_ptr( &ALPHA, "Wavenumber (alpha)");
+    metric.push_ptr( &first_eval, "1st eigenvalue" );
+    metric.header();
+
+    Timer timer;
+    timer.start();
+
+    do {
+      std::cout << "*** alpha = " << ALPHA << std::endl;
+      solve_evp();
+      first_eval = EIGENVALUES[ 0 ];
+      metric.update();
+      output_eigenvalues();
+      if ( CALC_EIGENVECTORS ){ output_eigenvectors(); }
+      TARGET = first_eval;
+      ALPHA -= step;
+
+      timer.print();
+      timer.stop();
+      timer.reset();
+      timer.start();
+
+    }while ( ALPHA >= min );
   }
 
   void OrrSommerfeld_2D::iterate_to_neutral( const double& epsilon )
