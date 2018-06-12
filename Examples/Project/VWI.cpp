@@ -33,14 +33,14 @@ int main()
   const std::size_t MB( M * 100 );  // Number of eta intervals in the base flow ODE
   double beta( 0.5 );               // Hartree parameter
   double zeta0( 1.0 );              // Transpiration width
-  double K( 9.0 );                  // Transpiration parameter ( +ve = blowing )
-  double alpha( 0.15 );              // Wavenumber (alpha hat)
-  double Rx( 500 * 500 );            // Local Reynolds number
+  double K( 8.0 );                  // Transpiration parameter ( +ve = blowing )
+  double alpha( 0.1 );              // Wavenumber (alpha hat)
+  double Rx( 5000 * 5000 );            // Local Reynolds number
   double Sigma( 0.0 );              // Wave amplitude
 
   double K_min( 0.0 );
   double K_step( 0.1 );
-  double Sigma_step( 0.1 );
+  double Sigma_step( 25.0 );
 
   // Solve the self similar injection flow
   mySelfSimInjection SSI;
@@ -89,7 +89,7 @@ int main()
 
   // Turn on forcing
   SSI.forcing( true );
-  SSI.wave_amplitude() = 1;
+  SSI.wave_amplitude() = 500;
 
   /* Setup the stability equations */
   // Create the OrrSommerfeld_2D object
@@ -98,7 +98,7 @@ int main()
 
   // Setup
   orrsommerfeld_2D.set_region(0.1,1.0,-1.0,1.0);
-  orrsommerfeld_2D.set_target( std::complex<double>(0.46,0.01) );
+  orrsommerfeld_2D.set_target( std::complex<double>(0.776,0.023) );
   orrsommerfeld_2D.set_order( "EPS_TARGET_IMAGINARY" );
   orrsommerfeld_2D.calc_eigenvectors() = true;
   double c_i( 0.0 ); // Imaginary part of eigenvalue
@@ -135,17 +135,18 @@ int main()
       }
 
       // Normalise the eigenvectors
-      double norm;
-      norm = real( v.square_integral2D() + w.square_integral2D() );
+      /*double norm_v, norm_w;
+      norm_v = real( v.square_integral2D() );
+      norm_w = real( w.square_integral2D() );
 
       for ( std::size_t i=0; i<evecs.xnodes().size(); ++i )
       {
         for ( std::size_t j=0; j<evecs.ynodes().size(); ++j )
         {
-          v( i, j, 0 ) = v( i, j, 0 ) / norm;
-          w( i, j, 0 ) = w( i, j, 0 ) / norm;
+          v( i, j, 0 ) = v( i, j, 0 ) / norm_v;
+          w( i, j, 0 ) = w( i, j, 0 ) / norm_w;
         }
-      }
+      }*/
 
       // Pass to SSI object to create forcing terms
       SSI.set_v_wave( v );

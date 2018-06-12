@@ -28,8 +28,8 @@ int main()
   // Define the domain + short scale injection parameters
   double hzeta_right( 32.0 );       // Size of the domain in the zeta_hat direction
   double eta_top( 32.0 );           // Size of the domain in the eta direction
-  const std::size_t N( 600 );       // Number of intervals in the zeta_hat direction
-  const std::size_t M( 600 );       // Number of intervals in the eta direction
+  const std::size_t N( 300 );       // Number of intervals in the zeta_hat direction
+  const std::size_t M( 300 );       // Number of intervals in the eta direction
   const std::size_t MB( M * 100 );  // Number of eta intervals in the base flow ODE
   double beta( 0.5 );               // Hartree parameter
   double zeta0( 1.0 );              // Transpiration width
