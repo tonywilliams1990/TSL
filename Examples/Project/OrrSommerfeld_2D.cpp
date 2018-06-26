@@ -33,11 +33,11 @@ int main()
   const std::size_t MB( M * 100 );  // Number of eta intervals in the base flow ODE
   double beta( 0.5 );               // Hartree parameter
   double zeta0( 1.0 );              // Transpiration width
-  double K( 9.0 );                  // Transpiration parameter ( +ve = blowing )
+  double K( 0.0 );                  // Transpiration parameter ( +ve = blowing )
   double alpha( 0.1 );              // Wavenumber (alpha hat)
   double Rx( 5000 * 5000 );           // Local Reynolds number
 
-  std::complex<double> target(0.8,0.03); // Target for eigensolver
+  std::complex<double> target(0.87,-0.1); // Target for eigensolver
   double alpha_max( 0.5 );
   double alpha_min( 0.01 );
 
@@ -127,18 +127,18 @@ int main()
   orrsommerfeld_2D.calc_eigenvectors() = true;
 
   // Solve
-  //orrsommerfeld_2D.solve_evp();
-  //orrsommerfeld_2D.output();
+  orrsommerfeld_2D.solve_evp();
+  orrsommerfeld_2D.output();
 
-  orrsommerfeld_2D.step_in_alpha( 0.01, alpha_max );
+  //orrsommerfeld_2D.step_in_alpha( 0.01, alpha_max );
 
   // Step backwards in alpha
-  OrrSommerfeld_2D orrsommerfeld_2D_back( SSI, alpha, Rx, nev );
+  /*OrrSommerfeld_2D orrsommerfeld_2D_back( SSI, alpha, Rx, nev );
   orrsommerfeld_2D_back.set_region(0.1,1.0,-1.0,1.0);
   orrsommerfeld_2D_back.set_target( target );
   orrsommerfeld_2D_back.set_order( "EPS_TARGET_IMAGINARY" );
   orrsommerfeld_2D_back.calc_eigenvectors() = true;
-  orrsommerfeld_2D_back.step_back_in_alpha( 0.01, alpha_min );
+  orrsommerfeld_2D_back.step_back_in_alpha( 0.01, alpha_min );*/
 
   timer.print();
   timer.stop();

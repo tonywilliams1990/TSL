@@ -8,16 +8,16 @@ show_fig_2 = False
 show_fig_3 = False
 show_vel = True
 
-save_fig = True
+save_fig = False
 
 zeta0 = 1
 beta = 0.5
-K = 9
-R = 20000
-alpha = 0.23
+K = 0
+R = 5000
+alpha = 0.1
 number_of_levels = 11
 
-data = np.loadtxt("./DATA/K_"+ str(K) + "_zeta0_" + str(zeta0) + "_beta_"+ str(beta) + "_601x601_32_32/eigenvectors_R_"+ str(R*R) +"/alpha_"+ str(alpha) + "_evecs.dat")
+data = np.loadtxt("./DATA/K_"+ str(K) + "_zeta0_" + str(zeta0) + "_beta_"+ str(beta) + "_301x301_32_32/eigenvectors_R_"+ str(R*R) +"/alpha_"+ str(alpha) + "_evecs.dat")
 
 zeta_hat = data[:,0]
 eta = data[:,1]
@@ -35,9 +35,6 @@ w = evec2_abs / np.max(evec2_abs)
 vel = np.sqrt( v * v + w * w )
 vel = vel / np.max(vel)
 
-#TODO not sure if this is the correct in-plane velocity
-
-#TODO what if there is more than one eigenvalue ???
 
 min_x = np.min(zeta_hat)
 #max_x = np.max(zeta_hat)

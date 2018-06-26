@@ -26,6 +26,8 @@ env.Program( 'Test/Complex_Eigen_test.out' , ['Test/Complex_Eigen_test.cpp'] , O
 env.Program( 'Test/Complex_Sparse_Eigen_test.out', ['Test/Complex_Sparse_Eigen_test.cpp'], OPTS = opts, LIBS = libs) #SparseEigenSystem
 env.Program( 'Test/SelfSimInjection_test.out', ['Test/SelfSimInjection_test.cpp'], OPTS = opts, LIBS = libs) #SelfSimInjection
 env.Program( 'Test/Rayleigh_2D_test.out', ['Test/Rayleigh_2D_test.cpp'], OPTS = opts, LIBS = libs) #Rayleigh_2D
+env.Program( 'Test/VWI_test.out' , ['Test/VWI_test.cpp'] , OPTS = opts, LIBS = libs )
+env.Program( 'Test/VWI_test_2.out' , ['Test/VWI_test_2.cpp'] , OPTS = opts, LIBS = libs )
 
 # Project codes
 

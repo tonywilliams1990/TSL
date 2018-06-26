@@ -104,23 +104,16 @@ int main()
   double c_i( 0.0 ); // Imaginary part of eigenvalue
 
   do {
-
-    /* Iterate */
-    double max_residual( 0.0 );
-    std::size_t iteration( 0 );
-    std::size_t max_iterations( 20 );
-
-    do {
-
       /* Solve the stability equations */
       cout << "*** Solving the stability equations for v and w ***" << endl;
       orrsommerfeld_2D.update_SSI( SSI );
+
       Timer timer_OS;
       timer_OS.start();
       orrsommerfeld_2D.solve_evp();
       timer_OS.print();
       timer_OS.stop();
-      //orrsommerfeld_2D.set_target( orrsommerfeld_2D.eigenvalues()[0] );
+      //orrsommerfeld_2D.set_target( orrsommerfeld_2D.eigenvalues()[0] );//TODO (added this)
 
       // Return eigenvectors
       TwoD_node_mesh< std::complex<double> > evecs;
@@ -157,75 +150,44 @@ int main()
       SSI.set_w_wave( w );
 
       /* Solve the streak equations (with forcing) */
-      cout << "*** Solving the streak equations (with forcing) ***" << endl;
+      //cout << "*** Solving the streak equations (with forcing) ***" << endl;
 
-      SSI.solve();
-      new_sol = SSI.solution();
-      cout << "  * A = " << SSI.mass_flux() << endl;
+      //SSI.solve();
+      //new_sol = SSI.solution();
+      //cout << "  * A = " << SSI.mass_flux() << endl;
+      //sol = new_sol;
 
-      // Calculate the difference
-      diff = sol - new_sol;
-      //diff.dump( "./diff_dump.dat" );
-      Vector<double> diff_vars;
-      diff_vars = diff.get_vars();
-      max_residual = diff_vars.norm_inf();
-      cout << "  * max_residual = " << max_residual << endl;
+      c_i = orrsommerfeld_2D.eigenvalues()[0].imag();
+      cout << "  * c_i = " << c_i << endl;
+      cout << "  * Sigma = " << SSI.wave_amplitude() << endl;
+      cout << "  * K = " << SSI.injection() << endl;
+      // Decide how to vary K and Sigma and then resolve self-similar eqns
 
-      sol = new_sol;
-
-      ++iteration;
-    }while( ( max_residual > 1e-3 ) && ( iteration < max_iterations ) );
-
-    c_i = orrsommerfeld_2D.eigenvalues()[0].imag();
-    cout << "  * c_i = " << c_i << endl;
-    cout << "  * Sigma = " << SSI.wave_amplitude() << endl;
-    cout << "  * K = " << SSI.injection() << endl;
-    // Decide how to vary K and Sigma and then resolve self-similar eqns
-
-    /*if ( SSI.injection() <= 4.0 )
-    {
-      K_step = 0.2;
-    }
-
-    if ( SSI.injection() <= 1.0 )
-    {
-      K_step = 0.1;
-    }
-
-    if ( SSI.wave_amplitude() >= 1.5 )
-    {
-      Sigma_step = 0.1;
-    }
-
-    if ( SSI.wave_amplitude() >= 2.0 )
-    {
-      Sigma_step = 0.05;
-    }*/
-
-    if ( c_i > 0.0 )
-    {
-      SSI.injection() -= K_step;
-      cout << "*** Stepping in K ***" << endl;
-      SSI.solve();
-    }
-    else
-    {
-      SSI.wave_amplitude() += Sigma_step;
-      cout << "*** Stepping in sigma ***" << endl;
-      SSI.solve();
-    }
-
+      if ( c_i > 0.0 )
+      {
+        SSI.injection() -= K_step;
+        cout << "*** Stepping in K ***" << endl;
+        SSI.solve();
+      }
+      else
+      {
+        SSI.wave_amplitude() += Sigma_step;
+        cout << "*** Stepping in sigma ***" << endl;
+        SSI.solve();
+      }
 
   }while( SSI.injection() > K_min );
 
-
-
+  c_i = orrsommerfeld_2D.eigenvalues()[0].imag();
+  cout << "  * c_i = " << c_i << endl;
+  cout << "  * Sigma = " << SSI.wave_amplitude() << endl;
+  cout << "  * K = " << SSI.injection() << endl;
   SSI.injection() = K_min;
-
   // Iterate to convergence
+  cout << "*** Iterating to convergence ***" << endl;
   double max_residual( 0.0 );
   std::size_t iteration( 0 );
-  std::size_t max_iterations( 20 );
+  std::size_t max_iterations( 50 );
 
   do {
 
@@ -292,6 +254,7 @@ int main()
   cout << "  * c_i = " << c_i << endl;
   cout << "  * Sigma = " << SSI.wave_amplitude() << endl;
   cout << "  * K = " << SSI.injection() << endl;
+
 
   //Extra to refine sigma??
   std::size_t sigma_iteration( 0 );
