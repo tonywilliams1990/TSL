@@ -38,10 +38,10 @@ int main()
   cout << "*** ------- Solving the 2D OrrSommerfeld equation (Global) ------- ***" << endl;
 
   // Define the domain + short scale injection parameters
-  double hzeta_right( 20.0 );       // Size of the domain in the zeta_hat direction
-  double eta_top( 20.0 );           // Size of the domain in the eta direction
-  std::size_t N( 100 );       // Number of intervals in the zeta_hat direction
-  std::size_t M( 100 );       // Number of intervals in the eta direction
+  double hzeta_right( 32.0 );       // Size of the domain in the zeta_hat direction
+  double eta_top( 32.0 );           // Size of the domain in the eta direction
+  std::size_t N( 150 );       // Number of intervals in the zeta_hat direction
+  std::size_t M( 150 );       // Number of intervals in the eta direction
   std::size_t MB( M * 100 );  // Number of eta intervals in the base flow ODE
   double beta( 0.5 );               // Hartree parameter
   double zeta0( 1.0 );              // Transpiration width
@@ -151,8 +151,8 @@ int main()
 
   // Redefine the SSI mesh and resolve
   cout << "*** Solving the self-similar flow on a refined mesh ***" << endl;
-  N = 100;
-  M = 100;
+  N = 200;
+  M = 200;
   MB = M * 100;
   cout << "  * N = " << N << ", M = " << M << endl;
   SSI.hzeta_intervals() = N;
@@ -803,7 +803,7 @@ int main()
                             * ( Guess_hzeta[ U ] )
                             - ( Base[ PhiB ] + Guess[ Phi ] ) * Guess_eta[ U ]
                             - Base[UBd] * Guess[Phi];
-                            + std::pow( Rx, -2.0/3.0 ) * Sigma * Sigma * F_1;
+                            //+ std::pow( Rx, -2.0/3.0 ) * Sigma * Sigma * F_1;
           ++row;
 
 
@@ -897,11 +897,11 @@ int main()
                           * ( Guess_hzeta[ Theta ] ) - Guess[ Psi ] * Base[ ThetaB ]
                           - ( 2. - beta ) * ( ( Base[ UB ] + Guess[ U ] )
                           * Guess[ Theta ] + hzeta * Base[ ThetaB ] * Guess[ U ] );
-                          + std::pow( Rx, -1.0/6.0 ) * Sigma * Sigma * F_2;
+                          //+ std::pow( Rx, -1.0/6.0 ) * Sigma * Sigma * F_2;
           ++row;
 
       }
-      
+
       // eta = eta_inf boundary ( top boundary )
       j = M ;
       eta = ETA_NODES[ j ];

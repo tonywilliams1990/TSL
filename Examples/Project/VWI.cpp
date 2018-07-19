@@ -98,7 +98,7 @@ int main()
 
   // Setup
   orrsommerfeld_2D.set_region(0.1,1.0,-1.0,1.0);
-  orrsommerfeld_2D.set_target( std::complex<double>(0.76,0.01) );
+  orrsommerfeld_2D.set_target( std::complex<double>(0.8,-0.01) );
   orrsommerfeld_2D.set_order( "EPS_TARGET_IMAGINARY" );
   orrsommerfeld_2D.calc_eigenvectors() = true;
   double c_i( 0.0 ); // Imaginary part of eigenvalue

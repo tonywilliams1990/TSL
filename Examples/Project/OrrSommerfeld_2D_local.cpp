@@ -172,7 +172,8 @@ int main()
 
   evecs.remesh1( HZETA_NODES, ETA_NODES );
 
-  // Normalise the eigenvector
+  // Normalise the eigenvectors
+
   int v = static_cast<int>(OS_2D::v);
   int w = static_cast<int>(OS_2D::w);
   int q = static_cast<int>(OS_2D::q);
