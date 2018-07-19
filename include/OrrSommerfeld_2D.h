@@ -20,7 +20,7 @@
 
 #include "Eigenvalue"
 
-enum{ v, w, q, s };
+enum class OS_2D{ v, w, q, s };
 
 namespace TSL
 {
@@ -195,10 +195,11 @@ namespace TSL
 
   void OrrSommerfeld_2D::solve_evp()
   {
-    //std::cout << "*** Setting up the generalised eigenvalue problem ***" << std::endl;
-    //std::cout << "--- K = " << SSI.injection() << ", alpha = " << ALPHA << std::endl;
     SlepcInitialize(NULL,NULL,(char*)0,(char*)0);
-
+    int v = static_cast<int>(OS_2D::v);
+    int w = static_cast<int>(OS_2D::w);
+    int q = static_cast<int>(OS_2D::q);
+    int s = static_cast<int>(OS_2D::s);
     // Create the sparse matrices
     std::size_t N( SSI.hzeta_intervals() ); //TODO make N and M member variables?
     std::size_t M( SSI.eta_intervals() );

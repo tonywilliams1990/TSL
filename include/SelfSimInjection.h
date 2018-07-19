@@ -21,7 +21,7 @@
 // Enumerations
 enum{ f, fd, fdd, g, gd, gdd };                               // Base ODE
 enum{ UB, UBd, PhiB, ThetaB, ThetaBd, PsiB };                 // Base ODE
-enum{ Phi, Psi, U, Theta };                                   // PDE
+enum class SelfSim{ Phi, Psi, U, Theta };                     // PDE
 
 namespace TSL
 {
@@ -849,6 +849,10 @@ namespace TSL
       void solve_perturbation_eqns()
       {
         std::cout << "*** Solving the perturbation equations ***" << std::endl;
+        int Phi = static_cast<int>(SelfSim::Phi);
+        int Psi = static_cast<int>(SelfSim::Psi);
+        int U = static_cast<int>(SelfSim::U);
+        int Theta = static_cast<int>(SelfSim::Theta);
 
         TwoD_node_mesh<double> q( X_NODES, Y_NODES, 4 );
         TwoD_node_mesh<double> q_output( HZETA_NODES, ETA_NODES, 8 );
@@ -903,7 +907,8 @@ namespace TSL
 
             // Psi = 0
             A( row, col( i, j, Psi ) )      =   1;
-            B[ row ]                        = - ( Q( i, j, Psi ) );
+
+            B[ row ]                        = - Q( i, j, Psi );
             ++row;
 
             // U_hzeta = 0
@@ -917,6 +922,7 @@ namespace TSL
 
             // Theta = 0
             A( row, col( i, j, Theta ) )    =   1;
+            
             B[ row ]                        = - Q( i, j, Theta );
             ++row;
 

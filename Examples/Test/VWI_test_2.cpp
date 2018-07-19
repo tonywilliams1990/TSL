@@ -26,10 +26,10 @@ int main()
   cout << "*** ------- Vortex-wave interaction ------- ***" << endl;
 
   // Define the domain + short scale injection parameters
-  double hzeta_right( 32.0 );       // Size of the domain in the zeta_hat direction
-  double eta_top( 32.0 );           // Size of the domain in the eta direction
-  const std::size_t N( 300 );       // Number of intervals in the zeta_hat direction
-  const std::size_t M( 300 );       // Number of intervals in the eta direction
+  double hzeta_right( 20.0 );       // Size of the domain in the zeta_hat direction
+  double eta_top( 20.0 );           // Size of the domain in the eta direction
+  const std::size_t N( 200 );       // Number of intervals in the zeta_hat direction
+  const std::size_t M( 200 );       // Number of intervals in the eta direction
   const std::size_t MB( M * 100 );  // Number of eta intervals in the base flow ODE
   double beta( 0.5 );               // Hartree parameter
   double zeta0( 1.0 );              // Transpiration width
@@ -38,13 +38,14 @@ int main()
   double Rx( 5000 * 5000 );         // Local Reynolds number
   double Sigma( 0.0 );              // Wave amplitude
   double Relax( 1.0 );              // Relaxation parameter
-  double tol( 1e-3 );               // Tolerance for c_i = 0
-  double conv_tol( 1e-4 );          // Convergence tolerance for inner loop
+  double tol( 1e-4 );               // Tolerance for c_i = 0
+  double conv_tol( 1e-5 );          // Convergence tolerance for inner loop
 
   double K_min( 0.0 );
-  double K_step( 0.5 );
-  double Sigma_step( 0.05 );
-  double Sigma_start( 0.1 );
+  double K_step( 0.25 );
+  double Sigma_step_initial( 0.05 );
+  double Sigma_step( Sigma_step_initial );
+  double Sigma_start( 0.25 );
 
   // Solve the self similar injection flow
   mySelfSimInjection SSI;
@@ -121,7 +122,7 @@ int main()
 
       // Iterate
       std::size_t iteration( 0 );
-      std::size_t max_iterations( 20 );
+      std::size_t max_iterations( 50 );
       double c_i_old( 0.0 );
       double c_i_diff( 0.0 );
 
@@ -213,13 +214,13 @@ int main()
         cout << "  * Sigma = " << SSI.wave_amplitude() << endl;
         c_i_plus = c_i;
         Sigma_plus = SSI.wave_amplitude();
-        SSI.wave_amplitude() = ( c_i_plus * Sigma_minus + c_i_minus * Sigma_plus )
-                              / ( c_i_plus - c_i_minus );
+        SSI.wave_amplitude() = Sigma_minus
+			     + ( c_i_minus * ( Sigma_minus - Sigma_plus ) / ( c_i_plus - c_i_minus ) );
         Sigma_step *= 0.1;
         cout << "*** Stepping in sigma ***" << endl;
         //SSI.solve();
       }
-      else if ( std::abs( c_i ) > tol )
+      else if ( c_i < 0.0 && std::abs( c_i ) > tol )
       {
         cout << "  * c_i = " << c_i << endl;
         cout << "  * Sigma = " << SSI.wave_amplitude() << endl;
@@ -270,6 +271,7 @@ int main()
     SSI.injection() -= K_step;
     cout << "*** Stepping in K ***" << endl;
     SSI.solve();
+    Sigma_step = Sigma_step_initial; // Reset sigma step
 
   }while( SSI.injection() > K_min );
 

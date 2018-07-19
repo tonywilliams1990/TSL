@@ -88,6 +88,20 @@ int main()
   Eigen::SparseLU< Eigen::SparseMatrix<double, Eigen::ColMajor, long long> > solver;
   solver.compute( C_matrix_Eigen );
 
+  // Test complex sparse matrices
+  TSL::SparseMatrix<std::complex<double>> E_matrix( 2, 2 );
+  TSL::Vector<std::complex<double>> E_vector( 2, 0.0 );
+  E_matrix( 0, 0 ) = std::complex<double>(1.0,1.0);
+  E_matrix( 0, 1 ) = std::complex<double>(-1.0,0.0);
+  E_matrix( 1, 0 ) = std::complex<double>(1.0,-1.0);
+  E_matrix( 1, 1 ) = std::complex<double>(1.0,1.0);
+  E_vector[ 0 ] = std::complex<double>(0.0,1.0);
+  E_vector[ 1 ] = std::complex<double>(1.0,0.0);
+
+  //E_matrix.print();
+  TSL::Vector<std::complex<double>> E_sol( 2, 0.0 );
+  E_sol = E_matrix.solve( E_vector );
+  cout << " E_sol = " << endl << E_sol << endl;
 
 	cout << "FINISHED" << endl;
 

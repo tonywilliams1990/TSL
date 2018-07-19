@@ -28,6 +28,7 @@ env.Program( 'Test/SelfSimInjection_test.out', ['Test/SelfSimInjection_test.cpp'
 env.Program( 'Test/Rayleigh_2D_test.out', ['Test/Rayleigh_2D_test.cpp'], OPTS = opts, LIBS = libs) #Rayleigh_2D
 env.Program( 'Test/VWI_test.out' , ['Test/VWI_test.cpp'] , OPTS = opts, LIBS = libs )
 env.Program( 'Test/VWI_test_2.out' , ['Test/VWI_test_2.cpp'] , OPTS = opts, LIBS = libs )
+env.Program( 'Test/VWI_test_3.out' , ['Test/VWI_test_3.cpp'] , OPTS = opts, LIBS = libs )
 
 # Project codes
 
@@ -47,6 +48,8 @@ env.Program( 'Project/Injection_K_step.out' , ['Project/Injection_K_step.cpp'] ,
 env.Program( 'Project/Rayleigh_2D_critical.out' , ['Project/Rayleigh_2D_critical.cpp'] , OPTS = opts, LIBS = libs )
 env.Program( 'Project/OrrSommerfeld_2D.out' , ['Project/OrrSommerfeld_2D.cpp'] , OPTS = opts, LIBS = libs )
 env.Program( 'Project/VWI.out' , ['Project/VWI.cpp'] , OPTS = opts, LIBS = libs )
+env.Program( 'Project/OrrSommerfeld_2D_local.out' , ['Project/OrrSommerfeld_2D_local.cpp'] , OPTS = opts, LIBS = libs )
+env.Program( 'Project/VWI_local.out' , ['Project/VWI_local.cpp'] , OPTS = opts, LIBS = libs )
 
 # Example Problem codes
 
@@ -55,3 +58,4 @@ env.Program( 'Problems/Falkner_Skan_marching.out' , ['Problems/Falkner_Skan_marc
 env.Program( 'Problems/Harmonic.out' , ['Problems/Harmonic.cpp'] , OPTS = opts, LIBS = libs)  #ODE_BVP
 env.Program( 'Problems/Rayleigh.out' , ['Problems/Rayleigh.cpp'] , OPTS = opts, LIBS = libs)  #EVP
 env.Program( 'Problems/OrrSommerfeld_sparse.out', ['Problems/OrrSommerfeld_sparse.cpp'] , OPTS = opts, LIBS = libs) #SparseEVP
+env.Program( 'Problems/Harmonic_local.out' , ['Problems/Harmonic_local.cpp'] , OPTS = opts, LIBS = libs)  #ODE_BVP local

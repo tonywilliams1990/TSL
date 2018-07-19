@@ -26,21 +26,26 @@ int main()
   cout << "*** ------- Vortex-wave interaction ------- ***" << endl;
 
   // Define the domain + short scale injection parameters
-  double hzeta_right( 32.0 );       // Size of the domain in the zeta_hat direction
-  double eta_top( 32.0 );           // Size of the domain in the eta direction
+  double hzeta_right( 20.0 );       // Size of the domain in the zeta_hat direction
+  double eta_top( 20.0 );           // Size of the domain in the eta direction
   const std::size_t N( 200 );       // Number of intervals in the zeta_hat direction
   const std::size_t M( 200 );       // Number of intervals in the eta direction
   const std::size_t MB( M * 100 );  // Number of eta intervals in the base flow ODE
   double beta( 0.5 );               // Hartree parameter
   double zeta0( 1.0 );              // Transpiration width
-  double K( 8.0 );                  // Transpiration parameter ( +ve = blowing )
+  double K( 0.4 );                  // Transpiration parameter ( +ve = blowing )
   double alpha( 0.1 );              // Wavenumber (alpha hat)
-  double Rx( 5000 * 5000 );            // Local Reynolds number
+  double Rx( 5000 * 5000 );         // Local Reynolds number
   double Sigma( 0.0 );              // Wave amplitude
+  double Relax( 1.0 );              // Relaxation parameter
+  double tol( 1e-4 );               // Tolerance for c_i = 0
+  double conv_tol( 1e-5 );          // Convergence tolerance for inner loop
 
   double K_min( 0.0 );
   double K_step( 0.1 );
-  double Sigma_step( 0.1 );
+  double Sigma_step_initial( 0.025 );
+  double Sigma_step( Sigma_step_initial );
+  double Sigma_start( 0.05 );
 
   // Solve the self similar injection flow
   mySelfSimInjection SSI;
@@ -76,7 +81,7 @@ int main()
 
   /* Solve streak equations (no forcing) */
   cout << "*** Solving the streak equations (no forcing) ***" << endl;
-
+  cout << "  * K = " << SSI.injection() << endl;
   SSI.solve();
   //SSI.output();
   //SSI.output_base_solution();
@@ -84,269 +89,178 @@ int main()
   base = SSI.base_flow_solution();
   cout << "  * zeta0 = " << SSI.injection_width() << ", A = " << SSI.mass_flux() << endl;
 
-  TwoD_node_mesh<double> new_sol( HZETA_NODES, ETA_NODES, 8 );
-  TwoD_node_mesh<double> diff( HZETA_NODES, ETA_NODES, 8);
+  //TwoD_node_mesh<double> new_sol( HZETA_NODES, ETA_NODES, 8 );
+  //TwoD_node_mesh<double> diff( HZETA_NODES, ETA_NODES, 8);
 
   // Turn on forcing
   SSI.forcing( true );
-  SSI.wave_amplitude() = 0.1;
+  SSI.wave_amplitude() = Sigma_start;
 
-  /* Setup the stability equations */
-  // Create the OrrSommerfeld_2D object
+  // Setup the stability equations
   std::size_t nev( 1 );
   OrrSommerfeld_2D orrsommerfeld_2D( SSI, alpha, Rx, nev );
-
-  // Setup
   orrsommerfeld_2D.set_region(0.1,1.0,-1.0,1.0);
-  orrsommerfeld_2D.set_target( std::complex<double>(0.76,0.01) );
+  //std::complex<double> target(0.87,-0.19);
+  std::complex<double> target(0.931,-0.19); // 201x201
+  //orrsommerfeld_2D.set_target( std::complex<double>(0.76,0.0) );
+  orrsommerfeld_2D.set_target( target );
   orrsommerfeld_2D.set_order( "EPS_TARGET_IMAGINARY" );
   orrsommerfeld_2D.calc_eigenvectors() = true;
   double c_i( 0.0 ); // Imaginary part of eigenvalue
+  double c_r( 0.0 ); // Real part of eigenvalue
 
-  do {
-      /* Solve the stability equations */
-      cout << "*** Solving the stability equations for v and w ***" << endl;
-      orrsommerfeld_2D.update_SSI( SSI );
+  // Output K and Sigma to file
+  //TrackerFile metric( "./DATA/K_vs_Sigma_alpha_" + Utility::stringify( alpha, 3 ) + ".dat" );
+  //metric.push_ptr( &SSI.injection(), "K" );
+  //metric.push_ptr( &SSI.wave_amplitude(), "Sigma" );
+  //metric.push_ptr( &c_i, "c_i" );
+  //metric.header();
 
-      Timer timer_OS;
-      timer_OS.start();
-      orrsommerfeld_2D.solve_evp();
-      timer_OS.print();
-      timer_OS.stop();
-      //orrsommerfeld_2D.set_target( orrsommerfeld_2D.eigenvalues()[0] );//TODO (added this)
+  TrackerFile metric( "./DATA/ci_vs_Sigma_K_" + Utility::stringify( SSI.injection(), 3 ) + ".dat" );
+  metric.push_ptr( &SSI.wave_amplitude(), "Sigma" );
+  metric.push_ptr( &c_i, "c_i" );
 
-      // Return eigenvectors
-      TwoD_node_mesh< std::complex<double> > evecs;
-      evecs = orrsommerfeld_2D.eigenvectors(); // v, w, q, s
+  //TODO need to iterate on K eventually
 
-      // Put into separate v and w meshes
-      TwoD_node_mesh< std::complex<double> > v( evecs.xnodes(), evecs.ynodes(), 1 );
-      TwoD_node_mesh< std::complex<double> > w( evecs.xnodes(), evecs.ynodes(), 1 );
+    double c_i_minus, c_i_plus, Sigma_minus, Sigma_plus;
 
-      for ( std::size_t i=0; i<evecs.xnodes().size(); ++i )
-      {
-        for ( std::size_t j=0; j<evecs.ynodes().size(); ++j )
-        {
-          v( i, j, 0 ) = evecs( i, j, 0 );
-          w( i, j, 0 ) = evecs( i, j, 1 );
-        }
-      }
-
-      // Normalise the eigenvectors
-      double norm;
-      norm= real( v.square_integral2D() + w.square_integral2D() );
-
-      for ( std::size_t i=0; i<evecs.xnodes().size(); ++i )
-      {
-        for ( std::size_t j=0; j<evecs.ynodes().size(); ++j )
-        {
-          v( i, j, 0 ) = v( i, j, 0 ) / norm;
-          w( i, j, 0 ) = w( i, j, 0 ) / norm;
-        }
-      }
-
-      // Pass to SSI object to create forcing terms
-      SSI.set_v_wave( v );
-      SSI.set_w_wave( w );
-
-      /* Solve the streak equations (with forcing) */
-      //cout << "*** Solving the streak equations (with forcing) ***" << endl;
-
-      //SSI.solve();
-      //new_sol = SSI.solution();
-      //cout << "  * A = " << SSI.mass_flux() << endl;
-      //sol = new_sol;
-
-      c_i = orrsommerfeld_2D.eigenvalues()[0].imag();
-      cout << "  * c_i = " << c_i << endl;
-      cout << "  * Sigma = " << SSI.wave_amplitude() << endl;
-      cout << "  * K = " << SSI.injection() << endl;
-      // Decide how to vary K and Sigma and then resolve self-similar eqns
-
-      if ( c_i > 0.0 )
-      {
-        SSI.injection() -= K_step;
-        cout << "*** Stepping in K ***" << endl;
-        SSI.solve();
-      }
-      else
-      {
-        SSI.wave_amplitude() += Sigma_step;
-        cout << "*** Stepping in sigma ***" << endl;
-        SSI.solve();
-      }
-
-  }while( SSI.injection() > K_min );
-
-  c_i = orrsommerfeld_2D.eigenvalues()[0].imag();
-  cout << "  * c_i = " << c_i << endl;
-  cout << "  * Sigma = " << SSI.wave_amplitude() << endl;
-  cout << "  * K = " << SSI.injection() << endl;
-  SSI.injection() = K_min;
-  // Iterate to convergence
-  cout << "*** Iterating to convergence ***" << endl;
-  double max_residual( 0.0 );
-  std::size_t iteration( 0 );
-  std::size_t max_iterations( 50 );
-
-  do {
-
-    /* Solve the stability equations */
-    cout << "*** Solving the stability equations for v and w ***" << endl;
-    orrsommerfeld_2D.update_SSI( SSI );
-    orrsommerfeld_2D.solve_evp();
-
-    // Return eigenvectors
-    TwoD_node_mesh< std::complex<double> > evecs;
-    evecs = orrsommerfeld_2D.eigenvectors(); // v, w, q, s
-
-    // Put into separate v and w meshes
-    TwoD_node_mesh< std::complex<double> > v( evecs.xnodes(), evecs.ynodes(), 1 );
-    TwoD_node_mesh< std::complex<double> > w( evecs.xnodes(), evecs.ynodes(), 1 );
-
-    for ( std::size_t i=0; i<evecs.xnodes().size(); ++i )
-    {
-      for ( std::size_t j=0; j<evecs.ynodes().size(); ++j )
-      {
-        v( i, j, 0 ) = evecs( i, j, 0 );
-        w( i, j, 0 ) = evecs( i, j, 1 );
-      }
-    }
-
-    // Normalise the eigenvectors
-    double norm;
-    norm= real( v.square_integral2D() + w.square_integral2D() );
-
-    for ( std::size_t i=0; i<evecs.xnodes().size(); ++i )
-    {
-      for ( std::size_t j=0; j<evecs.ynodes().size(); ++j )
-      {
-        v( i, j, 0 ) = v( i, j, 0 ) / norm;
-        w( i, j, 0 ) = w( i, j, 0 ) / norm;
-      }
-    }
-
-    // Pass to SSI object to create forcing terms
-    SSI.set_v_wave( v );
-    SSI.set_w_wave( w );
-
-    /* Solve the streak equations (with forcing) */
-    cout << "*** Solving the streak equations (with forcing) ***" << endl;
-
-    SSI.solve();
-    new_sol = SSI.solution();
-    cout << "  * A = " << SSI.mass_flux() << endl;
-
-    // Calculate the difference
-    diff = sol - new_sol;
-    //diff.dump( "./diff_dump.dat" );
-    Vector<double> diff_vars;
-    diff_vars = diff.get_vars();
-    max_residual = diff_vars.norm_inf();
-    cout << "  * max_residual = " << max_residual << endl;
-
-    sol = new_sol;
-
-    ++iteration;
-  }while( ( max_residual > 1e-3 ) && ( iteration < max_iterations ) );
-
-  c_i = orrsommerfeld_2D.eigenvalues()[0].imag();
-  cout << "  * c_i = " << c_i << endl;
-  cout << "  * Sigma = " << SSI.wave_amplitude() << endl;
-  cout << "  * K = " << SSI.injection() << endl;
-
-
-  //Extra to refine sigma??
-  std::size_t sigma_iteration( 0 );
-  std::size_t max_sigma_step( 20 );
-  do {
-    double max_residual( 0.0 );
-    std::size_t iteration( 0 );
-    std::size_t max_iterations( 20 );
-    cout << "*** Refining sigma ***" << endl;
     do {
 
-      // Solve the stability equations
-      cout << "*** Solving the stability equations for v and w ***" << endl;
-      orrsommerfeld_2D.update_SSI( SSI );
-      orrsommerfeld_2D.solve_evp();
+      // Iterate
+      std::size_t iteration( 0 );
+      std::size_t max_iterations( 50 );
+      double c_i_old( 0.0 );
+      double c_i_diff( 0.0 );
 
-      // Return eigenvectors
-      TwoD_node_mesh< std::complex<double> > evecs;
-      evecs = orrsommerfeld_2D.eigenvectors(); // v, w, q, s
+      TwoD_node_mesh< std::complex<double> > v( HZETA_NODES, ETA_NODES, 1 );
+      TwoD_node_mesh< std::complex<double> > w( HZETA_NODES, ETA_NODES, 1 );
+      TwoD_node_mesh< std::complex<double> > v_old( HZETA_NODES, ETA_NODES, 1 );
+      TwoD_node_mesh< std::complex<double> > w_old( HZETA_NODES, ETA_NODES, 1 );
+      TwoD_node_mesh< std::complex<double> > v_relax( HZETA_NODES, ETA_NODES, 1 );
+      TwoD_node_mesh< std::complex<double> > w_relax( HZETA_NODES, ETA_NODES, 1 );
 
-      // Put into separate v and w meshes
-      TwoD_node_mesh< std::complex<double> > v( evecs.xnodes(), evecs.ynodes(), 1 );
-      TwoD_node_mesh< std::complex<double> > w( evecs.xnodes(), evecs.ynodes(), 1 );
+      do {
 
-      for ( std::size_t i=0; i<evecs.xnodes().size(); ++i )
-      {
-        for ( std::size_t j=0; j<evecs.ynodes().size(); ++j )
+        // Solve the stability equations
+        cout << "*** Solving the stability equations for v and w ***" << endl;
+        orrsommerfeld_2D.update_SSI( SSI );
+        Timer timer_OS;
+        timer_OS.start();
+        orrsommerfeld_2D.solve_evp();
+        orrsommerfeld_2D.output();
+        timer_OS.print();
+        timer_OS.stop();
+
+        c_i = orrsommerfeld_2D.eigenvalues()[0].imag();
+        c_i_diff = c_i - c_i_old;
+        c_i_old = c_i;
+
+        // Return eigenvectors
+        TwoD_node_mesh< std::complex<double> > evecs;
+        evecs = orrsommerfeld_2D.eigenvectors(); // v, w, q, s
+
+        // Put into separate v and w meshes
+        for ( std::size_t i=0; i<evecs.xnodes().size(); ++i )
         {
-          v( i, j, 0 ) = evecs( i, j, 0 );
-          w( i, j, 0 ) = evecs( i, j, 1 );
+          for ( std::size_t j=0; j<evecs.ynodes().size(); ++j )
+          {
+            v( i, j, 0 ) = evecs( i, j, 0 );
+            w( i, j, 0 ) = evecs( i, j, 1 );
+          }
         }
+
+        // Normalise the eigenvectors
+        double norm;
+        norm= real( v.square_integral2D() + w.square_integral2D() );
+
+        for ( std::size_t i=0; i<evecs.xnodes().size(); ++i )
+        {
+          for ( std::size_t j=0; j<evecs.ynodes().size(); ++j )
+          {
+            v( i, j, 0 ) = v( i, j, 0 ) / norm;
+            w( i, j, 0 ) = w( i, j, 0 ) / norm;
+          }
+        }
+
+        // Set relaxation wave perturbation
+        for ( std::size_t i=0; i<evecs.xnodes().size(); ++i )
+        {
+          for ( std::size_t j=0; j<evecs.ynodes().size(); ++j )
+          {
+            v_relax( i, j, 0 ) = v_old( i, j, 0 ) + Relax * ( v( i, j, 0 ) - v_old( i, j, 0 ));
+            w_relax( i, j, 0 ) = w_old( i, j, 0 ) + Relax * ( w( i, j, 0 ) - w_old( i, j, 0 ));
+          }
+        }
+
+        // Pass to SSI object to create forcing terms
+        SSI.set_v_wave( v_relax );
+        SSI.set_w_wave( w_relax );
+
+        // Update old v and w
+        v_old = v;
+        w_old = w;
+
+        // Solve the streak equations (with forcing)
+        cout << "*** Solving the streak equations (with forcing) ***" << endl;
+        SSI.solve();
+        cout << "  * A = " << SSI.mass_flux() << endl;
+        cout << "  * iter = " << iteration << endl;
+        cout << "  * c_i_diff = " << c_i_diff << endl;
+        ++iteration;
+
+        //target.imag( c_i );
+        //target.real( c_r );
+        //orrsommerfeld_2D.set_target( target );
+
+      }while( ( std::abs( c_i_diff ) > conv_tol ) && ( iteration < max_iterations ) );
+
+      if ( iteration > 10 ){ Sigma_step *= 0.9; }
+      if ( iteration < 5  ){ Sigma_step *= 1.1; }
+
+      c_i = orrsommerfeld_2D.eigenvalues()[0].imag();
+      c_r = orrsommerfeld_2D.eigenvalues()[0].real();
+
+      // Decide how to vary Sigma
+      if ( c_i > 0.0 && std::abs( c_i ) > tol )
+      {
+        cout << "  * c_i = " << c_i << endl;
+        cout << "  * Sigma = " << SSI.wave_amplitude() << endl;
+        c_i_plus = c_i;
+        Sigma_plus = SSI.wave_amplitude();
+        SSI.wave_amplitude() = Sigma_minus
+			     + ( c_i_minus * ( Sigma_minus - Sigma_plus ) / ( c_i_plus - c_i_minus ) );
+        Sigma_step *= 0.1;
+        cout << "*** Stepping in sigma ***" << endl;
+        cout << "  * Step = " << Sigma_step << endl;
+        //SSI.solve();
+      }
+      else if ( c_i < 0.0 && std::abs( c_i ) > tol )
+      {
+        cout << "  * c_i = " << c_i << endl;
+        cout << "  * Sigma = " << SSI.wave_amplitude() << endl;
+        c_i_minus = c_i;
+        Sigma_minus = SSI.wave_amplitude();
+        SSI.wave_amplitude() += Sigma_step;
+        cout << "*** Stepping in sigma ***" << endl;
+        cout << "  * Step = " << Sigma_step << endl;
+        //SSI.solve();
       }
 
-      // Normalise the eigenvectors
-      double norm;
-      norm= real( v.square_integral2D() + w.square_integral2D() );
-
-      for ( std::size_t i=0; i<evecs.xnodes().size(); ++i )
+      if ( c_i < 0.0 )
       {
-        for ( std::size_t j=0; j<evecs.ynodes().size(); ++j )
-        {
-          v( i, j, 0 ) = v( i, j, 0 ) / norm;
-          w( i, j, 0 ) = w( i, j, 0 ) / norm;
-        }
+        target.imag( c_i + 0.005 );
+      } else {
+        target.imag( 0.0 );
       }
+      target.real( c_r );
+      orrsommerfeld_2D.set_target( target );
+      cout << "  * target = " << target << endl;
 
-      // Pass to SSI object to create forcing terms
-      SSI.set_v_wave( v );
-      SSI.set_w_wave( w );
+      metric.update();
 
-      // Solve the streak equations (with forcing)
-      cout << "*** Solving the streak equations (with forcing) ***" << endl;
+    }while( std::abs( c_i ) > tol );
 
-      SSI.solve();
-      new_sol = SSI.solution();
-      cout << "  * A = " << SSI.mass_flux() << endl;
 
-      // Calculate the difference
-      diff = sol - new_sol;
-      //diff.dump( "./diff_dump.dat" );
-      Vector<double> diff_vars;
-      diff_vars = diff.get_vars();
-      max_residual = diff_vars.norm_inf();
-      cout << "  * max_residual = " << max_residual << endl;
-
-      sol = new_sol;
-
-      ++iteration;
-    }while( ( max_residual > 1e-3 ) && ( iteration < max_iterations ) );
-
-    c_i = orrsommerfeld_2D.eigenvalues()[0].imag();
-    cout << "  * c_i = " << c_i << endl;
-    cout << "  * Sigma = " << SSI.wave_amplitude() << endl;
-    cout << "  * K = " << SSI.injection() << endl;
-
-    if ( c_i > 0.0 )
-    {
-      SSI.wave_amplitude() -= Sigma_step / 10.;
-      cout << "*** Stepping in sigma ***" << endl;
-      SSI.solve();
-    }
-    else
-    {
-      SSI.wave_amplitude() += Sigma_step / 10.;
-      cout << "*** Stepping in sigma ***" << endl;
-      SSI.solve();
-    }
-    ++sigma_iteration;
-
-    //TODO if sign change Sigma_step = Sigma_step/10
-
-  }while( ( std::abs( c_i ) > 1e-3 ) && ( sigma_iteration < max_sigma_step ) );
 
   // Now output the solution (after solving once more)
   SSI.set_output( true );
