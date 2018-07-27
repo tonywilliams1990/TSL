@@ -38,17 +38,21 @@ int main()
   cout << "*** ------- Solving the 2D OrrSommerfeld equation (Global) ------- ***" << endl;
 
   // Define the domain + short scale injection parameters
-  double hzeta_right( 32.0 );       // Size of the domain in the zeta_hat direction
-  double eta_top( 32.0 );           // Size of the domain in the eta direction
-  std::size_t N( 150 );       // Number of intervals in the zeta_hat direction
-  std::size_t M( 150 );       // Number of intervals in the eta direction
-  std::size_t MB( M * 100 );  // Number of eta intervals in the base flow ODE
+  double hzeta_right( 20.0 );       // Size of the domain in the zeta_hat direction
+  double eta_top( 20.0 );           // Size of the domain in the eta direction
+  std::size_t N( 120 );             // Number of intervals in the zeta_hat direction
+  std::size_t M( 120 );             // Number of intervals in the eta direction
+  std::size_t MB( M * 100 );        // Number of eta intervals in the base flow ODE
   double beta( 0.5 );               // Hartree parameter
   double zeta0( 1.0 );              // Transpiration width
   double K( 9.0 );                  // Transpiration parameter ( +ve = blowing )
   double alpha( 0.4 );              // Wavenumber (alpha hat)
   double Rx( 5000 * 5000 );         // Local Reynolds number
-  double Sigma( 0.0 );              // Wave amplitude
+  double Sigma( 0.01 );              // Wave amplitude
+  double tol( 1e-4 );               // Tolerance for c_i = 0
+
+  double K_min( 0.0 );
+  double K_step( 0.1 );
 
   std::complex<double> target( 0.76, 0.0 ); // Target for eigensolver
 
@@ -150,16 +154,16 @@ int main()
   evecs = orrsommerfeld_2D.eigenvectors(); // v, w, q, s
 
   // Redefine the SSI mesh and resolve
-  cout << "*** Solving the self-similar flow on a refined mesh ***" << endl;
-  N = 200;
-  M = 200;
-  MB = M * 100;
-  cout << "  * N = " << N << ", M = " << M << endl;
-  SSI.hzeta_intervals() = N;
-  SSI.eta_intervals() = M;
-  SSI.base_intervals() = MB;
-  SSI.mesh_setup();
-  SSI.solve();
+  //cout << "*** Solving the self-similar flow on a refined mesh ***" << endl;
+  //N = 200;
+  //M = 200;
+  //MB = M * 100;
+  //cout << "  * N = " << N << ", M = " << M << endl;
+  //SSI.hzeta_intervals() = N;
+  //SSI.eta_intervals() = M;
+  //SSI.base_intervals() = MB;
+  //SSI.mesh_setup();
+  //SSI.solve();//TODO do we need this second solve - could just keep the same mesh
   TSL::eta_intervals = M;
 
   // Remesh the eigenvectors onto the refined mesh
@@ -174,7 +178,7 @@ int main()
   sol = SSI.solution();
   base = SSI.base_flow_solution();
 
-  evecs.remesh1( HZETA_NODES, ETA_NODES );
+  //evecs.remesh1( HZETA_NODES, ETA_NODES );
 
   // Normalise the eigenvectors
   double norm;
@@ -228,7 +232,6 @@ int main()
     }
   }
 
-
   // Step sizes
   const double dY( Y_NODES[ 1 ] - Y_NODES[ 0 ] );
   const double dX( X_NODES[ 1 ] - X_NODES[ 0 ] );
@@ -246,8 +249,6 @@ int main()
 
   do {
       SparseMatrix< std::complex<double> > A( size, size );
-      //cout << "A.rows() = " << A.rows() << endl;
-      //cout << "A.cols() = " << A.cols() << endl;
       std::cout << "  * Assembling sparse matrix problem" << std::endl;
 
       Timer timer;                                        // Timer
@@ -614,10 +615,10 @@ int main()
           A( row, col( i, j, w ) )          = - Guess_eta_hzeta[ U ] / zeta0;
 
           // - w_g * ( 1 / zeta0 ) * U_{hzeta eta}
-          A( row, col( i + 1, j + 1, U ) )  =   Guess[ w ] * Xd * Yd / ( 4 * dX * dY * zeta0 );
-          A( row, col( i - 1, j - 1, U ) )  =   Guess[ w ] * Xd * Yd / ( 4 * dX * dY * zeta0 );
-          A( row, col( i + 1, j - 1, U ) )  = - Guess[ w ] * Xd * Yd / ( 4 * dX * dY * zeta0 );
-          A( row, col( i - 1, j + 1, U ) )  = - Guess[ w ] * Xd * Yd / ( 4 * dX * dY * zeta0 );
+          A( row, col( i + 1, j + 1, U ) )  = - Guess[ w ] * Xd * Yd / ( 4 * dX * dY * zeta0 );
+          A( row, col( i - 1, j - 1, U ) )  = - Guess[ w ] * Xd * Yd / ( 4 * dX * dY * zeta0 );
+          A( row, col( i + 1, j - 1, U ) )  =   Guess[ w ] * Xd * Yd / ( 4 * dX * dY * zeta0 );
+          A( row, col( i - 1, j + 1, U ) )  =   Guess[ w ] * Xd * Yd / ( 4 * dX * dY * zeta0 );
 
           // - ( UB'' + UG_{eta eta} ) * v
           A( row, col( i, j, v ) )          = - ( UBdd + Guess_eta_eta[ U ] );
@@ -668,8 +669,8 @@ int main()
           A( row, col( i, j - 1, v ) )     = - Guess_hzeta[ U ] * Yd / ( 2 * dY * zeta0 );
 
           // + ( 1 / zeta0 ) * v_g_{eta} * U_{hzeta}
-          A( row, col( i + 1, j, U ) )      = - Guess_eta[ v ] * Xd / ( 2 * dX * zeta0 );
-          A( row, col( i - 1, j, U ) )      =   Guess_eta[ v ] * Xd / ( 2 * dX * zeta0 );
+          A( row, col( i + 1, j, U ) )      =   Guess_eta[ v ] * Xd / ( 2 * dX * zeta0 );
+          A( row, col( i - 1, j, U ) )      = - Guess_eta[ v ] * Xd / ( 2 * dX * zeta0 );
 
           // - ( 1 / zeta0 ) * (UBd + UG_{eta}) * v_{hzeta}
           A( row, col( i + 1, j, v ) )     = - ( Base[ UBd ] + Guess_eta[ U ] ) * Xd / ( 2 * dX * zeta0 );
@@ -683,10 +684,10 @@ int main()
           A( row, col( i, j, v ) )         = - Guess_eta_hzeta[ U ] / zeta0;
 
           // - v_g * ( 1 / zeta0 ) * U_{hzeta eta}
-          A( row, col( i + 1, j + 1, U ) )  =   Guess[ v ] * Xd * Yd / ( 4 * dX * dY * zeta0 );
-          A( row, col( i - 1, j - 1, U ) )  =   Guess[ v ] * Xd * Yd / ( 4 * dX * dY * zeta0 );
-          A( row, col( i + 1, j - 1, U ) )  = - Guess[ v ] * Xd * Yd / ( 4 * dX * dY * zeta0 );
-          A( row, col( i - 1, j + 1, U ) )  = - Guess[ v ] * Xd * Yd / ( 4 * dX * dY * zeta0 );
+          A( row, col( i + 1, j + 1, U ) )  = - Guess[ v ] * Xd * Yd / ( 4 * dX * dY * zeta0 );
+          A( row, col( i - 1, j - 1, U ) )  = - Guess[ v ] * Xd * Yd / ( 4 * dX * dY * zeta0 );
+          A( row, col( i + 1, j - 1, U ) )  =   Guess[ v ] * Xd * Yd / ( 4 * dX * dY * zeta0 );
+          A( row, col( i - 1, j + 1, U ) )  =   Guess[ v ] * Xd * Yd / ( 4 * dX * dY * zeta0 );
 
           // - ( 1 / zeta0^2 ) * UG_{hzeta hzeta} * w
           A( row, col( i, j, w ) )         = - Guess_eta_hzeta[ U ] / ( zeta0 * zeta0 );
@@ -911,8 +912,8 @@ int main()
                           - ( hzeta * Base[ PsiB ] + Guess[ Psi ] )
                           * ( Guess_hzeta[ Theta ] ) - Guess[ Psi ] * Base[ ThetaB ]
                           - ( 2. - beta ) * ( ( Base[ UB ] + Guess[ U ] )
-                          * Guess[ Theta ] + hzeta * Base[ ThetaB ] * Guess[ U ] );
-                          //+ std::pow( Rx, -1.0/6.0 ) * Sigma * Sigma * F_2;
+                          * Guess[ Theta ] + hzeta * Base[ ThetaB ] * Guess[ U ] )
+                          + std::pow( Rx, -1.0/6.0 ) * Sigma * Sigma * F_2;
           ++row;
 
       }

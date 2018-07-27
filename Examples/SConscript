@@ -29,6 +29,7 @@ env.Program( 'Test/Rayleigh_2D_test.out', ['Test/Rayleigh_2D_test.cpp'], OPTS = 
 env.Program( 'Test/VWI_test.out' , ['Test/VWI_test.cpp'] , OPTS = opts, LIBS = libs )
 env.Program( 'Test/VWI_test_2.out' , ['Test/VWI_test_2.cpp'] , OPTS = opts, LIBS = libs )
 env.Program( 'Test/VWI_test_3.out' , ['Test/VWI_test_3.cpp'] , OPTS = opts, LIBS = libs )
+env.Program( 'Test/VWI_try.out' , ['Test/VWI_try.cpp'] , OPTS = opts, LIBS = libs )
 
 # Project codes
 
