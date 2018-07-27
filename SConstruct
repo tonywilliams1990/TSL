@@ -40,7 +40,7 @@ libdir_str = topdir + '/lib '
 libs_str   = TSL_lib + ' '
 preproc    = ''
 #opts = ' -O2 -std=c++14 -Wall -Wextra '
-opts = ' -O2 '
+opts = ' -O2 -std=c++11'
 link_flags = ' '
 
 # Set the rpath for the linker to find petsc/slepc-3

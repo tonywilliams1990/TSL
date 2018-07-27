@@ -21,7 +21,7 @@ namespace TSL
       harmonic_equation() : Equation<std::complex<double>, double>( 3 ) {}
 
       /// The harmonic equation
-      void residual_fn( const Vector<std::complex<double>> &z, Vector<std::complex<double>> &g ) const
+      void residual_fn( const Vector< std::complex<double> > &z, Vector< std::complex<double> > &g ) const
       {
         g[ f ] = z[ fd ];
         g[ fd ] = -z[ lambda ] * z[ f ];
@@ -30,26 +30,26 @@ namespace TSL
 
     };
 
-    class harmonic_left_BC : public Residual<std::complex<double>>
+    class harmonic_left_BC : public Residual< std::complex<double> >
     {
     public:
       // 1 reisudal and 2 unknowns
-      harmonic_left_BC() : Residual<std::complex<double>> ( 2, 3 ) {}
+      harmonic_left_BC() : Residual< std::complex<double> > ( 2, 3 ) {}
 
-      void residual_fn( const Vector<std::complex<double>> &z, Vector<std::complex<double>> &B ) const
+      void residual_fn( const Vector< std::complex<double> > &z, Vector< std::complex<double> > &B ) const
       {
         B[ 0 ] = z[ f ];
         B[ 1 ] = z[ fd ] - 1.0; // arbitrary amplitude
       }
     };
 
-    class harmonic_right_BC : public Residual<std::complex<double>>
+    class harmonic_right_BC : public Residual< std::complex<double> >
     {
     public:
       // 1 reisudal and 2 unknowns
-      harmonic_right_BC() : Residual<std::complex<double>> ( 1, 3 ) {}
+      harmonic_right_BC() : Residual< std::complex<double> > ( 1, 3 ) {}
 
-      void residual_fn( const Vector<std::complex<double>> &z, Vector<std::complex<double>> &B ) const
+      void residual_fn( const Vector< std::complex<double> > &z, Vector< std::complex<double> > &B ) const
       {
         B[ 0 ] = z[ f ];
       }

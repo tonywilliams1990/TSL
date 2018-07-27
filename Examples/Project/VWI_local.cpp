@@ -45,12 +45,12 @@ int main()
   std::size_t MB( M * 100 );  // Number of eta intervals in the base flow ODE
   double beta( 0.5 );               // Hartree parameter
   double zeta0( 1.0 );              // Transpiration width
-  double K( 7.5 );                  // Transpiration parameter ( +ve = blowing )
-  double alpha( 0.1 );              // Wavenumber (alpha hat)
+  double K( 9.0 );                  // Transpiration parameter ( +ve = blowing )
+  double alpha( 0.4 );              // Wavenumber (alpha hat)
   double Rx( 5000 * 5000 );         // Local Reynolds number
   double Sigma( 0.0 );              // Wave amplitude
 
-  std::complex<double> target(0.8,-0.01); // Target for eigensolver
+  std::complex<double> target( 0.76, 0.0 ); // Target for eigensolver
 
   // Solve the self similar injection flow
   mySelfSimInjection SSI;
@@ -214,6 +214,21 @@ int main()
       Q( i, j, Theta ) = sol( i, j, 3 );
     }
   }
+
+  // Normalise based on the extra condition q(0,0) = 1
+  std::complex<double> lambda( Q( 0, 0, q ) );
+  for ( std::size_t i = 0; i < N + 1; ++i )
+  {
+    for ( std::size_t j = 0; j < M + 1; ++j )
+    {
+      Q( i, j, v )  = Q( i, j, v ) / lambda;
+      Q( i, j, w )  = Q( i, j, w ) / lambda;
+      Q( i, j, q )  = Q( i, j, q ) / lambda;
+      Q( i, j, s )  = Q( i, j, s ) / lambda;
+    }
+  }
+
+
   // Step sizes
   const double dY( Y_NODES[ 1 ] - Y_NODES[ 0 ] );
   const double dX( X_NODES[ 1 ] - X_NODES[ 0 ] );

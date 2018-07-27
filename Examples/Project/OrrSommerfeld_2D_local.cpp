@@ -38,18 +38,18 @@ int main()
   cout << "*** ------- Solving the 2D OrrSommerfeld equation (Global) ------- ***" << endl;
 
   // Define the domain + short scale injection parameters
-  double hzeta_right( 32.0 );       // Size of the domain in the zeta_hat direction
-  double eta_top( 32.0 );           // Size of the domain in the eta direction
-  std::size_t N( 150 );       // Number of intervals in the zeta_hat direction
-  std::size_t M( 150 );       // Number of intervals in the eta direction
+  double hzeta_right( 32.0 ); // Size of the domain in the zeta_hat direction
+  double eta_top( 32.0 );     // Size of the domain in the eta direction
+  std::size_t N( 180 );       // Number of intervals in the zeta_hat direction
+  std::size_t M( 180 );       // Number of intervals in the eta direction
   std::size_t MB( M * 100 );  // Number of eta intervals in the base flow ODE
-  double beta( 0.5 );               // Hartree parameter
-  double zeta0( 1.0 );              // Transpiration width
-  double K( 7.5 );                  // Transpiration parameter ( +ve = blowing )
-  double alpha( 0.1 );              // Wavenumber (alpha hat)
-  double Rx( 5000 * 5000 );           // Local Reynolds number
+  double beta( 0.5 );         // Hartree parameter
+  double zeta0( 1.0 );        // Transpiration width
+  double K( 9.0 );           // Transpiration parameter ( +ve = blowing )
+  double alpha( 0.4 );        // Wavenumber (alpha hat)
+  double Rx( 5000 * 5000 );   // Local Reynolds number
 
-  std::complex<double> target(0.8,-0.01); // Target for eigensolver
+  std::complex<double> target( 0.76, 0.0 ); // Target for eigensolver
 
   // Solve the self similar injection flow
   mySelfSimInjection SSI;
@@ -210,6 +210,22 @@ int main()
       Q( i, j, s )  = evecs( i, j, s );
     }
   }
+
+  // Normalise based on the extra condition q(0,0) = 1
+  std::complex<double> lambda( Q( 0, 0, q ) );
+  for ( std::size_t i = 0; i < N + 1; ++i )
+  {
+    for ( std::size_t j = 0; j < M + 1; ++j )
+    {
+      Q( i, j, v )  = Q( i, j, v ) / lambda;
+      Q( i, j, w )  = Q( i, j, w ) / lambda;
+      Q( i, j, q )  = Q( i, j, q ) / lambda;
+      Q( i, j, s )  = Q( i, j, s ) / lambda;
+    }
+  }
+
+  //cout << "Q( 0, 0, q ) = " << Q( 0, 0, q ) << endl;
+
   // Step sizes
   const double dY( Y_NODES[ 1 ] - Y_NODES[ 0 ] );
   const double dX( X_NODES[ 1 ] - X_NODES[ 0 ] );
@@ -250,7 +266,7 @@ int main()
         // Symmetry boundary conditions
 
         // w = 0
-        A( row, col( i, j, w ) ) = 1;
+        A( row, col( i, j, w ) ) = 1.;
 
         B[ row ] = - Q( i, j, w );
         ++row;
@@ -265,7 +281,7 @@ int main()
         ++row;
 
         // s = 0
-        A( row, col( 0, j, s ) ) = 1;
+        A( row, col( 0, j, s ) ) = 1.;
 
         B[ row ] = - Q( i, j, s );
         ++row;
@@ -296,19 +312,19 @@ int main()
         double Ydd( SSI.mesh_Ydd( eta ) );
 
         // v = 0
-        A( row, col( i, j, v ) ) = 1;
+        A( row, col( i, j, v ) ) = 1.;
 
         B[ row ] = - Q( i, j, v );
         ++row;
 
         // w = 0
-        A( row, col( i, j, w ) ) = 1;
+        A( row, col( i, j, w ) ) = 1.;
 
         B[ row ] = - Q( i, j, w );
         ++row;
 
         //s - (i / (alpha*Rx^(1/2))) * w_{eta eta} = 0
-        A( row, col( i, j, s ) )     =   1;
+        A( row, col( i, j, s ) )     =   1.;
         A( row, col( i, j + 1, w ) ) = - iaR * ( - 5 * Yd * Yd / ( dY * dY ) + 4 * Ydd / ( 2 * dY ) );
         A( row, col( i, j + 2, w ) ) =   iaR * ( - 4 * Yd * Yd / ( dY * dY ) + 1 * Ydd / ( 2 * dY ) );
         A( row, col( i, j + 3, w ) ) =   iaR * Yd * Yd / ( dY * dY );
@@ -320,7 +336,7 @@ int main()
         ++row;
 
         //q - (i / (alpha*Rx^(1/2))) * v_{eta eta} = 0
-        A( row, col( i, j, q ) )     =   1;
+        A( row, col( i, j, q ) )     =   1.;
         A( row, col( i, j + 1, v ) ) = - 6. * iaR * Yd * Yd / ( dY * dY );
         A( row, col( i, j + 2, v ) ) =   ( 3. / 2. ) * iaR * Yd * Yd / ( dY * dY );
         A( row, col( i, j + 3, v ) ) = - ( 2. / 9. ) * iaR * Yd * Yd / ( dY * dY );
@@ -393,7 +409,7 @@ int main()
           A( row, col( i, j, v ) )        +=  U - c_g;
 
           // + ((1 - beta) / Rx) * v
-          A( row, col( i, j, v ) )        +=  ( 1.0 - beta ) / Rx;
+          A( row, col( i, j, v ) )        +=  ( 1. - beta ) / Rx;
 
           // - v_g * c
           A( row, size - 1 ) = - Q( i, j, v );
@@ -406,7 +422,7 @@ int main()
                              +  Q( i, j, v )     * laplace_4
                              +  Q( i + 1, j, v ) * laplace_5
                              +  Q( i, j + 1, v ) * laplace_7 )
-                      - ( U - c_g + ( ( 1.0 - beta ) / Rx ) ) * Q( i, j, v )
+                      - ( U - c_g + ( ( 1. - beta ) / Rx ) ) * Q( i, j, v )
                       + Q( i, j, q );
           ++row;
 
@@ -425,7 +441,7 @@ int main()
           A( row, col( i, j, w ) )        +=  U - c_g;
 
           // + ((1 - beta) / Rx) * w
-          A( row, col( i, j, w ) )        +=  ( 1.0 - beta ) / Rx;
+          A( row, col( i, j, w ) )        +=  ( 1. - beta ) / Rx;
 
           // - w_g * c
           A( row, size - 1 ) = - Q( i, j, w );
@@ -438,7 +454,7 @@ int main()
                              +  Q( i, j, w )     * laplace_4
                              +  Q( i + 1, j, w ) * laplace_5
                              +  Q( i, j + 1, w ) * laplace_7 )
-                      - ( U - c_g + ( ( 1.0 - beta ) / Rx ) ) * Q( i, j, w )
+                      - ( U - c_g + ( ( 1. - beta ) / Rx ) ) * Q( i, j, w )
                       + Q( i, j, s );
           ++row;
 
@@ -550,19 +566,19 @@ int main()
       Yd = SSI.mesh_Yd( eta );
 
       // v = 0
-      A( row, col( i, j, v ) ) = 1;
+      A( row, col( i, j, v ) ) = 1.;
 
       B[ row ] = - Q( i, j, v );
       ++row;
 
       // w = 0
-      A( row, col( i, j, w ) ) = 1;
+      A( row, col( i, j, w ) ) = 1.;
 
       B[ row ] = - Q( i, j, w );
       ++row;
 
       // s - (i / (alpha*Rx^(1/2))) * w_{eta eta} = 0
-      A( row, col( i, j, s ) )        =   1;
+      A( row, col( i, j, s ) )        =   1.;
       A( row, col( i, j - 1, w ) )    = - iaR * ( - 5 * Yd * Yd / ( dY * dY ) - 4 * Ydd / ( 2 * dY ) );
       A( row, col( i, j - 2, w ) )    =   iaR * ( - 4 * Yd * Yd / ( dY * dY ) - 1 * Ydd / ( 2 * dY ) );
       A( row, col( i, j - 3, w ) )    =   iaR * Yd * Yd / ( dY * dY );
@@ -574,7 +590,7 @@ int main()
       ++row;
 
       // q - (i / (alpha*Rx^(1/2))) * v_{eta eta} = 0
-      A( row, col( i, j, q ) )        =   1;
+      A( row, col( i, j, q ) )        =   1.;
       A( row, col( i, j - 1, v ) )    = - 6. * iaR * Yd * Yd / ( dY * dY );
       A( row, col( i, j - 2, v ) )    =   ( 3. / 2. ) * iaR * Yd * Yd / ( dY * dY );
       A( row, col( i, j - 3, v ) )    = - ( 2. / 9. ) * iaR * Yd * Yd / ( dY * dY );
@@ -601,19 +617,19 @@ int main()
       double Ydd( SSI.mesh_Ydd( eta ) );
 
       // w = 0
-      A( row, col( i, j, w ) ) = 1;
+      A( row, col( i, j, w ) ) = 1.;
 
       B[ row ] = - Q( i, j, w );
       ++row;
 
       // v = 0
-      A( row, col( i, j, v ) ) = 1;
+      A( row, col( i, j, v ) ) = 1.;
 
       B[ row ] = - Q( i, j, v );
       ++row;
 
       // q - (1/zeta0^2) * (i / (alpha*Rx^(1/2))) * v_{hzeta hzeta} = 0
-      A( row, col( i, j, q ) )        =   1;
+      A( row, col( i, j, q ) )        =   1.;
       A( row, col( i - 1, j, v ) )    = - iaR * ( - 5 * Xd * Xd / ( dX * dX ) - 4 * Xdd / ( 2 * dX ) )
                                     / ( zeta0 * zeta0 );
       A( row, col( i - 2, j, v ) )    =   iaR * ( - 4 * Xd * Xd / ( dX * dX ) - 1 * Xdd / ( 2 * dX ) )
@@ -627,7 +643,7 @@ int main()
       ++row;
 
       // s - (1/zeta0^2) * (i / (alpha*Rx^(1/2))) * w_{hzeta hzeta} = 0
-      A( row, col( i, j, s ) )        =   1;
+      A( row, col( i, j, s ) )        =   1.;
       A( row, col( i - 1, j, w ) )    = - 6. * iaR * Xd * Xd / ( dX * dX * zeta0 * zeta0 );
       A( row, col( i - 2, j, w ) )    =   ( 3. / 2. ) * iaR * Xd * Xd / ( dX * dX * zeta0 * zeta0 );
       A( row, col( i - 3, j, w ) )    = - ( 2. / 9. ) * iaR * Xd * Xd / ( dX * dX * zeta0 * zeta0 );
@@ -642,8 +658,8 @@ int main()
 
 
     // TODO extra condition for c ??? q(0,0) = 1 ???
-    A( row, col( 0, 0, q ) ) = 1;
-    B[ row ] = 1.0 - Q( 0, 0, q );
+    A( row, col( 0, 0, q ) ) = 1.;
+    B[ row ] = 1. - Q( 0, 0, q );
     ++row;
 
     // v_eta(0,0) = 1 ???
