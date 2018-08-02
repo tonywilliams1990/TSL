@@ -13,13 +13,11 @@ enum{ v, w, q, s };
 namespace TSL
 {
   std::size_t eta_intervals;
-
   std::size_t col( const std::size_t& i, const std::size_t& j, const std::size_t& k )
   {
     // Return the column number for the kth variable at node (i,j)
     return 4 * ( i * ( eta_intervals + 1 ) + j ) + k;
   }
-
 }
 
 using namespace std;
@@ -33,34 +31,33 @@ public:
   }
 }; // End of class mySelfSimInjection
 
-
 int main()
 {
-  cout << "*** ------- Solving the 2D OrrSommerfeld equation (Global) ------- ***" << endl;
+  cout << "*** ------- Solving the VWI equations ------- ***" << endl;
 
   // Define the domain + short scale injection parameters
-  double hzeta_right( 32.0 );       // Size of the domain in the zeta_hat direction
-  double eta_top( 32.0 );           // Size of the domain in the eta direction
-  std::size_t N( 300 );             // Number of intervals in the zeta_hat direction
-  std::size_t M( 300 );             // Number of intervals in the eta direction
+  double hzeta_right( 20.0 );       // Size of the domain in the zeta_hat direction
+  double eta_top( 20.0 );           // Size of the domain in the eta direction
+  std::size_t N( 130 );             // Number of intervals in the zeta_hat direction
+  std::size_t M( 130 );             // Number of intervals in the eta direction
   std::size_t MB( M * 100 );        // Number of eta intervals in the base flow ODE
   double beta( 0.5 );               // Hartree parameter
   double zeta0( 1.0 );              // Transpiration width
-  double K( 8.8 );                  // Transpiration parameter ( +ve = blowing )
+  double K( 8.5 );                  // Transpiration parameter ( +ve = blowing )
   double alpha( 0.4 );              // Wavenumber (alpha hat)
   double Rx( 5000 * 5000 );         // Local Reynolds number
-  double Sigma( 0.1 );              // Wave amplitude
+  double Sigma( 0.0 );             // Wave amplitude
   double tol( 1e-3 );               // Tolerance for c_i = 0
   double conv_tol( 1e-6 );          // Convergence tolerance for inner loop
 
   TSL::eta_intervals = M;
 
   double K_min( 0.0 );
-  double K_step( 0.1 );
-  double Sigma_step_initial( 0.1 );
+  double K_step( 0.5 );
+  double Sigma_step_initial( 1.0 );
   double Sigma_step( Sigma_step_initial );
 
-  std::complex<double> target( 0.76, 0.0 ); // Target for eigensolver
+  std::complex<double> target( 0.77, 0.0 ); // Target for eigensolver
 
   // Solve the self similar injection flow
   mySelfSimInjection SSI;
@@ -83,9 +80,10 @@ int main()
   Timer timer;
   timer.start();
 
-  // Solve self-similar equations on a coarse grid
+  // Solve self-similar equations
   SSI.set_output_path();
   SSI.mesh_setup();
+  SSI.solve_check_exists();
 
   Vector<double> ETA_NODES      = SSI.eta_nodes();
   Vector<double> HZETA_NODES    = SSI.hzeta_nodes();
@@ -95,38 +93,10 @@ int main()
 
   TwoD_node_mesh<double> sol( HZETA_NODES, ETA_NODES, 8 ); // Mesh for storing the solution
   OneD_node_mesh<double> base( BASE_ETA_NODES, 6 );
+  sol = SSI.solution();
+  base = SSI.base_flow_solution();
 
-  // Don't bother solving it all again if the solution file already exists
-  bool exists;
-  exists = Utility::file_exists( SSI.output_path() + "Qout_" + Utility::stringify( zeta0 ) + ".dat" );
-  bool base_exists;
-  base_exists = Utility::file_exists( SSI.output_path() + "Base_soln.dat" );
-
-  if ( !exists || !base_exists ){
-    SSI.solve();
-    SSI.output();
-    SSI.output_base_solution();
-    sol = SSI.solution();
-    base = SSI.base_flow_solution();
-    cout << "  * zeta0 = " << SSI.injection_width() << ", A = " << SSI.mass_flux() << endl;
-  }
-  if ( exists ){
-    cout << "--- Reading solution from file" << endl;
-    sol.read( SSI.output_path() + "Qout_" + Utility::stringify( zeta0 ) + ".dat" );
-    cout << "--- Finished reading" << endl;
-  }
-  if ( base_exists ){
-    base.read( SSI.output_path() + "Base_soln.dat" );
-    std::cout << "  * UB'(eta=0) =" << base( 0, 1 ) << std::endl;
-  }
-  if ( exists && base_exists ){
-    SSI.set_solved( true );
-    SSI.set_solution( sol );
-    SSI.set_base_solution( base );
-  }
-
-
-  /* Solve the 2D Orr-Sommerfeld equation (Global) */
+  cout << "*** Solving the 2D OrrSommerfeld equation ( global ) ***" << endl;
   cout << "--- K = " << K << ", alpha = " << alpha << ", Rx^1/2 = " << sqrt(Rx) << endl;
 
   // Create the OrrSommerfeld_2D object
@@ -136,13 +106,72 @@ int main()
   orrsommerfeld_2D.set_target( target );
   orrsommerfeld_2D.set_order( "EPS_TARGET_IMAGINARY" );
   orrsommerfeld_2D.calc_eigenvectors() = true;
+
+  // Solve the global eigenvalue problem
+  Timer timer_OS;
+  timer_OS.start();
+  orrsommerfeld_2D.solve_evp();
+  orrsommerfeld_2D.output();
+  timer_OS.print();
+  timer_OS.stop();
+
+  // Return the eigenvalues and eigenvectors
+  Vector< std::complex<double> > eigenvalues;
+  eigenvalues = orrsommerfeld_2D.eigenvalues();
+  TwoD_node_mesh< std::complex<double> > eigenvectors;
+  eigenvectors = orrsommerfeld_2D.eigenvectors(); // v, w, q, s
+
+  // Normalise the eigenvectors
+  double normalisation;
+  normalisation = real( eigenvectors.square_integral2D( v )
+                      + eigenvectors.square_integral2D( w ) );
+
+  for ( std::size_t i=0; i<eigenvectors.xnodes().size(); ++i )
+  {
+    for ( std::size_t j=0; j<eigenvectors.ynodes().size(); ++j )
+    {
+      eigenvectors( i, j, v ) = eigenvectors( i, j, v ) / sqrt( normalisation );
+      eigenvectors( i, j, w ) = eigenvectors( i, j, w ) / sqrt( normalisation );
+      eigenvectors( i, j, q ) = eigenvectors( i, j, q ) / sqrt( normalisation );
+      eigenvectors( i, j, s ) = eigenvectors( i, j, s ) / sqrt( normalisation );
+    }
+  }
+
+  // Current guess g
+  TwoD_node_mesh< std::complex<double> > Q_evec( SSI.hzeta_nodes(), SSI.eta_nodes(), 4 );
+  std::complex<double> c_g( eigenvalues[0] );
+
+  // Set the initial guess
+  for ( std::size_t i = 0; i < N + 1; ++i )
+  {
+    for ( std::size_t j = 0; j < M + 1; ++j )
+    {
+      Q_evec( i, j, v )  = eigenvectors( i, j, v );
+      Q_evec( i, j, w )  = eigenvectors( i, j, w );
+      Q_evec( i, j, q )  = eigenvectors( i, j, q );
+      Q_evec( i, j, s )  = eigenvectors( i, j, s );
+    }
+  }
+
+  Q_evec.dump_gnu("./DATA/VWI_OS2D_global.dat");
+  sol.dump_gnu("./DATA/VWI_SSI_Initial.dat");
+
+  cout << "q(0,0) = " << Q_evec( 0, 0, q ) << endl;
+  double eta( ETA_NODES[ 0 ] );
+  double Yd( SSI.mesh_Yd( eta ) );
+  double dY( Y_NODES[ 1 ] - Y_NODES[ 0 ] );
+  cout << "q_eta(0,0) = " << ( 3 * Yd / ( 2 * dY ) ) * Q_evec( 0, 0, q )
+                 - ( 4 * Yd / ( 2 * dY ) ) * Q_evec( 0, 1, q )
+                 + ( 1 * Yd / ( 2 * dY ) ) * Q_evec( 0, 2, q ) << endl;
+
+
   double c_i( 0.0 ); // Imaginary part of eigenvalue
   double c_r( 0.0 ); // Real part of eigenvalue
 
   // Output K and Sigma to file
   TrackerFile metric( "./DATA/K_vs_Sigma_alpha_" + Utility::stringify( alpha, 3 ) + ".dat" );
   metric.push_ptr( &SSI.injection(), "K" );
-  metric.push_ptr( &SSI.wave_amplitude(), "Sigma" );
+  metric.push_ptr( &Sigma, "Sigma" );
   metric.push_ptr( &c_i, "c_i" );
   metric.header();
 
@@ -160,45 +189,44 @@ int main()
 
       do{
 
-        cout << "*** Solving the stability equations for v and w ***" << endl;
-        orrsommerfeld_2D.update_SSI( SSI );
+        cout << "*** Solving the stability equations for v and w ( local ) ***" << endl;
         Timer timer_OS;
         timer_OS.start();
-        orrsommerfeld_2D.solve_evp();
-        orrsommerfeld_2D.output();
+        orrsommerfeld_2D.solve_local( c_g, Q_evec, sol );
         timer_OS.print();
         timer_OS.stop();
 
-        c_i = orrsommerfeld_2D.eigenvalues()[0].imag();
+        c_i = imag( c_g );
         c_i_diff = c_i - c_i_old;
         c_i_old = c_i;
 
-        // Return the eigenvalues and eigenvectors
-        Vector< std::complex<double> > evals;
-        evals = orrsommerfeld_2D.eigenvalues();
-        TwoD_node_mesh< std::complex<double> > evecs;
-        evecs = orrsommerfeld_2D.eigenvectors(); // v, w, q, s
+        cout << "  * c = " << c_g << endl;
 
         // Normalise the eigenvectors
         double norm;
-        norm = real( evecs.square_integral2D( v ) + evecs.square_integral2D( w ) );
-
-        for ( std::size_t i=0; i<evecs.xnodes().size(); ++i )
+        norm = real( Q_evec.square_integral2D( v ) + Q_evec.square_integral2D( w ) );
+        //cout << "--- norm = " << norm << endl;
+        for ( std::size_t i=0; i<Q_evec.xnodes().size(); ++i )
         {
-          for ( std::size_t j=0; j<evecs.ynodes().size(); ++j )
+          for ( std::size_t j=0; j<Q_evec.ynodes().size(); ++j )
           {
-            evecs( i, j, v ) = evecs( i, j, v ) / norm;
-            evecs( i, j, w ) = evecs( i, j, w ) / norm;
-            evecs( i, j, q ) = evecs( i, j, q ) / norm;
-            evecs( i, j, s ) = evecs( i, j, s ) / norm;
+            Q_evec( i, j, v ) = Q_evec( i, j, v ) / sqrt( norm );
+            Q_evec( i, j, w ) = Q_evec( i, j, w ) / sqrt( norm );
+            Q_evec( i, j, q ) = Q_evec( i, j, q ) / sqrt( norm );
+            Q_evec( i, j, s ) = Q_evec( i, j, s ) / sqrt( norm );
           }
         }
+        //norm = real( Q_evec.square_integral2D( v ) + Q_evec.square_integral2D( w ) );
+        //cout << "--- norm (after normalisation) = " << norm << endl;
+
+        Q_evec.dump_gnu("./DATA/VWI_OS2D_local.dat");
 
         /* Resolve self-sim equations (with forcing) */
         cout << "*** Solving the self-similar equations ( with forcing ) ***" << endl;
 
         // Current guess g
         TwoD_node_mesh<double> Q( X_NODES, Y_NODES, 4 );
+        TwoD_node_mesh< std::complex<double> > Q_EVEC( X_NODES, Y_NODES, 4 );
         // Set the initial guess
         for ( std::size_t i = 0; i < N + 1; ++i )
         {
@@ -206,8 +234,12 @@ int main()
           {
             Q( i, j, Phi )   = sol( i, j, 0 );
             Q( i, j, Psi )   = sol( i, j, 1 );
-            Q( i, j, U )     = sol( i, j, 2);
+            Q( i, j, U )     = sol( i, j, 2 );
             Q( i, j, Theta ) = sol( i, j, 3 );
+            Q_EVEC( i, j, v ) = Q_evec( i, j, v );
+            Q_EVEC( i, j, w ) = Q_evec( i, j, w );
+            Q_EVEC( i, j, q ) = Q_evec( i, j, q );
+            Q_EVEC( i, j, s ) = Q_evec( i, j, s );
           }
         }
 
@@ -376,23 +408,23 @@ int main()
                 double UBdd = beta * ( Base[ UB ] * Base[ UB ] - 1. ) - Base[ PhiB ] * Base[ UBd ];
 
                 // Wave eigenvectors for forcing terms
-                Vector< std::complex<double> > Wave( evecs.get_nodes_vars( i, j ) );
-                Vector< std::complex<double> > Wave_eta( ( evecs.get_nodes_vars( i, j + 1 )
-                                          - evecs.get_nodes_vars( i, j - 1 ) ) * ( Yd /( 2 * dY )) );
-                Vector< std::complex<double> > Wave_hzeta( ( evecs.get_nodes_vars( i + 1, j )
-                                            - evecs.get_nodes_vars( i - 1, j ) )
+                Vector< std::complex<double> > Wave( Q_EVEC.get_nodes_vars( i, j ) );
+                Vector< std::complex<double> > Wave_eta( ( Q_EVEC.get_nodes_vars( i, j + 1 )
+                                          - Q_EVEC.get_nodes_vars( i, j - 1 ) ) * ( Yd /( 2 * dY )) );
+                Vector< std::complex<double> > Wave_hzeta( ( Q_EVEC.get_nodes_vars( i + 1, j )
+                                            - Q_EVEC.get_nodes_vars( i - 1, j ) )
                                             * ( Xd /( 2 * dX )) );
-                Vector< std::complex<double> > Wave_eta_eta( ( evecs.get_nodes_vars( i, j + 1 ) * laplace_7
-                                              + evecs.get_nodes_vars( i, j ) * ( - 2. * Yd * Yd / ( dY * dY ) )
-                                              + evecs.get_nodes_vars( i, j - 1 ) * laplace_1 ) );
-                Vector< std::complex<double> > Wave_hzeta_hzeta( ( evecs.get_nodes_vars( i + 1, j ) * laplace_5
-                                              + evecs.get_nodes_vars( i, j ) * ( - 2. * Xd * Xd / ( zeta0 * zeta0 * dX * dX ))
-                                              + evecs.get_nodes_vars( i - 1, j ) * laplace_3 ) );
+                Vector< std::complex<double> > Wave_eta_eta( ( Q_EVEC.get_nodes_vars( i, j + 1 ) * laplace_7
+                                              + Q_EVEC.get_nodes_vars( i, j ) * ( - 2. * Yd * Yd / ( dY * dY ) )
+                                              + Q_EVEC.get_nodes_vars( i, j - 1 ) * laplace_1 ) );
+                Vector< std::complex<double> > Wave_hzeta_hzeta( ( Q_EVEC.get_nodes_vars( i + 1, j ) * laplace_5
+                                              + Q_EVEC.get_nodes_vars( i, j ) * ( - 2. * Xd * Xd / ( zeta0 * zeta0 * dX * dX ))
+                                              + Q_EVEC.get_nodes_vars( i - 1, j ) * laplace_3 ) );
 
-                Vector< std::complex<double> > Wave_eta_hzeta( ( evecs.get_nodes_vars( i + 1, j + 1 )
-                                              + evecs.get_nodes_vars( i - 1, j - 1 )
-                                              - evecs.get_nodes_vars( i + 1, j - 1 )
-                                              - evecs.get_nodes_vars( i - 1, j + 1 ) ) * ( Xd * Yd / ( 4 * dX * dY) ) );
+                Vector< std::complex<double> > Wave_eta_hzeta( ( Q_EVEC.get_nodes_vars( i + 1, j + 1 )
+                                              + Q_EVEC.get_nodes_vars( i - 1, j - 1 )
+                                              - Q_EVEC.get_nodes_vars( i + 1, j - 1 )
+                                              - Q_EVEC.get_nodes_vars( i - 1, j + 1 ) ) * ( Xd * Yd / ( 4 * dX * dY) ) );
 
                 ///////////////////////////////
                 // Self-sim streak equations //
@@ -487,10 +519,12 @@ int main()
 
                 // Forcing (RHS)
                 /*std::complex<double> F_1;
-                F_1 = Guess[ v ] * ( conj( Guess_eta_eta[ v ] ) + conj( Guess_eta_hzeta[ w ] ) )
-                   + Guess[ w ] * ( conj( Guess_eta_hzeta[ v ] ) + conj( Guess_hzeta_hzeta[ w ] ) );
+                F_1 = Wave[ v ] * ( conj( Wave_eta_eta[ v ] ) + conj( Wave_eta_hzeta[ w ] ) )
+                   + Wave[ w ] * ( conj( Wave_eta_hzeta[ v ] ) + conj( Wave_hzeta_hzeta[ w ] ) );
                 F_1 *= std::complex<double> (0.0, - 1.0 / alpha);
-                F_1 = F_1 + conj( F_1 );*/
+                F_1 = F_1 + conj( F_1 );
+
+                double Forcing_1 = real( F_1 );*/
 
                 // Residual
                 B[ row ]        = - Guess_laplace[ U ]
@@ -499,9 +533,8 @@ int main()
                                   * ( Guess_hzeta[ U ] )
                                   - ( Base[ PhiB ] + Guess[ Phi ] ) * Guess_eta[ U ]
                                   - Base[UBd] * Guess[Phi];
-                                  //+ std::pow( Rx, -2.0/3.0 ) * Sigma * Sigma * F_1;
+                                  //+ std::pow( Rx, -2.0/3.0 ) * Sigma * Sigma * Forcing_1;
                 ++row;
-
 
                 ////////////////////
                 // Theta equation //
@@ -577,11 +610,11 @@ int main()
                       + Wave[ w ] * ( conj( Wave_hzeta_hzeta[ v ] ) - conj( Wave_eta_eta[ v ] ) - 2. * conj( Wave_eta_hzeta[ w ] ) );
                 F_2 = F_2 + conj( F_2 );
 
-                double Forcing = real( F_2 );
+                double Forcing_2 = real( F_2 );
 
                 // Residual
                 B[ row ]      = - Guess_laplace[ Theta ]
-                                + 2.*( 1. - beta )
+                                + 2. * ( 1. - beta )
                                 * ( hzeta * ( Base[ UB ] + Guess[ U ] )
                                 * Guess_eta[ U ] + hzeta * Base[ UBd ] * Guess[ U ]
                                 - eta * ( Base[ UB ] + Guess[ U ] )
@@ -593,7 +626,7 @@ int main()
                                 * ( Guess_hzeta[ Theta ] ) - Guess[ Psi ] * Base[ ThetaB ]
                                 - ( 2. - beta ) * ( ( Base[ UB ] + Guess[ U ] )
                                 * Guess[ Theta ] + hzeta * Base[ ThetaB ] * Guess[ U ] )
-                                + std::pow( Rx, -1.0/6.0 ) * Sigma * Sigma * Forcing;
+                                + std::pow( Rx, -1.0/6.0 ) * Sigma * Sigma * Forcing_2;
                 ++row;
 
             }
@@ -736,22 +769,18 @@ int main()
           for ( std::size_t j = 0; j < M + 1; ++j )
           {
             double eta=ETA_NODES[j];
-            sol( i, j, 0 ) = Q( i, j, Phi);
-            sol( i, j, 1 ) = Q( i, j, Psi);
-            sol( i, j, 2 ) = Q( i, j, U);
-            sol( i, j, 3 ) = Q( i, j, Theta);
-            sol( i, j, 4 ) =   Q( i, j, Phi)
-                                  + base.get_interpolated_vars( eta )[ PhiB ];
-            sol( i, j, 5 ) =   Q( i, j, Psi)
-                                  + hzeta * base.get_interpolated_vars( eta )[ PsiB ];
-            sol( i, j, 6 ) =   Q( i, j, U)
-                                  + base.get_interpolated_vars( eta )[ UB ];
-            sol( i, j, 7 ) =   Q( i, j, Theta)
-                                  + base.get_interpolated_vars( eta )[ ThetaB ];
+            sol( i, j, 0 ) = Q( i, j, Phi );
+            sol( i, j, 1 ) = Q( i, j, Psi );
+            sol( i, j, 2 ) = Q( i, j, U );
+            sol( i, j, 3 ) = Q( i, j, Theta );
+            sol( i, j, 4 ) = Q( i, j, Phi )   + base.get_interpolated_vars( eta )[ PhiB ];
+            sol( i, j, 5 ) = Q( i, j, Psi )   + hzeta * base.get_interpolated_vars( eta )[ PsiB ];
+            sol( i, j, 6 ) = Q( i, j, U )     + base.get_interpolated_vars( eta )[ UB ];
+            sol( i, j, 7 ) = Q( i, j, Theta ) + hzeta * base.get_interpolated_vars( eta )[ ThetaB ];
             }
         }
 
-        SSI.set_solution( sol );
+        sol.dump_gnu("./DATA/VWI_SSI.dat");
 
         cout << "  * iter = " << iter << endl;
         cout << "  * c_i_diff = " << c_i_diff << endl;
@@ -759,8 +788,8 @@ int main()
 
       }while( ( std::abs( c_i_diff ) > conv_tol ) && ( iter < max_iter ) );
 
-      c_i = orrsommerfeld_2D.eigenvalues()[0].imag();
-      c_r = orrsommerfeld_2D.eigenvalues()[0].real();
+      c_i = imag( c_g );
+      c_r = real( c_g );
 
       // Decide how to vary Sigma
       if ( c_i > 0.0 && std::abs( c_i ) > tol )
@@ -786,25 +815,15 @@ int main()
         cout << "  * Step = " << Sigma_step << endl;
       }
 
-      if ( c_i < 0.0 )
-      {
-        target.imag( c_i + 0.005 );
-      } else {
-        target.imag( 0.0 );
-      }
-      target.real( c_r );
-      orrsommerfeld_2D.set_target( target );
-      cout << "  * target = " << target << endl;
-
     }while( std::abs( c_i ) > tol );
 
-    c_i = orrsommerfeld_2D.eigenvalues()[0].imag();
+    c_i = imag( c_g );
     cout << "  * c_i = " << c_i << endl;
-    cout << "  * Sigma = " << SSI.wave_amplitude() << endl;
+    cout << "  * Sigma = " << Sigma << endl;
     cout << "  * K = " << SSI.injection() << endl;
     metric.update();
-    SSI.output();
-    SSI.output_base_solution();
+    sol.dump_gnu( "./DATA/VWI_try_K_" + Utility::stringify( SSI.injection(), 3 )
+              + "_alpha_" + Utility::stringify( alpha, 3 ) + ".dat" );
     // Step in K
     SSI.injection() -= K_step;
     cout << "*** Stepping in K ***" << endl;
@@ -815,7 +834,8 @@ int main()
   timer.print();
   timer.stop();
 
-  sol.dump( "./DATA/VWI_try.dat" );
+  sol.dump_gnu( "./DATA/VWI_try_K_" + Utility::stringify( SSI.injection(), 3 )
+            + "_alpha_" + Utility::stringify( alpha, 3 ) + ".dat" );
 
 	cout << "FINISHED" << endl;
 

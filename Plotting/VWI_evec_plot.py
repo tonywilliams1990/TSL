@@ -12,13 +12,9 @@ save_fig = False
 
 zeta0 = 1
 beta = 0.5
-K = 0
-R = 5000
-alpha = 0.4
 number_of_levels = 11
 
-#data = np.loadtxt("./DATA/K_"+ str(K) + "_zeta0_" + str(zeta0) + "_beta_"+ str(beta) + "_301x301_32_32/eigenvectors_R_"+ str(R*R) +"/alpha_"+ str(alpha) + "_evecs.dat")
-data = np.loadtxt("./DATA/VWI_OS2D_local.dat")
+data = np.loadtxt("./DATA/VWI_local_output.dat")
 
 zeta_hat = data[:,0]
 eta = data[:,1]

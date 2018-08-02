@@ -33,11 +33,11 @@ int main()
   const std::size_t MB( M * 100 );  // Number of eta intervals in the base flow ODE
   double beta( 0.5 );               // Hartree parameter
   double zeta0( 1.0 );              // Transpiration width
-  double K( 0.0 );                  // Transpiration parameter ( +ve = blowing )
-  double alpha( 0.1 );              // Wavenumber (alpha hat)
+  double K( 9.0 );                  // Transpiration parameter ( +ve = blowing )
+  double alpha( 0.4 );              // Wavenumber (alpha hat)
   double Rx( 5000 * 5000 );           // Local Reynolds number
 
-  std::complex<double> target(0.87,-0.1); // Target for eigensolver
+  std::complex<double> target(0.76,0.0); // Target for eigensolver
   double alpha_max( 0.5 );
   double alpha_min( 0.01 );
 
@@ -64,53 +64,7 @@ int main()
 
   SSI.set_output_path();
   SSI.mesh_setup();
-  Vector<double> ETA_NODES      = SSI.eta_nodes();
-  Vector<double> HZETA_NODES    = SSI.hzeta_nodes();
-  Vector<double> X_NODES        = SSI.x_nodes();
-  Vector<double> Y_NODES        = SSI.y_nodes();
-  Vector<double> BASE_ETA_NODES = SSI.base_eta_nodes();
-
-  TwoD_node_mesh<double> sol( HZETA_NODES, ETA_NODES, 8 ); // Mesh for storing the solution
-  OneD_node_mesh<double> base( BASE_ETA_NODES, 6 );
-
-  // Don't bother solving it all again if the solution file already exists
-  bool exists;
-  exists = Utility::file_exists( SSI.output_path() + "Qout_" + Utility::stringify( zeta0 ) + ".dat" );
-  bool base_exists;
-  base_exists = Utility::file_exists( SSI.output_path() + "Base_soln.dat" );
-
-  try
-  {
-    if ( !exists || !base_exists ){
-      SSI.solve();
-      SSI.output();
-      SSI.output_base_solution();
-      sol = SSI.solution();
-      base = SSI.base_flow_solution();
-      cout << "  * zeta0 = " << SSI.injection_width() << ", A = " << SSI.mass_flux() << endl;
-     }
-    if ( exists ){
-      cout << "--- Reading solution from file" << endl;
-      sol.read( SSI.output_path() + "Qout_" + Utility::stringify( zeta0 ) + ".dat" );
-      cout << "--- Finished reading" << endl;
-    }
-
-    if ( base_exists ){
-      base.read( SSI.output_path() + "Base_soln.dat" );
-      std::cout << "  * UB'(eta=0) =" << base( 0, 1 ) << std::endl;
-    }
-
-    if ( exists && base_exists ){
-      SSI.set_solved( true );
-      SSI.set_solution( sol );
-      SSI.set_base_solution( base );
-    }
-  }
-  catch ( std::runtime_error )
-  {
-    cout << " \033[1;31;48m  * FAILED THROUGH EXCEPTION BEING RAISED (SSI) \033[0m\n";
-    assert( false );
-  }
+  SSI.solve_check_exists();
 
   // Setup the generalised eigenvalue problem A p = c B p (solved using SLEPc)
   cout << "*** Setting up the generalised eigenvalue problem ***" << endl;
@@ -127,8 +81,24 @@ int main()
   orrsommerfeld_2D.calc_eigenvectors() = true;
 
   // Solve
+  Timer timer_OS;
+  timer_OS.start();
   orrsommerfeld_2D.solve_evp();
   orrsommerfeld_2D.output();
+  timer_OS.print();
+  timer_OS.stop();
+
+  //TODO set an initial guess somehow = faster convergence ???
+  orrsommerfeld_2D.set_initial_guess_from_evec( 0 );
+  target = orrsommerfeld_2D.eigenvalues()[ 0 ];
+  orrsommerfeld_2D.set_target( target );
+
+  // Solve again (to see if it's any quicker)
+  timer_OS.start();
+  orrsommerfeld_2D.solve_evp();
+  orrsommerfeld_2D.output();
+  timer_OS.print();
+  timer_OS.stop();
 
   //orrsommerfeld_2D.step_in_alpha( 0.01, alpha_max );
 

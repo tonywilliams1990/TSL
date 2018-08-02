@@ -25,9 +25,13 @@ enum class SelfSim{ Phi, Psi, U, Theta };                     // PDE
 
 namespace TSL
 {
+  // Forward declare the VWI class that will be friends with SelfSimInjection
+  class VWI;
+
   class SelfSimInjection
   {
   protected:
+      friend class VWI;           // Friend class that may access things directly
       double HZETA_RIGHT;         // Size of the domain in the zeta_hat direction
       double ETA_TOP;             // Size of the domain in the eta direction
       std::size_t N;              // Number of intervals in the zeta_hat direction
@@ -773,6 +777,11 @@ namespace TSL
           HZETA_NODES[ i ] = guess[ 0 ];
         }
 
+        TwoD_node_mesh<double> q( X_NODES, Y_NODES, 4 );
+        TwoD_node_mesh<double> q_output( HZETA_NODES, ETA_NODES, 8 );
+        Q = q;
+        Q_output = q_output;
+
       }
 
       /* ----- Methods for solving the perturbation problem ----- */
@@ -854,10 +863,17 @@ namespace TSL
         int U = static_cast<int>(SelfSim::U);
         int Theta = static_cast<int>(SelfSim::Theta);
 
-        TwoD_node_mesh<double> q( X_NODES, Y_NODES, 4 );
-        TwoD_node_mesh<double> q_output( HZETA_NODES, ETA_NODES, 8 );
-        Q = q;
-        Q_output = q_output;
+        // Set the initial guess
+        for ( std::size_t i = 0; i < N + 1; ++i )
+        {
+          for ( std::size_t j = 0; j < M + 1; ++j )
+          {
+            Q( i, j, Phi )   = Q_output( i, j, 0 );
+            Q( i, j, Psi )   = Q_output( i, j, 1 );
+            Q( i, j, U )     = Q_output( i, j, 2);
+            Q( i, j, Theta ) = Q_output( i, j, 3 );
+          }
+        }
 
         // step sizes in the remapped domain : these should be constants
         const double dY( Y_NODES[ 1 ] - Y_NODES[ 0 ] );
@@ -865,7 +881,6 @@ namespace TSL
 
         // Vector for the RHS of the matrix problem
         Vector<double> B( 4 * ( M + 1 ) * ( N + 1 ), 0.0 );
-        //TODO use Q to initialise B ? (only if forcing?)
 
         /* Iterate to a solution */
         double max_residual( 0.0 );             // Maximum residual
@@ -922,7 +937,7 @@ namespace TSL
 
             // Theta = 0
             A( row, col( i, j, Theta ) )    =   1;
-            
+
             B[ row ]                        = - Q( i, j, Theta );
             ++row;
 
@@ -1101,8 +1116,8 @@ namespace TSL
               A( row, col( i, j, Phi ) )          =    Base[ UBd ] + Guess_eta[ U ];
 
               // Forcing 1
-              double F_1;
-              F_1 = calculate_forcing_1( i, j );
+              //double F_1;
+              //F_1 = calculate_forcing_1( i, j );
 
               // Residual
               B[ row ]        = - Guess_laplace[ U ]
@@ -1110,8 +1125,8 @@ namespace TSL
                                 - ( hzeta * Base[ PsiB ] + Guess[ Psi ] )
                                 * ( Guess_hzeta[ U ] )
                                 - ( Base[ PhiB ] + Guess[ Phi ] ) * Guess_eta[ U ]
-                                - Base[UBd] * Guess[Phi]
-                                + std::pow( RX, -2.0/3.0 ) * SIGMA * SIGMA * F_1;
+                                - Base[UBd] * Guess[Phi];
+                                //+ std::pow( RX, -2.0/3.0 ) * SIGMA * SIGMA * F_1;
               ++row;
 
               ////////////////////
@@ -1550,6 +1565,52 @@ namespace TSL
         }
         setup();
         solve_perturbation_eqns();
+      }
+
+      void solve_check_exists()
+      {
+        TwoD_node_mesh<double> sol( HZETA_NODES, ETA_NODES, 8 ); // Mesh for storing the solution
+        OneD_node_mesh<double> base( BASE_ETA_NODES, 6 );
+
+        // Don't bother solving it all again if the solution file already exists
+        bool exists;
+        exists = Utility::file_exists( OUTPUT_PATH + "Qout_" + Utility::stringify( ZETA0 ) + ".dat" );
+        bool base_exists;
+        base_exists = Utility::file_exists( OUTPUT_PATH + "Base_soln.dat" );
+
+        try
+        {
+          if ( !exists || !base_exists ){
+            solve();
+            output();
+            output_base_solution();
+            sol = solution();
+            base = base_flow_solution();
+            std::cout << "  * zeta0 = " << ZETA0 << ", A = " << A_PARAM << std::endl;
+           }
+          if ( exists ){
+            std::cout << "--- Reading solution from file" << std::endl;
+            sol.read( OUTPUT_PATH + "Qout_" + Utility::stringify( ZETA0 ) + ".dat" );
+            std::cout << "--- Finished reading" << std::endl;
+          }
+
+          if ( base_exists ){
+            base.read( OUTPUT_PATH + "Base_soln.dat" );
+            std::cout << "  * UB'(eta=0) =" << base( 0, 1 ) << std::endl;
+          }
+
+          if ( exists && base_exists ){
+            set_solved( true );
+            set_solution( sol );
+            set_base_solution( base );
+          }
+        }
+        catch ( std::runtime_error )
+        {
+          std::cout << " \033[1;31;48m  * FAILED THROUGH EXCEPTION BEING RAISED (SSI) \033[0m\n";
+          assert( false );
+        }
+
       }
 
   }; // End of class SelfSimInjection

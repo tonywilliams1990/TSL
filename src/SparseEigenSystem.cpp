@@ -141,7 +141,6 @@ namespace TSL
     ST st;
     EPS eps;
 
-
     // assuming A & B are square
     n = p_A -> rows();
 
@@ -269,7 +268,28 @@ namespace TSL
     // set the order of the returned ev's, as set by the get_order method.
     EPSSetWhichEigenpairs(eps, ORDER);
     // set the number of requested ev's. Not sure if this is relevant if REGION_DEFINED
-    EPSSetDimensions(eps,NEV,2*NEV+10,PETSC_DEFAULT);
+    //EPSSetDimensions(eps,NEV,2*NEV+10,PETSC_DEFAULT);
+    EPSSetDimensions(eps,NEV,NEV+1,PETSC_DEFAULT);
+    EPSSetTolerances(eps, 1.e-10, 200 );
+
+    //TODO fill the vector with an initial guess
+    VecCreate(PETSC_COMM_WORLD,&x);
+    VecSetSizes(x,PETSC_DECIDE,n);
+    VecSetFromOptions(x);
+    if ( GUESS_DEFINED )
+    {
+      for ( PetscInt i = 0; i < n; ++i )
+      {
+#ifdef PETSC_Z
+        VecSetValue(x,i,INITIAL_GUESS[i],INSERT_VALUES);
+#endif
+#ifdef PETSC_D
+        VecSetValue(x,i,INITIAL_GUESS[i].real(),INSERT_VALUES);
+#endif
+      }
+      //std::cout << "***** setting initial space\n";
+      EPSSetInitialSpace(eps,1,&x);
+    }
 
     /*
        Define the region containing the eigenvalues of interest
@@ -303,9 +323,8 @@ namespace TSL
     KSPGetPC(ksp,&pc);
     // set it to LU factorization is precondition
     PCSetType(pc,PCLU);
-    // solve using the SUPERLU_DIST library
+    // solve using the MUMPS library
     //PCFactorSetMatSolverPackage(pc,MATSOLVERSUPERLU_DIST);
-    //PCFactorSetMatSolverPackage(pc,MATSOLVERMUMPS);
     PCFactorSetMatSolverType(pc,MATSOLVERMUMPS); // Updated in PETSC 3.9.1
 
 

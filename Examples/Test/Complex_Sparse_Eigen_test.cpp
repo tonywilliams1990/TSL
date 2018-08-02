@@ -81,14 +81,33 @@ int main()
   b( 3, 2 ) = std::complex<double>( 0.00, -4.00 );
   b( 3, 3 ) = std::complex<double>( 4.00, -5.00 );
 
+  // Also convert to dense matrices for use later
+  Matrix< std::complex<double> > A( 4, 4, 0.0 );
+  Matrix< std::complex<double> > B( 4, 4, 0.0 );
+  for ( std::size_t i = 0; i < 4; ++i )
+  {
+    for ( std::size_t j = 0; j < 4; ++j )
+    {
+      A( i, j ) = a( i, j );
+      B( i, j ) = b( i, j );
+    }
+  }
+
   // a vector for the eigenvalues
   Vector< std::complex<double> > lambdas;
   // eigenvalues are: (3,-9), (2,-5), (3,-1), (4,-5)
+  Matrix< std::complex<double> > evec_mat;
 
   SparseEigenSystem< std::complex<double> > system( &a, &b );
+  system.calc_eigenvectors() = true;
+
   try
   {
+    Timer timer_OS;
+    timer_OS.start();
     system.eigensolve();
+    timer_OS.print();
+    timer_OS.stop();
   }
   catch ( std::runtime_error )
   {
@@ -102,6 +121,45 @@ int main()
   // get those tagged eigenvalues
   //lambdas = system.get_tagged_eigenvalues();
   lambdas = system.eigenvalues();
+  evec_mat = system.eigenvectors();
+
+  cout << "evec_mat = " << endl << evec_mat << endl;
+  Vector< std::complex<double> > evec( 4, 0.0 );
+
+  std::size_t i( 0 );
+  for ( std::size_t j = 0; j < 4; ++j )
+  {
+    evec[ j ] = evec_mat( i, j );
+  }
+  cout << "evec = " << evec << endl;
+
+  std::complex<double> target( lambdas[ i ] );
+  cout << "target = " << target << endl;
+  Vector< std::complex<double> > Ax( 4, 0.0 );
+  Ax = A.mult( evec );
+  Vector< std::complex<double> > kBx( 4, 0.0 );
+  kBx = B.mult( evec );
+  kBx = target * kBx;
+  cout << "Ax - kBx = " << Ax - kBx << endl;
+  // Try again with an initial guess
+  system.set_initial_guess( evec );
+  system.set_nev( 1 ); //only return one eigenvalue and eigenvector
+  system.set_target( target );
+
+  try
+  {
+    Timer timer_OS;
+    timer_OS.start();
+    system.eigensolve();
+    timer_OS.print();
+    timer_OS.stop();
+  }
+  catch ( std::runtime_error )
+  {
+    cout << " \033[1;31;48m  * FAILED THROUGH EXCEPTION BEING RAISED \033[0m\n";
+    assert( false );
+  }
+
   const double tol = 1.e-10;
   if ( std::abs( lambdas[ 0 ] - std::complex<double>( 3.0, -1.0 ) ) > tol )
   {

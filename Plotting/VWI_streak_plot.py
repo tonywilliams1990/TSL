@@ -5,32 +5,23 @@ import matplotlib.pyplot as plt
 
 
 zeta0 = 1
-beta = 0.1
+beta = 0.5
 K = 2.5
-N = 1
-Gaussian = False
 
 # change the levels in the VW plot to see more detail (line 85)
+data = np.loadtxt("./DATA/VWI_local_output.dat")
 
-if Gaussian:
-    data = np.loadtxt("./DATA/K_Step_beta_"+ str(beta) + "_zeta0_" + str(zeta0) + "_Gaussian/Qout_K_" + str(K) + "_zeta0_" + str(zeta0) + ".dat")
-else:
-    #data = np.loadtxt("./DATA/K_"+ str(K) + "_beta_"+ str(beta) + "_401x401_16_128/Qout_" + str(zeta0) + ".dat")
-    #data = np.loadtxt("./DATA/K_Step_beta_"+ str(beta) + "_zeta0_" + str(zeta0) + "_N_" + str(N) + "/Qout_K_" + str(K) + "_zeta0_" + str(zeta0) + ".dat")
-    #data = np.loadtxt("./DATA/K_Step_beta_"+ str(beta) + "_zeta0_" + str(zeta0) + "/Qout_K_" + str(K) + "_zeta0_" + str(zeta0) + ".dat")
-    data = np.loadtxt("./DATA/VWI_SSI.dat")
-    #data = np.loadtxt("./DATA/VWI_try_K_8.7_alpha_0.4.dat")
 
 zeta_hat = data[:,0]
 eta = data[:,1]
-Phi_pert = data[:,2]
-Psi_pert = data[:,3]
-U_pert = data[:,4]
-Theta_pert = data[:,5]
-Phi = data[:,6]
-Psi = data[:,7] # Psi / zeta0
-U = data[:,8]
-Theta = data[:,9] # Theta / zeta0
+Phi_pert = data[:,10]
+Psi_pert = data[:,12]
+U_pert = data[:,14]
+Theta_pert = data[:,16]
+Phi = data[:,18]# Phi_real
+Psi = data[:,20]# Psi_real
+U = data[:,22]# U_real
+Theta = data[:,24]# Theta_real
 
 zeta = zeta0 * zeta_hat
 eta_hat = eta / zeta0

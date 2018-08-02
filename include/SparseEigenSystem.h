@@ -86,7 +86,7 @@ namespace TSL
     void set_initial_guess( const Vector<T>& guess );
 
     /// Solve the matrix linear eigensystem
-    void eigensolve();
+    void eigensolve(); 
 
     /// Return all the eigenvalues
     Vector< std::complex<double> > eigenvalues() const
