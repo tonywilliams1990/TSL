@@ -20,6 +20,8 @@
 #if defined(PETSC_D) || defined(PETSC_Z)
 #include "petscsys.h"
 #include "petsc.h"
+#include "petscksp.h"
+#include "mpi.h"
 #endif
 
 #ifdef SLEPC
@@ -59,7 +61,7 @@ namespace TSL
       }
 
       /// Copy constructor
-			SparseMatrix( const SparseMatrix<T>& source )
+			SparseMatrix( const SparseMatrix<T>& source )  
 			{
 				//CONTAINER = source.CONTAINER;
         ROWS = source.ROWS;
@@ -282,6 +284,7 @@ namespace TSL
         row_nnz[i] = this->numel_row( i );
       }
     }
+
 #endif
 
   }; // End of class SparseMatrix

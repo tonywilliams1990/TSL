@@ -17,9 +17,13 @@ int main()
   cout << "A = " << endl << A << endl;
 
   TSL::Vector<double> x(3,0.0);
+  TSL::Timer timer;                                        // Timer
+  cout << "Solving using Eigen and LU factorisation" << endl;
+  timer.start();
   x = A.solve( b, "LU" );
-
   cout << "x = " << endl << x << endl;
+  timer.print();
+  timer.stop();
 
   TSL::Matrix<double> B(3,2,1.0);
   cout << "B = " << endl << B << endl;

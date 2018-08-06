@@ -18,3 +18,4 @@
 #include "SparseMatrix.h"
 #include "SparseVector.h"
 #include "SparseEigenSystem.h"
+#include "PETScSparseLinearSystem.h"

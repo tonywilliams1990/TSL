@@ -19,26 +19,7 @@
 
 namespace TSL
 {
-  /*PetscErrorCode monitor_function(EPS eps, PetscInt its,PetscInt nconv,
-    PetscScalar *eigr,PetscScalar *eigi,PetscReal* errest,
-    PetscInt nest,void *mctx)
-  {
-    std::cout << "[MONITOR] nconv = " << nconv;
-    std::cout << " its = " << its << "\n";
-    std::cout << "[MONITOR] est_err() = ";
-    for (int i = 0; i < nest; i++)
-    {
-       std::cout << errest[i] << " ";
-    }
-    std::cout << "\n";
-    return 0;
-  }*/
-
   /// A linear Nth-order generalised eigensystem class.
-  /// Here we can construct a linear eigenproblem in the form
-  /// \f[ A_{NxN} \,{\underline x}_i = \lambda_i\, B_{NxN}\, {\underline x}_i \f]
-  /// for Banded double/complex matrices \f$ A \f$ and \f$ B \f$. The eigenvalues
-  /// and eigenvectors can be tagged and retrieved as required.
   template <typename T>
   class SparseEigenSystem
   {
@@ -46,19 +27,15 @@ namespace TSL
   public:
 
     /// Constructor for a linear system object.
-    /// \param Aptr A pointer to a typed A matrix
-    /// \param Bptr A pointer to a typed B matrix
     SparseEigenSystem( SparseMatrix<T>* Aptr, SparseMatrix<T>* Bptr );
 
     /// Destructor for a linear system object.
     ~SparseEigenSystem();
 
     /// Access the (actual) number of (converged) eigenvalues found.
-    /// \return A hande to the number of eigenvalues
     unsigned get_nconv() const;
 
-    /// Request a certain number of eigenvalues (not guaranteed)
-    /// \param n The number of eigenvalues being asked for
+    /// Request a certain number of eigenvalues
     void set_nev( unsigned n );
 
     /// Set target for the shift-invert algorithm.
@@ -86,7 +63,7 @@ namespace TSL
     void set_initial_guess( const Vector<T>& guess );
 
     /// Solve the matrix linear eigensystem
-    void eigensolve(); 
+    void eigensolve();
 
     /// Return all the eigenvalues
     Vector< std::complex<double> > eigenvalues() const

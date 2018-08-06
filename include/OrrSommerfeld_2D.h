@@ -242,6 +242,7 @@ namespace TSL
     SparseMatrix< std::complex<double> > B( 4 * N_eta * N_hzeta, 4 * N_eta * N_hzeta );
 
     // Create the SparseEigenSystem
+
     SparseEigenSystem< std::complex<double> > system( &A, &B );
     system.set_nev( EIGS_REQUESTED );
     system.set_region( LEFT, RIGHT, BOTTOM, TOP );
@@ -689,6 +690,7 @@ namespace TSL
           }
         }
       }
+
     }
 /*
     // Check BCs

@@ -465,7 +465,7 @@ namespace TSL
         return x;
       }
 
-      /// Solve system of equations AX=B where X and B are vectors
+      /// Solve system of equations AX=B where X and B are matrices
       Matrix<T> solve( const Matrix<T>& B, const std::string method = "LU" ) const
       {
         if ( ROWS != B.ROWS ) { throw Error( "Linear system error: dimension 1 " );}

@@ -189,11 +189,6 @@ namespace TSL
     MatAssemblyEnd(A,MAT_FINAL_ASSEMBLY);
 
     std::cout << "A assembled \n";
-    //timer.print();
-    //timer.stop();
-    //timer.print();
-    //timer.reset();
-    //timer.start();
 
     // define B using PETSc structures
     //MatCreate(p_LIBRARY -> get_Comm(),&B);
@@ -230,9 +225,6 @@ namespace TSL
     MatAssemblyEnd(B,MAT_FINAL_ASSEMBLY);
 
     std::cout << "B assembled \n";
-
-    //timer.print();
-    //timer.stop();
 
     // PETSc storage for the eigenvector, using A to define the size
 #ifdef PETSC_D
@@ -272,7 +264,8 @@ namespace TSL
     EPSSetDimensions(eps,NEV,NEV+1,PETSC_DEFAULT);
     EPSSetTolerances(eps, 1.e-10, 200 );
 
-    //TODO fill the vector with an initial guess
+    //Fill the vector with an initial guess TODO only for complex at the moment
+#ifdef PETSC_Z
     VecCreate(PETSC_COMM_WORLD,&x);
     VecSetSizes(x,PETSC_DECIDE,n);
     VecSetFromOptions(x);
@@ -280,17 +273,11 @@ namespace TSL
     {
       for ( PetscInt i = 0; i < n; ++i )
       {
-#ifdef PETSC_Z
         VecSetValue(x,i,INITIAL_GUESS[i],INSERT_VALUES);
-#endif
-#ifdef PETSC_D
-        VecSetValue(x,i,INITIAL_GUESS[i].real(),INSERT_VALUES);
-#endif
       }
-      //std::cout << "***** setting initial space\n";
       EPSSetInitialSpace(eps,1,&x);
     }
-
+#endif
     /*
        Define the region containing the eigenvalues of interest
     */
@@ -333,31 +320,7 @@ namespace TSL
        - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
     EPSSolve(eps);
-    // EPSGetDimensions(eps,&nev,NULL,NULL);
-    // update the NEV private data with the number of returned eigenvalues
-    // NEV = (unsigned)nev; // is this always the same as the input nev?
 
-    // Optional: Get some information from the solver and display it
-/*  // DEBUG
-    PetscInt its, lits, maxit;
-    EPSType type;
-    PetscReal tol;
-    //KSP ksp;
-    //
-    std::cout << "[DEBUG] Target location for eigenvalue  = " << SHIFT << "\n";
-    std::cout << "[DEBUG] Target ordering of returned eigenvalues (see EPSWhich enum) = " << ORDER << "\n";
-    //
-    EPSGetIterationNumber(eps,&its);
-    PetscPrintf(PETSC_COMM_WORLD,"[DEBUG] Number of iterations of the method: %D\n",its);
-    EPSGetST(eps,&st); STGetKSP(st,&ksp);
-    KSPGetTotalIterations(ksp,&lits);
-    PetscPrintf(PETSC_COMM_WORLD,"[DEBUG] Number of linear iterations of the method: %D\n",lits);
-    EPSGetType(eps,&type);
-    PetscPrintf(PETSC_COMM_WORLD,"[DEBUG] Solution method: %s\n\n",type);
-    PetscPrintf(PETSC_COMM_WORLD,"[DEBUG] Number of requested eigenvalues: %D\n",NEV);
-    EPSGetTolerances(eps,&tol,&maxit);
-    PetscPrintf(PETSC_COMM_WORLD,"[DEBUG] Stopping condition: tol=%.4g, maxit=%D\n",(double)tol,maxit);
-*/
     /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
                       Display solution and clean up
        - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
@@ -388,9 +351,9 @@ namespace TSL
       //std::cout << ALL_EIGENVALUES[i] << "\n";
 #endif
 #ifdef PETSC_D
-      double lambda_r,lambda_i;
+      PetscScalar lambda_r,lambda_i;
       EPSGetEigenvalue(eps,i,&lambda_r,&lambda_i);
-      ALL_EIGENVALUES[i] = std::complex<double>( lambda_r, lambda_i );
+      //ALL_EIGENVALUES[i] = std::complex<double>( lambda_r, lambda_i );
 #endif
 
       if ( CALC_EIGENVECTORS )
@@ -406,7 +369,7 @@ namespace TSL
         for ( int j=0; j<n; ++j )
         {
           //ALL_EIGENVECTORS[i][j]=std::complex<double>( arrayr[j], arrayi[j] );
-          ALL_EIGENVECTORS( i, j ) = std::complex<double>( arrayr[j], arrayi[j] );
+          //ALL_EIGENVECTORS( i, j ) = std::complex<double>( arrayr[j], arrayi[j] );
         }
         // documentation says to "restore", though it might not matter as we're done with it now
         VecRestoreArray1d( xr, n, 0, &arrayr );
@@ -450,6 +413,7 @@ namespace TSL
   template class SparseEigenSystem< std::complex<double> >;
 #endif
 #ifdef PETSC_D
+  template class SparseEigenSystem< std::complex<double> >;
   template class SparseEigenSystem<double>;
 #endif
 

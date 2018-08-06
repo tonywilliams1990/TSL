@@ -6,22 +6,26 @@ import matplotlib.pyplot as plt
 
 zeta0 = 1
 beta = 0.5
-K = 2.5
+N = 70
+M = 70
+K = 11
+R = 12000
+Sigma = 0.0002
 
-# change the levels in the VW plot to see more detail (line 85)
-data = np.loadtxt("./DATA/VWI_local_output.dat")
+
+data = np.loadtxt("./DATA/VWI/K_" + str(K) + "_R_" + str(R) + "_Sigma_" + str(Sigma) + "_" + str(N+1) + "x" + str(M+1) + "_20_20.dat")
 
 
 zeta_hat = data[:,0]
 eta = data[:,1]
 Phi_pert = data[:,10]
-Psi_pert = data[:,12]
-U_pert = data[:,14]
-Theta_pert = data[:,16]
-Phi = data[:,18]# Phi_real
-Psi = data[:,20]# Psi_real
-U = data[:,22]# U_real
-Theta = data[:,24]# Theta_real
+Psi_pert = data[:,11]
+U_pert = data[:,12]
+Theta_pert = data[:,13]
+Phi = data[:,14]# Phi_real
+Psi = data[:,15]# Psi_real
+U = data[:,16]# U_real
+Theta = data[:,17]# Theta_real
 
 zeta = zeta0 * zeta_hat
 eta_hat = eta / zeta0
@@ -33,11 +37,11 @@ W = (1 - beta)*zeta_hat*U - Psi # effectively W / zeta0
 #U[U > 1.0] = 1.0
 
 min_x = np.min(zeta_hat)
-max_x = np.max(zeta_hat)
-#max_x = 2
+#max_x = np.max(zeta_hat)
+max_x = 10
 min_y = np.min(eta)
-max_y = np.max(eta)
-#max_y = max_x * zeta0
+#max_y = np.max(eta)
+max_y = 10
 
 npts = 500
 
@@ -80,10 +84,8 @@ axes.set_xlim([0,max_x])
 #plt.xticks(np.arange(0, max_x + 0.5, 0.5))
 axes.set_ylim([0,max_y])
 
-if Gaussian:
-    plt.savefig('U_contour_K_' + str(K) + "_beta_" + str(beta) + "_zeta0_" + str(zeta0) + "_Gaussian.eps", format='eps', dpi=1000)
-else:
-    plt.savefig('U_contour_K_' + str(K) + "_beta_" + str(beta) + "_zeta0_" + str(zeta0) + "_N_" + str(N) + ".eps", format='eps', dpi=1000)
+
+#plt.savefig('U_contour_K_' + str(K) + "_beta_" + str(beta) + "_zeta0_" + str(zeta0) + "_N_" + str(N) + ".eps", format='eps', dpi=1000)
 
 plt.figure()
 
@@ -115,9 +117,7 @@ axes.set_xlim([0,max_x])
 #plt.xticks(np.arange(0, max_x + 0.5, 0.5))
 axes.set_ylim([0,max_y])
 
-if Gaussian:
-    plt.savefig('VW_stream_K_' + str(K) + "_beta_" + str(beta) + "_zeta0_" + str(zeta0) + "_Gaussian.eps", format='eps', dpi=1000)
-else:
-    plt.savefig('VW_stream_K_' + str(K) + "_beta_" + str(beta) + "_zeta0_" + str(zeta0) + "_N_" + str(N) + ".eps", format='eps', dpi=1000)
+
+#plt.savefig('VW_stream_K_' + str(K) + "_beta_" + str(beta) + "_zeta0_" + str(zeta0) + "_N_" + str(N) + ".eps", format='eps', dpi=1000)
 
 plt.show()

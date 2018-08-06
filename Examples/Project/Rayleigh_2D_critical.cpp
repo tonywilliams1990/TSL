@@ -105,7 +105,7 @@ int main()
   // Setup the generalised eigenvalue problem A p = c B p (solved using SLEPc)
   cout << "*** Setting up the generalised eigenvalue problem ***" << endl;
   cout << "--- K = " << K << ", alpha = " << alpha << endl;
-
+#ifdef PETSC_Z
   // Create the Rayleigh_2D object
   std::size_t nev( 1 );
   Rayleigh_2D rayleigh_2D( SSI, alpha, nev );
@@ -123,7 +123,7 @@ int main()
 
   timer.print();
   timer.stop();
-
+#endif
 	cout << "FINISHED" << endl;
 
 }

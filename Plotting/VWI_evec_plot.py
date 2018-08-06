@@ -13,8 +13,13 @@ save_fig = False
 zeta0 = 1
 beta = 0.5
 number_of_levels = 11
+N = 70
+M = 70
+K = 11
+R = 12000
+Sigma = 0.0002
 
-data = np.loadtxt("./DATA/VWI_local_output.dat")
+data = np.loadtxt("./DATA/VWI/K_" + str(K) + "_R_" + str(R) + "_Sigma_" + str(Sigma) + "_" + str(N+1) + "x" + str(M+1) + "_20_20.dat")
 
 zeta_hat = data[:,0]
 eta = data[:,1]
@@ -41,10 +46,10 @@ vel = vel / np.max(vel)
 
 min_x = np.min(zeta_hat)
 #max_x = np.max(zeta_hat)
-max_x = 8
+max_x = 10
 min_y = np.min(eta)
 #max_y = np.max(eta)
-max_y = 8
+max_y = 10
 
 npts = 500
 
@@ -86,9 +91,9 @@ if show_fig_2:
     plt.figure(2)
     origin = 'lower'
     cmap = plt.cm.YlGnBu_r
-    levels = np.linspace(np.min(evec1_imag),np.max(evec1_imag),number_of_levels)
+    levels = np.linspace(np.min(evec3_imag),np.max(evec3_imag),number_of_levels)
 
-    CS = plt.contourf(xi, yi, evec1_imag_i, levels,
+    CS = plt.contourf(xi, yi, evec3_imag_i, levels,
                       cmap=cmap,
                       origin=origin,
                       extend='both')
@@ -106,9 +111,9 @@ if show_fig_3:
     plt.figure(3)
     origin = 'lower'
     cmap = plt.cm.YlGnBu_r
-    levels = np.linspace(np.min(evec1_abs),np.max(evec1_abs),number_of_levels)
+    levels = np.linspace(np.min(evec3_abs),np.max(evec3_abs),number_of_levels)
 
-    CS = plt.contourf(xi, yi, evec1_abs_i, levels,
+    CS = plt.contourf(xi, yi, evec3_abs_i, levels,
                       cmap=cmap,
                       origin=origin,
                       extend='both')

@@ -72,6 +72,7 @@ if int(petsc * slepc):
     rpath.append( slepc_lib_dir )
 
     preproc += ' -DPETSC_Z '
+    #preproc += ' -DPETSC_D '
     preproc += ' -DSLEPC '
     preproc += ' -DINC_MPI '
 

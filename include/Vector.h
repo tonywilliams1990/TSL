@@ -315,7 +315,7 @@ namespace TSL
         dump.setf( std::ios::scientific );
         for ( std::size_t i = 0; i < SIZE; ++i )
         {
-          dump << VECTOR( i, 0) << std::endl;
+          dump << VECTOR( i, 0 ) << std::endl;
         }
       }
 

@@ -3,10 +3,10 @@ import numpy as np
 import matplotlib.mlab as mlab
 import matplotlib.pyplot as plt
 
-show_fig_1 = False
-show_fig_2 = False
-show_fig_3 = False
-show_vel = True
+show_fig_1 = True
+show_fig_2 = True
+show_fig_3 = True
+show_vel = False
 
 save_fig = False
 
@@ -17,8 +17,9 @@ R = 5000
 alpha = 0.4
 number_of_levels = 11
 
+
 #data = np.loadtxt("./DATA/K_"+ str(K) + "_zeta0_" + str(zeta0) + "_beta_"+ str(beta) + "_301x301_32_32/eigenvectors_R_"+ str(R*R) +"/alpha_"+ str(alpha) + "_evecs.dat")
-data = np.loadtxt("./DATA/VWI_OS2D_local.dat")
+data = np.loadtxt("./DATA/OS2D_global.dat")
 
 zeta_hat = data[:,0]
 eta = data[:,1]
@@ -57,8 +58,14 @@ yi = np.linspace(min_y, max_y, npts)
 evec1_real_i = mlab.griddata(zeta_hat, eta, evec1_real, xi, yi, interp = 'linear')
 evec1_imag_i = mlab.griddata(zeta_hat, eta, evec1_imag, xi, yi, interp = 'linear')
 evec1_abs_i  = mlab.griddata(zeta_hat, eta, evec1_abs , xi, yi, interp = 'linear')
+evec2_real_i = mlab.griddata(zeta_hat, eta, evec2_real, xi, yi, interp = 'linear')
+evec2_imag_i = mlab.griddata(zeta_hat, eta, evec2_imag, xi, yi, interp = 'linear')
 evec2_abs_i  = mlab.griddata(zeta_hat, eta, evec2_abs , xi, yi, interp = 'linear')
+evec3_real_i = mlab.griddata(zeta_hat, eta, evec3_real, xi, yi, interp = 'linear')
+evec3_imag_i = mlab.griddata(zeta_hat, eta, evec3_imag, xi, yi, interp = 'linear')
 evec3_abs_i  = mlab.griddata(zeta_hat, eta, evec3_abs , xi, yi, interp = 'linear')
+evec4_real_i = mlab.griddata(zeta_hat, eta, evec4_real, xi, yi, interp = 'linear')
+evec4_imag_i = mlab.griddata(zeta_hat, eta, evec4_imag, xi, yi, interp = 'linear')
 evec4_abs_i  = mlab.griddata(zeta_hat, eta, evec4_abs , xi, yi, interp = 'linear')
 vel_i        = mlab.griddata(zeta_hat, eta, vel       , xi, yi, interp = 'linear')
 

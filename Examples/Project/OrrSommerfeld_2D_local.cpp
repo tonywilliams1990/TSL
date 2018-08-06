@@ -64,7 +64,7 @@ int main()
 
   cout << "*** Solving the 2D OrrSommerfeld equation (Global) ***" << endl;
   cout << "--- K = " << K << ", alpha = " << alpha << ", Rx^1/2 = " << sqrt(Rx) << endl;
-
+#ifdef PETSC_Z
   // Create the OrrSommerfeld_2D object
   std::size_t nev( 1 );
   OrrSommerfeld_2D orrsommerfeld_2D( SSI, alpha, Rx, nev );
@@ -153,6 +153,6 @@ int main()
 
   timer.print();
   timer.stop();
-
+#endif
 	cout << "FINISHED" << endl;
 }

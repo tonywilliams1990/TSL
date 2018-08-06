@@ -26,10 +26,10 @@ int main()
   cout << "*** ------- Solving the 2D OrrSommerfeld equation (EVP) ------- ***" << endl;
 
   // Define the domain + short scale injection parameters
-  double hzeta_right( 32.0 );       // Size of the domain in the zeta_hat direction
-  double eta_top( 32.0 );           // Size of the domain in the eta direction
-  const std::size_t N( 300 );       // Number of intervals in the zeta_hat direction
-  const std::size_t M( 300 );       // Number of intervals in the eta direction
+  double hzeta_right( 20.0 );       // Size of the domain in the zeta_hat direction
+  double eta_top( 20.0 );           // Size of the domain in the eta direction
+  const std::size_t N( 200 );       // Number of intervals in the zeta_hat direction
+  const std::size_t M( 200 );       // Number of intervals in the eta direction
   const std::size_t MB( M * 100 );  // Number of eta intervals in the base flow ODE
   double beta( 0.5 );               // Hartree parameter
   double zeta0( 1.0 );              // Transpiration width
@@ -69,7 +69,7 @@ int main()
   // Setup the generalised eigenvalue problem A p = c B p (solved using SLEPc)
   cout << "*** Setting up the generalised eigenvalue problem ***" << endl;
   cout << "--- K = " << K << ", alpha = " << alpha << ", Rx^1/2 = " << sqrt(Rx) << endl;
-
+#ifdef PETSC_Z
   // Create the OrrSommerfeld_2D object
   std::size_t nev( 1 );
   OrrSommerfeld_2D orrsommerfeld_2D( SSI, alpha, Rx, nev );
@@ -112,7 +112,7 @@ int main()
 
   timer.print();
   timer.stop();
-
+#endif
 	cout << "FINISHED" << endl;
 
 }
