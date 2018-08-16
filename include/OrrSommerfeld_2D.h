@@ -671,8 +671,9 @@ namespace TSL
     // Convert the eigenvector matrix to a 2D mesh
     if ( CALC_EIGENVECTORS )
     {
-      //Matrix< std::complex<double> > evecs;
-      EVECS = system.eigenvectors();
+      Matrix< std::complex<double> > evecs;
+      evecs = system.eigenvectors();
+      //EVECS = system.eigenvectors();
       std::size_t nev( system.get_nconv() ); // Number of converged eigenvalues
       TwoD_node_mesh< std::complex<double> > output( HZETA_NODES, ETA_NODES, nev * 4 );
       EIGENVECTORS = output;
@@ -683,10 +684,10 @@ namespace TSL
         {
           for ( std::size_t j = 0; j < N_eta; ++j )
           {
-            EIGENVECTORS( i, j, 4 * n + v ) = EVECS( n, 4 * ( i * N_eta + j ) + v );
-            EIGENVECTORS( i, j, 4 * n + w ) = EVECS( n, 4 * ( i * N_eta + j ) + w );
-            EIGENVECTORS( i, j, 4 * n + q ) = EVECS( n, 4 * ( i * N_eta + j ) + q );
-            EIGENVECTORS( i, j, 4 * n + s ) = EVECS( n, 4 * ( i * N_eta + j ) + s );
+            EIGENVECTORS( i, j, 4 * n + v ) = evecs( n, 4 * ( i * N_eta + j ) + v );
+            EIGENVECTORS( i, j, 4 * n + w ) = evecs( n, 4 * ( i * N_eta + j ) + w );
+            EIGENVECTORS( i, j, 4 * n + q ) = evecs( n, 4 * ( i * N_eta + j ) + q );
+            EIGENVECTORS( i, j, 4 * n + s ) = evecs( n, 4 * ( i * N_eta + j ) + s );
           }
         }
       }

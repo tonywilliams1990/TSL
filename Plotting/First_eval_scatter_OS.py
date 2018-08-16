@@ -9,13 +9,14 @@ legend = True
 legend_text_colour = "red"
 
 R = 5000 * 5000
-#K_vals = [8, 9, 10, 11, 12]
-K_vals = [1, 2, 3, 4]
+K_vals = [8, 9, 10, 11, 12]
+#K_vals = [1, 2, 3, 4]
 N = 601
-beta = 0
+beta = 0.5
 zeta0 = 1
 markers = [".", "^", "o", "*", "v", "+", "D"]
 markercycler = cycle(markers)
+alpha_min = 0.04
 
 
 back_data = True
@@ -27,11 +28,12 @@ print "K\talpha_max\tmax_growth_rate"
 
 for K in K_vals :
 
-    data = np.loadtxt("./DATA/K_"+ str(K) + "_zeta0_1_beta_"+ str(beta) + "_" + str(N) + "x" + str(N) + "_32_32/First_eval_R_" + str(R) + ".dat")
+    data = np.loadtxt("./DATA/Viscous_stability_601_DATA/K_"+ str(K) + "_zeta0_1_beta_"+ str(beta) + "_" + str(N) + "x" + str(N) + "_32_32/First_eval_R_" + str(R) + ".dat")
 
-    alpha = data[:,0]
-    c_real = data[:,1]
-    c_imag = data[:,2]
+    alpha_filter = np.abs(data[:,0])>alpha_min
+    alpha = data[:,0][alpha_filter]
+    c_real = data[:,1][alpha_filter]
+    c_imag = data[:,2][alpha_filter]
 
     max_growth_rate = np.max( alpha * c_imag )
     index = np.argmax( alpha * c_imag )
@@ -49,10 +51,11 @@ for K in K_vals :
     plt.scatter(alpha, c_imag, c="black", marker=marker, clip_on=False, label=" K = " + str(K) )#+ ", Rx^1/2 = " + str(R**0.5) )
 
     if back_data:
-        data_back = np.loadtxt("./DATA/K_"+ str(K) + "_zeta0_1_beta_"+ str(beta) + "_" + str(N) + "x" + str(N) + "_32_32/First_eval_back_R_" + str(R) + ".dat")
-        alpha_back = data_back[:,0]
-        c_real_back = data_back[:,1]
-        c_imag_back = data_back[:,2]
+        data_back = np.loadtxt("./DATA/Viscous_stability_601_DATA/K_"+ str(K) + "_zeta0_1_beta_"+ str(beta) + "_" + str(N) + "x" + str(N) + "_32_32/First_eval_back_R_" + str(R) + ".dat")
+        alpha_back_filter = np.abs(data_back[:,0])>alpha_min
+        alpha_back = data_back[:,0][alpha_back_filter]
+        c_real_back = data_back[:,1][alpha_back_filter]
+        c_imag_back = data_back[:,2][alpha_back_filter]
 
         plt.scatter(alpha_back, c_imag_back, c="black", marker=marker, clip_on=False)
 
@@ -64,8 +67,10 @@ for K in K_vals :
     print K, "\t", alpha_max_growth, "\t\t", max_growth_rate
 
 axes = plt.gca()
-axes.set_xlim([0,0.6])
-axes.set_ylim([-0.04,0.1])
+#axes.set_xlim([0,0.6])
+#axes.set_ylim([-0.04,0.1])
+axes.set_xlim([0,1.1])
+axes.set_ylim([-0.02,0.08])
 axes.set_axisbelow(True)
 plt.grid(True)
 

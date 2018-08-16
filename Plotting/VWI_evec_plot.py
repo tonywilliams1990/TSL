@@ -13,13 +13,14 @@ save_fig = False
 zeta0 = 1
 beta = 0.5
 number_of_levels = 11
-N = 70
-M = 70
-K = 11
-R = 12000
-Sigma = 0.0002
+N = 80
+M = 80
+K = 10.5
+R = 25000000
+Sigma = 0
 
-data = np.loadtxt("./DATA/VWI/K_" + str(K) + "_R_" + str(R) + "_Sigma_" + str(Sigma) + "_" + str(N+1) + "x" + str(M+1) + "_20_20.dat")
+#data = np.loadtxt("./DATA/VWI/K_" + str(K) + "_R_" + str(R) + "_Sigma_" + str(Sigma) + "_" + str(N+1) + "x" + str(M+1) + "_20_20.dat")
+data = np.loadtxt("./DATA/VWI/K_" + str(K) + "_R_2.5e+07_Sigma_" + str(Sigma) + "_" + str(N+1) + "x" + str(M+1) + "_20_20.dat")
 
 zeta_hat = data[:,0]
 eta = data[:,1]
@@ -58,8 +59,14 @@ yi = np.linspace(min_y, max_y, npts)
 evec1_real_i = mlab.griddata(zeta_hat, eta, evec1_real, xi, yi, interp = 'linear')
 evec1_imag_i = mlab.griddata(zeta_hat, eta, evec1_imag, xi, yi, interp = 'linear')
 evec1_abs_i  = mlab.griddata(zeta_hat, eta, evec1_abs , xi, yi, interp = 'linear')
+evec2_real_i = mlab.griddata(zeta_hat, eta, evec2_real, xi, yi, interp = 'linear')
+evec2_imag_i = mlab.griddata(zeta_hat, eta, evec2_imag, xi, yi, interp = 'linear')
 evec2_abs_i  = mlab.griddata(zeta_hat, eta, evec2_abs , xi, yi, interp = 'linear')
+evec3_real_i = mlab.griddata(zeta_hat, eta, evec3_real, xi, yi, interp = 'linear')
+evec3_imag_i = mlab.griddata(zeta_hat, eta, evec3_imag, xi, yi, interp = 'linear')
 evec3_abs_i  = mlab.griddata(zeta_hat, eta, evec3_abs , xi, yi, interp = 'linear')
+evec4_real_i = mlab.griddata(zeta_hat, eta, evec4_real, xi, yi, interp = 'linear')
+evec4_imag_i = mlab.griddata(zeta_hat, eta, evec4_imag, xi, yi, interp = 'linear')
 evec4_abs_i  = mlab.griddata(zeta_hat, eta, evec4_abs , xi, yi, interp = 'linear')
 vel_i        = mlab.griddata(zeta_hat, eta, vel       , xi, yi, interp = 'linear')
 
@@ -70,9 +77,9 @@ if show_fig_1:
     origin = 'lower'
     cmap = plt.cm.YlGnBu_r
     #levels = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1]
-    levels = np.linspace(np.min(evec1_real),np.max(evec1_real),number_of_levels)
+    levels = np.linspace(np.min(evec3_real),np.max(evec3_real),number_of_levels)
 
-    CS = plt.contourf(xi, yi, evec1_real_i, levels,
+    CS = plt.contourf(xi, yi, evec3_real_i, levels,
                       cmap=cmap,
                       origin=origin,
                       extend='both')

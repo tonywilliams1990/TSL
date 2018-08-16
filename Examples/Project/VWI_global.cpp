@@ -48,17 +48,17 @@ int main()
   // Define the domain + short scale injection parameters
   double hzeta_right( 20.0 );       // Size of the domain in the zeta_hat direction
   double eta_top( 20.0 );           // Size of the domain in the eta direction
-  std::size_t N( 70 );             // Number of intervals in the zeta_hat direction
-  std::size_t M( 70 );             // Number of intervals in the eta direction
+  std::size_t N( 100 );             // Number of intervals in the zeta_hat direction
+  std::size_t M( 100 );             // Number of intervals in the eta direction
   std::size_t MB( M * 100 );        // Number of eta intervals in the base flow ODE
   double beta( 0.5 );               // Hartree parameter
   double zeta0( 1.0 );              // Transpiration width
   double K( 11.0 );                  // Transpiration parameter ( +ve = blowing )
-  double alpha( 0.4 );              // Wavenumber (alpha hat)
-  double Rx( 12000 );         // Local Reynolds number
-  double Sigma( 0.0002 );              // Wave amplitude
+  double alpha( 0.8 );              // Wavenumber (alpha hat)
+  double Rx( 5000 * 5000 );         // Local Reynolds number
+  double Sigma( 0.0 );              // Wave amplitude
   double tol( 1e-3 );               // Tolerance for c_i = 0
-  bool read_from_file( true );
+  bool read_from_file( false );
 
 
   TSL::eta_intervals = M;
@@ -68,7 +68,7 @@ int main()
   double Sigma_step_initial( 1e-4 );
   double Sigma_step( Sigma_step_initial );
 
-  std::complex<double> target( 0.8, 0.0 ); // Target for eigensolver
+  std::complex<double> target( 0.75, 0.0 ); // Target for eigensolver
 
   // Solve the self similar injection flow
   mySelfSimInjection SSI;
@@ -186,7 +186,7 @@ if ( !read_from_file )
 }
 
   //TwoD_node_mesh<double> solution;
-  vwi.speed_up() = true;
+  vwi.speed_up() = false;
 
   vwi.set_output_path();
   vwi.make_output_directory();
@@ -195,7 +195,7 @@ if ( !read_from_file )
   double c_i;
 
   //do{
-    /*do{
+    do{
 
       vwi.solve_check_exists();
       //vwi.solve_local();
@@ -212,41 +212,24 @@ if ( !read_from_file )
       cout << "  * c = " << vwi.c_guess() << endl;
 
       //vwi.Reynolds() -= 50;
-      vwi.Sigma() -= 5e-6;
+      vwi.Sigma() += 0.01;
+      //if ( c_i > 0 ){ vwi.injection() -= 0.1; }
+      //if ( c_i <= 0 ){ vwi.Sigma() += 1e-4; }
       //vwi.injection() -= 0.01;
 
     //}while( c_i < 0.01 && c_i > 0.0 );
     //vwi.injection() -= 0.05;
-  }while( vwi.injection() > 0.0 );*/
+  }while( vwi.injection() >= 0.0 );
 
   // mesh refinement
-  cout << "  * Refining the mesh " << endl;
+  /*cout << "  * Refining the mesh " << endl;
   vwi.solve_check_exists();
   N = 80;
   M = 80;
   MB = M * 100;
   vwi.refine_mesh( N, M, MB );
   vwi.output();
-  vwi.output_eigenvalue();
-
-  /*do{
-    vwi.solve_check_exists();
-    c_i = imag( vwi.c_guess() );
-
-    cout << "  * K = " << vwi.injection() << endl;
-    cout << "  * Rx^1/2 = " << sqrt( vwi.Reynolds() )
-         << "  =>  Rx = " << vwi.Reynolds() << endl;
-    cout << "  * Sigma = " << vwi.Sigma() << endl;
-    cout << "  * c = " << vwi.c_guess() << endl;
-
-    if ( c_i > 0.004 ){ vwi.injection() -= 0.05; }
-    if ( c_i < 0.002 ){ vwi.Reynolds()  += 100;  }
-    if ( c_i >= 0.002 && c_i <= 0.004 ){
-      vwi.injection() -= 0.01;
-      vwi.Reynolds()  += 50;
-    }
-
-  }while( vwi.injection() > 0.0 && c_i >= 0.0 );*/
+  vwi.output_eigenvalue();*/
 
 	cout << "FINISHED" << endl;
 

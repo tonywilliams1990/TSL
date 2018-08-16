@@ -8,14 +8,14 @@ enum{ f, fd, fdd, g, gd, gdd };                         // Base ODE enumeration
 enum{ UB, UBd, PhiB, ThetaB, ThetaBd, PsiB };           // Base flow enumeration
 
 // Either Base_2D or Base_3D for 2D or 3D base flows
-#define Base_3D
+#define Base_2D
 
 namespace TSL
 {
     namespace Param
     {
       double eta_top( 30.0 );           // Size of the domain in the eta direction
-      const std::size_t M( 401 );       // Number of intervals in the eta direction
+      const std::size_t M( 1000 );       // Number of intervals in the eta direction
       double n( 0.0 );                  // Pressure gradient parameter
       double beta = (2.0*n)/(n+1.0);    // Hartree parameter
       double KB( 0.0 );                 // Base flow transpiration
@@ -24,7 +24,7 @@ namespace TSL
 
     namespace Base_Flow
     {
-      double K = Param::KB;             // Base transpiration parameter (+ve = blowing)   
+      double K = Param::KB;             // Base transpiration parameter (+ve = blowing)
       double beta = Param::beta;        // Hartree parameter
 
 #ifdef Base_2D
@@ -38,7 +38,7 @@ namespace TSL
           {
             F[ f ]   = u[ fd ];
             F[ fd ]  = u[ fdd ];
-            F[ fdd ] = - u[ f ] * u[ fdd ] - beta * ( 1.0 - u[ fd ] * u[ fd ] ); 
+            F[ fdd ] = - u[ f ] * u[ fdd ] - beta * ( 1.0 - u[ fd ] * u[ fd ] );
           }
       }; // End Falkner-Skan equation class
 
@@ -76,13 +76,13 @@ namespace TSL
           {
             F[ f ]    =  u[ fd ];
             F[ fd ]   =  u[ fdd ];
-            F[ fdd ]  = -( u[ f ] + ( 2.0 - beta ) * u[ g ] ) * u[ fdd ] 
+            F[ fdd ]  = -( u[ f ] + ( 2.0 - beta ) * u[ g ] ) * u[ fdd ]
                         - beta * ( 1.0 - u[ fd ] * u[ fd ] );
             F[ g ]    =  u[ gd ];
             F[ gd ]   =  u[ gdd ];
             F[ gdd ]  = -( u[ f ] + ( 2.0 - beta ) * u[ g ] ) * u[ gdd ]
-                        -( 2.0 * ( 1.0 - beta ) * u[ fd ] 
-                        - ( 2.0 - beta) * u[ gd ] ) * u[ gd ]; 
+                        -( 2.0 * ( 1.0 - beta ) * u[ fd ]
+                        - ( 2.0 - beta) * u[ gd ] ) * u[ gd ];
           }
       }; // End 3D alternative equation class
 
@@ -111,16 +111,16 @@ namespace TSL
             B[ 1 ] = z[ gd ];
           }
       }; // End 3D alternative far_BC class
-#endif                  
+#endif
     } // End of namespace Base_Flow
-   
+
 } // End of namespace TSL
 
 using namespace std;
 using namespace TSL;
 
 int main()
-{ 
+{
   cout << "*** ---------- General Base Flow ---------- ***" << endl;
   //TODO output information about the mesh and number of ODE points etc
   /* ----- Solve the base flow ODE ----- */
@@ -145,7 +145,7 @@ int main()
     //TODO maybe think about a better guess involving n
 		double eta = nodes[ j ];				                      // eta value at node j
 		base.solution()( j, f )  	= eta + exp( -eta ) - 1.0;
-    base.solution()( j, fd ) 	= 1.0 - exp( -eta ); 
+    base.solution()( j, fd ) 	= 1.0 - exp( -eta );
 		base.solution()( j, fdd ) = exp( -eta );
 	}
 #endif
@@ -154,10 +154,10 @@ int main()
 	{
 		double eta = nodes[ j ];					                   // eta value at node j
 		base.solution()( j, f )  	= eta + exp( -eta ) - 1.0;
-    base.solution()( j, fd ) 	= 1.0 - exp( -eta ); 
+    base.solution()( j, fd ) 	= 1.0 - exp( -eta );
 		base.solution()( j, fdd ) = exp( -eta );
     base.solution()( j, g )  	= 0.35 * (1.0 - exp( -eta ));
-    base.solution()( j, gd ) 	= 1.0 - exp( -eta ) - exp( -1.0 / (eta * eta) ); 
+    base.solution()( j, gd ) 	= 1.0 - exp( -eta ) - exp( -1.0 / (eta * eta) );
 		base.solution()( j, gdd ) = exp( -eta ) - 0.5 * tanh( eta ) + 0.5 * tanh( eta - 2.0 );
 	}
 #endif
@@ -182,7 +182,7 @@ int main()
     Base_soln( j, PhiB )    =   base.solution()( j, f );
     Base_soln( j, ThetaB )  =   ( 1.0 - Param::beta ) * base.solution()( j, fdd );
     Base_soln( j, ThetaBd ) =   ( 1.0 - Param::beta ) * ( - base.solution()( j, f ) *
-                                base.solution()( j, fdd ) - Param::beta * ( 1.0 -   
+                                base.solution()( j, fdd ) - Param::beta * ( 1.0 -
                                 base.solution()( j, fd ) * base.solution()( j, fd ) ) );
     Base_soln( j, PsiB )    =   ( 1.0 - Param::beta ) * base.solution()( j, fd );
 	}
@@ -192,21 +192,21 @@ int main()
 	{
 		Base_soln( j, UB )      =   base.solution()( j, fd );
     Base_soln( j, UBd )     =   base.solution()( j, fdd );
-    Base_soln( j, PhiB )    =   base.solution()( j, f ) 
+    Base_soln( j, PhiB )    =   base.solution()( j, f )
                               + ( 2.0 - Param::beta ) * base.solution()( j, g );
 
     Base_soln( j, ThetaB )  =   ( 1.0 - Param::beta ) * base.solution()( j, fdd )
                               - ( 2.0 - Param::beta ) * base.solution()( j, gdd );
 
-    Base_soln( j, ThetaBd ) =   ( 1.0 - Param::beta ) * ( -(base.solution()( j, f ) + 
-                                (2.0 - Param::beta) * base.solution()( j, g )) * 
-                                base.solution()( j, fdd ) - Param::beta * ( 1.0 - 
+    Base_soln( j, ThetaBd ) =   ( 1.0 - Param::beta ) * ( -(base.solution()( j, f ) +
+                                (2.0 - Param::beta) * base.solution()( j, g )) *
+                                base.solution()( j, fdd ) - Param::beta * ( 1.0 -
                                 base.solution()( j, fd ) * base.solution()( j, fd ) ) )
-                              - ( 2.0 - Param::beta ) * ( -(base.solution()( j, f ) + 
-                                (2.0 - Param::beta) * base.solution()( j, g )) * 
-                                base.solution()( j, gdd ) - Param::beta * ( 1.0 - 
-                                base.solution()( j, gd ) * base.solution()( j, gd ) ) - 
-                                2.0 * (1.0 - Param::beta ) * (base.solution()( j, fd ) - 
+                              - ( 2.0 - Param::beta ) * ( -(base.solution()( j, f ) +
+                                (2.0 - Param::beta) * base.solution()( j, g )) *
+                                base.solution()( j, gdd ) - Param::beta * ( 1.0 -
+                                base.solution()( j, gd ) * base.solution()( j, gd ) ) -
+                                2.0 * (1.0 - Param::beta ) * (base.solution()( j, fd ) -
                                 base.solution()( j, gd )) * base.solution()( j, gd ) );
 
     Base_soln( j, PsiB )    =   ( 1.0 - Param::beta ) * base.solution()( j, fd )
@@ -217,7 +217,7 @@ int main()
 
   // Output the wall shear to the screen
 #ifdef Base_2D
-  cout << "Base flow: 2D Falkner-Skan with transpiration" << endl; 
+  cout << "Base flow: 2D Falkner-Skan with transpiration" << endl;
 #endif
 #ifdef Base_3D
   cout << "Base flow: 3D alternative with transpiration" << endl;
@@ -225,11 +225,12 @@ int main()
   cout << "Base transpiration KB = " << Param::KB << endl;
   cout << "Hartree parameter beta = " << Param::beta << endl;
   cout << "U'(eta=0) =" << base.solution()( 0, fdd ) << endl;
+  cout << "delta* = " << Param::eta_top - base.solution()( Param::M - 1, f ) << endl;
 
   // Solve the system for different values of beta
   Vector<double> beta_vals;
   beta_vals.linspace( 0.0 , 1.0, 201);
-  OneD_node_mesh<double> Shear_values( beta_vals, 1 );  
+  OneD_node_mesh<double> Shear_values( beta_vals, 1 );
 
   cout << "***-----------------------------------------***" << endl;
   cout << "K_B = " << Base_Flow::K << endl;

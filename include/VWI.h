@@ -151,7 +151,7 @@ namespace TSL
           }
         }
 
-        // Normalise based on the extra condition q_eta(0,0) = 1 + i
+        // Normalise based on the extra condition q_eta(0,0) = 1e-5
         int q_r   = static_cast<int>(VWI_enum::q_r);
         int q_i   = static_cast<int>(VWI_enum::q_i);
         const double dY( Y_NODES[ 1 ] - Y_NODES[ 0 ] );
@@ -165,6 +165,38 @@ namespace TSL
                  - ( 4 * Yd / ( 2 * dY ) ) * Q( 0, 1, q_i )
                  + ( 1 * Yd / ( 2 * dY ) ) * Q( 0, 2, q_i );
 
+        lambda_r /= 1e-5;
+        double lambda( sqrt( lambda_r * lambda_r + lambda_i * lambda_i ) );
+        //lambda /= 1e-5;
+
+        for ( std::size_t i = 0; i < N + 1; ++i )
+        {
+          for ( std::size_t j = 0; j < M + 1; ++j )
+          {
+            for ( std::size_t n = 0; n < 8; ++n )
+            {
+              Q( i, j, n ) = Q( i, j, n ) / lambda;
+            }
+          }
+        }
+
+        // Normalise based on the extra condition int v = 1 along centreline
+        /*int v_r   = static_cast<int>(VWI_enum::v_r);
+        int v_i   = static_cast<int>(VWI_enum::v_i);
+        double lambda_r, lambda_i;
+        const double dY( Y_NODES[ 1 ] - Y_NODES[ 0 ] );
+        double eta, Yd;
+
+        // Sum
+        for ( std::size_t j = 0; j < Y_NODES.size() - 1; ++j )
+        {
+          //dx = ( NODES[ node + 1 ] - NODES[ node ] );
+          eta = ETA_NODES[ j ];
+          Yd = SSI.mesh_Yd( eta );
+          lambda_r += 0.5 * dY * ( Q( 0, j, v_r ) + Q( 0, j + 1, v_r ) ) / Yd;
+          lambda_i += 0.5 * dY * ( Q( 0, j, v_i ) + Q( 0, j + 1, v_i ) ) / Yd;
+        }
+
         double lambda( sqrt( lambda_r * lambda_r + lambda_i * lambda_i ) );
 
         for ( std::size_t i = 0; i < N + 1; ++i )
@@ -176,7 +208,8 @@ namespace TSL
               Q( i, j, n )  = Q( i, j, n ) / lambda;
             }
           }
-        }
+        }*/
+
       }
 
       /// Return a pointer to the current guess mesh
@@ -380,7 +413,6 @@ namespace TSL
     int ThetaBd = static_cast<int>(VWI_base::ThetaBd);
     int PsiB    = static_cast<int>(VWI_base::PsiB);
 
-
     // Create the sparse matrices
     std::size_t N_hzeta( N + 1 );
     std::size_t N_eta( M + 1 );
@@ -390,34 +422,6 @@ namespace TSL
     // Step sizes
     const double dY( Y_NODES[ 1 ] - Y_NODES[ 0 ] );
     const double dX( X_NODES[ 1 ] - X_NODES[ 0 ] );
-
-    // Normalise based on the extra condition q(0,0) = 1 or q_eta(0,0) = 1 + i
-    //std::complex<double> lambda( Q( 0, 0, q ) );
-    /*double lambda_r, lambda_i;
-    double eta( ETA_NODES[ 0 ] );
-    double Yd( SSI.mesh_Yd( eta ) );
-    lambda_r = ( 3 * Yd / ( 2 * dY ) ) * Q( 0, 0, q_r )
-             - ( 4 * Yd / ( 2 * dY ) ) * Q( 0, 1, q_r )
-             + ( 1 * Yd / ( 2 * dY ) ) * Q( 0, 2, q_r );
-    lambda_i = ( 3 * Yd / ( 2 * dY ) ) * Q( 0, 0, q_i )
-             - ( 4 * Yd / ( 2 * dY ) ) * Q( 0, 1, q_i )
-             + ( 1 * Yd / ( 2 * dY ) ) * Q( 0, 2, q_i );
-
-    double lambda( sqrt( lambda_r * lambda_r + lambda_i * lambda_i ) );
-    for ( std::size_t i = 0; i < N + 1; ++i )
-    {
-      for ( std::size_t j = 0; j < M + 1; ++j )
-      {
-        Q( i, j, v_r )  = Q( i, j, v_r ) / lambda;
-        Q( i, j, w_r )  = Q( i, j, w_r ) / lambda;
-        Q( i, j, q_r )  = Q( i, j, q_r ) / lambda;
-        Q( i, j, s_r )  = Q( i, j, s_r ) / lambda;
-        Q( i, j, v_i )  = Q( i, j, v_i ) / lambda;
-        Q( i, j, w_i )  = Q( i, j, w_i ) / lambda;
-        Q( i, j, q_i )  = Q( i, j, q_i ) / lambda;
-        Q( i, j, s_i )  = Q( i, j, s_i ) / lambda;
-      }
-    }*/
 
     // Iterate to a solution
     double max_residual( 0.0 );             // Maximum residual
@@ -1445,236 +1449,134 @@ namespace TSL
        A( row, col( i, j + 1, w_i ) )  +=   Rsigma2 * 2 * Guess[ v_i ]
                                         * ( Yd * Yd / ( dY * dY ) + Ydd / ( 2 * dY ) ) ;
 // Term 5
-       // - Rx^-1/6 * Sigma^2 * 4 * ( w_r_g_zeta + v_r_g_eta ) * w_r_eta
-       A( row, col( i, j + 1, w_r ) ) += - Rsigma2 * 4 * ( Guess_hzeta[ w_r ]
+       // + Rx^-1/6 * Sigma^2 * 4 * ( w_r_g_zeta + v_r_g_eta ) * w_r_eta
+       A( row, col( i, j + 1, w_r ) ) +=   Rsigma2 * 4 * ( Guess_hzeta[ w_r ]
                                          + Guess_eta[ v_r ] ) * Yd / ( 2 * dY );
-       A( row, col( i, j - 1, w_r ) ) +=   Rsigma2 * 4 * ( Guess_hzeta[ w_r ]
+       A( row, col( i, j - 1, w_r ) ) += - Rsigma2 * 4 * ( Guess_hzeta[ w_r ]
                                          + Guess_eta[ v_r ] ) * Yd / ( 2 * dY );
-       // - Rx^-1/6 * Sigma^2 * 4 * w_r_g_eta * w_r_zeta
-       A( row, col( i + 1, j, w_r ) ) += - Rsigma2 * 4 * Guess_eta[ w_r ] * Xd
+       // + Rx^-1/6 * Sigma^2 * 4 * w_r_g_eta * w_r_zeta
+       A( row, col( i + 1, j, w_r ) ) +=   Rsigma2 * 4 * Guess_eta[ w_r ] * Xd
                                          / ( 2 * dX );
-       A( row, col( i - 1, j, w_r ) ) +=   Rsigma2 * 4 * Guess_eta[ w_r ] * Xd
+       A( row, col( i - 1, j, w_r ) ) += - Rsigma2 * 4 * Guess_eta[ w_r ] * Xd
                                          / ( 2 * dX );
 
-       // - Rx^-1/6 * Sigma^2 * 4 * w_r_g_eta * v_r_eta
-       A( row, col( i, j + 1, v_r ) ) += - Rsigma2 * 4 * Guess_eta[ w_r ] * Yd
+       // + Rx^-1/6 * Sigma^2 * 4 * w_r_g_eta * v_r_eta
+       A( row, col( i, j + 1, v_r ) ) +=   Rsigma2 * 4 * Guess_eta[ w_r ] * Yd
                                          / ( 2 * dY );
-       A( row, col( i, j - 1, v_r ) ) +=   Rsigma2 * 4 * Guess_eta[ w_r ] * Yd
+       A( row, col( i, j - 1, v_r ) ) += - Rsigma2 * 4 * Guess_eta[ w_r ] * Yd
                                          / ( 2 * dY );
 // Term 6
-       // - Rx^-1/6 * Sigma^2 * 4 * ( w_i_g_zeta + v_i_g_eta ) * w_i_eta
-       A( row, col( i, j + 1, w_i ) ) += - Rsigma2 * 4 * ( Guess_hzeta[ w_i ]
+       // + Rx^-1/6 * Sigma^2 * 4 * ( w_i_g_zeta + v_i_g_eta ) * w_i_eta
+       A( row, col( i, j + 1, w_i ) ) +=   Rsigma2 * 4 * ( Guess_hzeta[ w_i ]
                                          + Guess_eta[ v_i ] ) * Yd / ( 2 * dY );
-       A( row, col( i, j - 1, w_i ) ) +=   Rsigma2 * 4 * ( Guess_hzeta[ w_i ]
+       A( row, col( i, j - 1, w_i ) ) += - Rsigma2 * 4 * ( Guess_hzeta[ w_i ]
                                          + Guess_eta[ v_i ] ) * Yd / ( 2 * dY );
-       // - Rx^-1/6 * Sigma^2 * 4 * w_i_g_eta * w_i_zeta
-       A( row, col( i + 1, j, w_i ) ) += - Rsigma2 * 4 * Guess_eta[ w_i ] * Xd
+       // + Rx^-1/6 * Sigma^2 * 4 * w_i_g_eta * w_i_zeta
+       A( row, col( i + 1, j, w_i ) ) +=   Rsigma2 * 4 * Guess_eta[ w_i ] * Xd
                                          / ( 2 * dX );
-       A( row, col( i - 1, j, w_i ) ) +=   Rsigma2 * 4 * Guess_eta[ w_i ] * Xd
+       A( row, col( i - 1, j, w_i ) ) += - Rsigma2 * 4 * Guess_eta[ w_i ] * Xd
                                          / ( 2 * dX );
 
-       // - Rx^-1/6 * Sigma^2 * 4 * w_r_g_eta * v_r_eta
-       A( row, col( i, j + 1, v_i ) ) += - Rsigma2 * 4 * Guess_eta[ w_i ] * Yd
+       // + Rx^-1/6 * Sigma^2 * 4 * w_r_g_eta * v_r_eta
+       A( row, col( i, j + 1, v_i ) ) +=   Rsigma2 * 4 * Guess_eta[ w_i ] * Yd
                                          / ( 2 * dY );
-       A( row, col( i, j - 1, v_i ) ) +=   Rsigma2 * 4 * Guess_eta[ w_i ] * Yd
+       A( row, col( i, j - 1, v_i ) ) += - Rsigma2 * 4 * Guess_eta[ w_i ] * Yd
                                          / ( 2 * dY );
 // Term 7
-      // - Rx^-1/6 * Sigma^2 * 2 * ( 2 * w_r_g_eta_zeta + v_r_g_eta_eta - v_r_g_zeta_zeta ) * w_r
-      A( row, col( i, j, w_r ) ) += - Rsigma2 * 2 * ( 2 * Guess_eta_hzeta[ w_r ]
+      // + Rx^-1/6 * Sigma^2 * 2 * ( 2 * w_r_g_eta_zeta + v_r_g_eta_eta - v_r_g_zeta_zeta ) * w_r
+      A( row, col( i, j, w_r ) ) +=   Rsigma2 * 2 * ( 2 * Guess_eta_hzeta[ w_r ]
                                   + Guess_eta_eta[ v_r ] - Guess_hzeta_hzeta[ v_r ] );
 
-      // - Rx^-1/6 * Sigma^2 * 4 * w_r_g * w_r_eta_zeta
-      A( row, col( i + 1, j + 1, w_r ) ) += - Rsigma2 * 4 * ( Guess[ w_r ] )
+      // + Rx^-1/6 * Sigma^2 * 4 * w_r_g * w_r_eta_zeta
+      A( row, col( i + 1, j + 1, w_r ) ) +=   Rsigma2 * 4 * ( Guess[ w_r ] )
                                           * Xd * Yd / ( 4 * dX * dY );
-      A( row, col( i - 1, j - 1, w_r ) ) += - Rsigma2 * 4 * ( Guess[ w_r ] )
+      A( row, col( i - 1, j - 1, w_r ) ) +=   Rsigma2 * 4 * ( Guess[ w_r ] )
                                           * Xd * Yd / ( 4 * dX * dY );
-      A( row, col( i + 1, j - 1, w_r ) ) +=   Rsigma2 * 4 * ( Guess[ w_r ] )
+      A( row, col( i + 1, j - 1, w_r ) ) += - Rsigma2 * 4 * ( Guess[ w_r ] )
                                           * Xd * Yd / ( 4 * dX * dY );
-      A( row, col( i - 1, j + 1, w_r ) ) +=   Rsigma2 * 4 * ( Guess[ w_r ] )
+      A( row, col( i - 1, j + 1, w_r ) ) += - Rsigma2 * 4 * ( Guess[ w_r ] )
                                           * Xd * Yd / ( 4 * dX * dY );
 
-      // - Rx^-1/6 * Sigma^2 * 2 * w_r_g * v_r_eta_eta
-      A( row, col( i, j - 1, v_r ) )  += - Rsigma2 * 2 * Guess[ w_r ]
+      // + Rx^-1/6 * Sigma^2 * 2 * w_r_g * v_r_eta_eta
+      A( row, col( i, j - 1, v_r ) )  +=   Rsigma2 * 2 * Guess[ w_r ]
                                        * ( Yd * Yd / ( dY * dY ) - Ydd / ( 2 * dY ) ) ;
-      A( row, col( i, j, v_r ) )      +=   Rsigma2 * 2 * Guess[ w_r ]
+      A( row, col( i, j, v_r ) )      += - Rsigma2 * 2 * Guess[ w_r ]
                                        * 2 * Yd * Yd / ( dY * dY );
-      A( row, col( i, j + 1, v_r ) )  += - Rsigma2 * 2 * Guess[ w_r ]
+      A( row, col( i, j + 1, v_r ) )  +=   Rsigma2 * 2 * Guess[ w_r ]
                                        * ( Yd * Yd / ( dY * dY ) + Ydd / ( 2 * dY ) ) ;
 
-      //   Rx^-1/6 * Sigma^2 * 2 * w_r_g * v_r_zeta_zeta
-      A( row, col( i - 1, j, v_r ) )  +=   Rsigma2 * 2 * Guess[ w_r ]
+      // - Rx^-1/6 * Sigma^2 * 2 * w_r_g * v_r_zeta_zeta
+      A( row, col( i - 1, j, v_r ) )  += - Rsigma2 * 2 * Guess[ w_r ]
                                        * ( Xd * Xd / ( dX * dX ) - Xdd / ( 2 * dX ) );
-      A( row, col( i, j, v_r ) )      += - Rsigma2 * 2 * Guess[ w_r ]
+      A( row, col( i, j, v_r ) )      +=   Rsigma2 * 2 * Guess[ w_r ]
                                        * 2 * Xd * Xd / ( dX * dX );
-      A( row, col( i + 1, j, v_r ) )  +=   Rsigma2 * 2 * Guess[ w_r ]
+      A( row, col( i + 1, j, v_r ) )  += - Rsigma2 * 2 * Guess[ w_r ]
                                        *  ( Xd * Xd / ( dX * dX ) + Xdd / ( 2 * dX ) );
 // Term 8
-     // - Rx^-1/6 * Sigma^2 * 2 * ( 2 * w_i_g_eta_zeta + v_i_g_eta_eta - v_i_g_zeta_zeta ) * w_i
-     A( row, col( i, j, w_i ) ) += - Rsigma2 * 2 * ( 2 * Guess_eta_hzeta[ w_i ]
+     // + Rx^-1/6 * Sigma^2 * 2 * ( 2 * w_i_g_eta_zeta + v_i_g_eta_eta - v_i_g_zeta_zeta ) * w_i
+     A( row, col( i, j, w_i ) ) +=   Rsigma2 * 2 * ( 2 * Guess_eta_hzeta[ w_i ]
                                  + Guess_eta_eta[ v_i ] - Guess_hzeta_hzeta[ v_i ] );
 
-     // - Rx^-1/6 * Sigma^2 * 4 * w_i_g * w_i_eta_zeta
-     A( row, col( i + 1, j + 1, w_i ) ) += - Rsigma2 * 4 * ( Guess[ w_i ] )
+     // + Rx^-1/6 * Sigma^2 * 4 * w_i_g * w_i_eta_zeta
+     A( row, col( i + 1, j + 1, w_i ) ) +=   Rsigma2 * 4 * ( Guess[ w_i ] )
                                          * Xd * Yd / ( 4 * dX * dY );
-     A( row, col( i - 1, j - 1, w_i ) ) += - Rsigma2 * 4 * ( Guess[ w_i ] )
+     A( row, col( i - 1, j - 1, w_i ) ) +=   Rsigma2 * 4 * ( Guess[ w_i ] )
                                          * Xd * Yd / ( 4 * dX * dY );
-     A( row, col( i + 1, j - 1, w_i ) ) +=   Rsigma2 * 4 * ( Guess[ w_i ] )
+     A( row, col( i + 1, j - 1, w_i ) ) += - Rsigma2 * 4 * ( Guess[ w_i ] )
                                          * Xd * Yd / ( 4 * dX * dY );
-     A( row, col( i - 1, j + 1, w_i ) ) +=   Rsigma2 * 4 * ( Guess[ w_i ] )
+     A( row, col( i - 1, j + 1, w_i ) ) += - Rsigma2 * 4 * ( Guess[ w_i ] )
                                          * Xd * Yd / ( 4 * dX * dY );
 
-     // - Rx^-1/6 * Sigma^2 * 2 * w_i_g * v_i_eta_eta
-     A( row, col( i, j - 1, v_i ) )  += - Rsigma2 * 2 * Guess[ w_i ]
+     // + Rx^-1/6 * Sigma^2 * 2 * w_i_g * v_i_eta_eta
+     A( row, col( i, j - 1, v_i ) )  +=   Rsigma2 * 2 * Guess[ w_i ]
                                       * ( Yd * Yd / ( dY * dY ) - Ydd / ( 2 * dY ) ) ;
-     A( row, col( i, j, v_i ) )      +=   Rsigma2 * 2 * Guess[ w_i ]
+     A( row, col( i, j, v_i ) )      += - Rsigma2 * 2 * Guess[ w_i ]
                                       * 2 * Yd * Yd / ( dY * dY );
-     A( row, col( i, j + 1, v_i ) )  += - Rsigma2 * 2 * Guess[ w_i ]
+     A( row, col( i, j + 1, v_i ) )  +=   Rsigma2 * 2 * Guess[ w_i ]
                                       * ( Yd * Yd / ( dY * dY ) + Ydd / ( 2 * dY ) ) ;
 
-     //   Rx^-1/6 * Sigma^2 * 2 * w_i_g * v_i_zeta_zeta
-     A( row, col( i - 1, j, v_i ) )  +=   Rsigma2 * 2 * Guess[ w_i ]
+     // - Rx^-1/6 * Sigma^2 * 2 * w_i_g * v_i_zeta_zeta
+     A( row, col( i - 1, j, v_i ) )  += - Rsigma2 * 2 * Guess[ w_i ]
                                       * ( Xd * Xd / ( dX * dX ) - Xdd / ( 2 * dX ) );
-     A( row, col( i, j, v_i ) )      += - Rsigma2 * 2 * Guess[ w_i ]
+     A( row, col( i, j, v_i ) )      +=   Rsigma2 * 2 * Guess[ w_i ]
                                       * 2 * Xd * Xd / ( dX * dX );
-     A( row, col( i + 1, j, v_i ) )  +=   Rsigma2 * 2 * Guess[ w_i ]
+     A( row, col( i + 1, j, v_i ) )  += - Rsigma2 * 2 * Guess[ w_i ]
                                       *  ( Xd * Xd / ( dX * dX ) + Xdd / ( 2 * dX ) );
-/*
-          // - Rx^-1/6 * Sigma^2 * 4 * real( v_g_eta + w_g_zeta ) * v_zeta
-          A( row, col( i + 1, j, w ) ) += - std::pow( RX, -1.0/6.0 ) * SIGMA * SIGMA
-                                          * 4. * real( Guess_eta[ v ] + Guess_hzeta[ w ] )
-                                          * Xd / ( 2. * dX );
-          A( row, col( i - 1, j, w ) ) +=   std::pow( RX, -1.0/6.0 ) * SIGMA * SIGMA
-                                          * 4. * real( Guess_eta[ v ] + Guess_hzeta[ w ] )
-                                          * Xd / ( 2. * dX );
 
-          //   Rx^-1/6 * Sigma^2 * 4 * real( v_g_eta + w_g_zeta ) * w_eta
-          A( row, col( i, j + 1, w ) ) +=   std::pow( RX, -1.0/6.0 ) * SIGMA * SIGMA
-                                          * 4. * real( Guess_eta[ v ] + Guess_hzeta[ w ] )
-                                          * Yd / ( 2. * dY );
-          A( row, col( i, j - 1, w ) ) += - std::pow( RX, -1.0/6.0 ) * SIGMA * SIGMA
-                                          * 4. * real( Guess_eta[ v ] + Guess_hzeta[ w ] )
-                                          * Yd / ( 2. * dY );
+        double Forcing;
+        Forcing  = 4 * Guess_hzeta[ v_r ] * ( Guess_eta[ v_r ] + Guess_hzeta[ w_r ] );
+        Forcing += 4 * Guess_hzeta[ v_i ] * ( Guess_eta[ v_i ] + Guess_hzeta[ w_i ] );
+        Forcing += 2 * Guess[ v_r ] * ( 2 * Guess_eta_hzeta[ v_r ]
+                     + Guess_hzeta_hzeta[ w_r ] - Guess_eta_eta[ w_r ] );
+        Forcing += 2 * Guess[ v_i ] * ( 2 * Guess_eta_hzeta[ v_i ]
+                     + Guess_hzeta_hzeta[ w_i ] - Guess_eta_eta[ w_i ] );
 
-          // - Rx^-1/6 * Sigma^2 * 2 * real( 2 * v_g_eta_zeta + w_g_zeta_zeta - w_g_eta_eta ) * v
-          A( row, col( i, j, v ) ) += - std::pow( RX, -1.0/6.0 ) * SIGMA * SIGMA
-                                      * 2. * real( 2. * Guess_eta_hzeta[ v ]
-                                      + Guess_hzeta_hzeta[ w ] - Guess_eta_eta[ w ] );
+        Forcing -= 4 * Guess_eta[ w_r ] * ( Guess_hzeta[ w_r ] + Guess_eta[ v_r ] );
+        Forcing -= 4 * Guess_eta[ w_i ] * ( Guess_hzeta[ w_i ] + Guess_eta[ v_i ] );
+        Forcing -= 2 * Guess[ w_r ] * ( 2 * Guess_eta_hzeta[ w_r ]
+                     + Guess_eta_eta[ v_r ] - Guess_hzeta_hzeta[ v_r ] );
+        Forcing -= 2 * Guess[ w_i ] * ( 2 * Guess_eta_hzeta[ w_i ]
+                     + Guess_eta_eta[ v_i ] - Guess_hzeta_hzeta[ v_i ] );
 
-          // - Rx^-1/6 * Sigma^2 * 4 * real( v_g ) * v_eta_zeta
-          A( row, col( i + 1, j + 1, v ) ) += - std::pow( RX, -1.0/6.0 ) * SIGMA
-                                              * SIGMA * 4. * real( Guess[ v ] )
-                                              * Xd * Yd / ( 4. * dX * dY );
-          A( row, col( i - 1, j - 1, v ) ) += - std::pow( RX, -1.0/6.0 ) * SIGMA
-                                              * SIGMA * 4. * real( Guess[ v ] )
-                                              * Xd * Yd / ( 4. * dX * dY );
-          A( row, col( i + 1, j - 1, v ) ) +=   std::pow( RX, -1.0/6.0 ) * SIGMA
-                                              * SIGMA * 4. * real( Guess[ v ] )
-                                              * Xd * Yd / ( 4. * dX * dY );
-          A( row, col( i - 1, j + 1, v ) ) +=   std::pow( RX, -1.0/6.0 ) * SIGMA
-                                              * SIGMA * 4. * real( Guess[ v ] )
-                                              * Xd * Yd / ( 4. * dX * dY );
+        //std::cout << " Forcing = " << Forcing << std::endl;
 
-          // - Rx^-1/6 * Sigma^2 * 2 * real( v_g ) * w_zeta_zeta
-          A( row, col( i - 1, j, w ) )  += - std::pow( RX, -1.0/6.0 ) * SIGMA
-                                           * SIGMA * 2. * real( Guess[ v ] )
-                                           * ( Xd * Xd / ( dX * dX ) - Xdd / ( 2. * dX ) );
-          A( row, col( i, j, w ) )      +=   std::pow( RX, -1.0/6.0 ) * SIGMA
-                                           * SIGMA * 2. * real( Guess[ v ] )
-                                           * 2. * Xd * Xd / ( dX * dX );
-          A( row, col( i + 1, j, w ) )  += - std::pow( RX, -1.0/6.0 ) * SIGMA
-                                           * SIGMA * 2. * real( Guess[ v ] )
-                                           *  ( Xd * Xd / ( dX * dX ) + Xdd / ( 2. * dX ) );
 
-          //   Rx^-1/6 * Sigma^2 * 2 * real( v_g ) * w_eta_eta
-          A( row, col( i, j - 1, w ) )  +=   std::pow( RX, -1.0/6.0 ) * SIGMA
-                                           * SIGMA * 2. * real( Guess[ v ] )
-                                           * ( Yd * Yd / ( dY * dY ) - Ydd / ( 2. * dY ) ) ;
-          A( row, col( i, j, w ) )      += - std::pow( RX, -1.0/6.0 ) * SIGMA
-                                           * SIGMA * 2. * real( Guess[ v ] )
-                                           * 2. * Yd * Yd / ( dY * dY );
-          A( row, col( i, j + 1, w ) )  +=   std::pow( RX, -1.0/6.0 ) * SIGMA
-                                           * SIGMA * 2. * real( Guess[ v ] )
-                                           * ( Yd * Yd / ( dY * dY ) + Ydd / ( 2. * dY ) ) ;
-
-          // - Rx^-1/6 * Sigma^2 * 2 * real( v_g_zeta_zeta - v_g_eta_eta - 2 * w_g_zeta_eta ) * w
-          A( row, col( i, j, w ) )      += - std::pow( RX, -1.0/6.0 ) * SIGMA
-                                           * SIGMA * 2. * real( Guess_hzeta_hzeta[ v ]
-                                           - Guess_eta_eta[ v ] - 2. * Guess_eta_hzeta[ w ] );
-
-          // - Rx^-1/6 * Sigma^2 * 2 * real( w_g ) * v_zeta_zeta
-          A( row, col( i - 1, j, v ) )  += - std::pow( RX, -1.0/6.0 ) * SIGMA
-                                           * SIGMA * 2. * real( Guess[ w ] )
-                                           * ( Xd * Xd / ( dX * dX ) - Xdd / ( 2. * dX ) );
-          A( row, col( i, j, v ) )      +=   std::pow( RX, -1.0/6.0 ) * SIGMA
-                                           * SIGMA * 2. * real( Guess[ w ] )
-                                           * 2. * Xd * Xd / ( dX * dX );
-          A( row, col( i + 1, j, v ) )  += - std::pow( RX, -1.0/6.0 ) * SIGMA
-                                           * SIGMA * 2. * real( Guess[ w ] )
-                                           *  ( Xd * Xd / ( dX * dX ) + Xdd / ( 2. * dX ) );
-
-          //   Rx^-1/6 * Sigma^2 * 2 * real( w_g ) * v_eta_eta
-          A( row, col( i, j - 1, v ) )  +=   std::pow( RX, -1.0/6.0 ) * SIGMA
-                                           * SIGMA * 2. * real( Guess[ w ] )
-                                           * ( Yd * Yd / ( dY * dY ) - Ydd / ( 2. * dY ) ) ;
-          A( row, col( i, j, v ) )      += - std::pow( RX, -1.0/6.0 ) * SIGMA
-                                           * SIGMA * 2. * real( Guess[ w ] )
-                                           * 2. * Yd * Yd / ( dY * dY );
-          A( row, col( i, j + 1, v ) )  +=   std::pow( RX, -1.0/6.0 ) * SIGMA
-                                           * SIGMA * 2. * real( Guess[ w ] )
-                                           * ( Yd * Yd / ( dY * dY ) + Ydd / ( 2. * dY ) ) ;
-
-          //   Rx^-1/6 * Sigma^2 * 4 * real( w_g ) * w_zeta_eta
-          A( row, col( i + 1, j + 1, w ) ) +=   std::pow( RX, -1.0/6.0 ) * SIGMA
-                                              * SIGMA * 4. * real( Guess[ w ] )
-                                              * Xd * Yd / ( 4. * dX * dY );
-          A( row, col( i - 1, j - 1, w ) ) +=   std::pow( RX, -1.0/6.0 ) * SIGMA
-                                              * SIGMA * 4. * real( Guess[ w ] )
-                                              * Xd * Yd / ( 4. * dX * dY );
-          A( row, col( i + 1, j - 1, w ) ) += - std::pow( RX, -1.0/6.0 ) * SIGMA
-                                              * SIGMA * 4. * real( Guess[ w ] )
-                                              * Xd * Yd / ( 4. * dX * dY );
-          A( row, col( i - 1, j + 1, w ) ) += - std::pow( RX, -1.0/6.0 ) * SIGMA
-                                              * SIGMA * 4. * real( Guess[ w ] )
-                                              * Xd * Yd / ( 4. * dX * dY );
-
-          // Forcing (RHS)
-          std::complex<double> F_2;
-          F_2 =   2. * ( Guess_hzeta[ v ] - Guess_eta[ w ] )
-                     * ( conj( Guess_eta[ v ] ) + conj( Guess_hzeta[ w ] ) )
-                + Guess[ v ] * ( 2. * conj( Guess_eta_hzeta[ v ] ) + conj( Guess_hzeta_hzeta[ w ] ) - conj( Guess_eta_eta[ w ] ) )
-                + Guess[ w ] * ( conj( Guess_hzeta_hzeta[ v ] ) - conj( Guess_eta_eta[ v ] ) - 2. * conj( Guess_eta_hzeta[ w ] ) );
-          F_2 = F_2 + conj( F_2 );
-*/
-          double Forcing;
-          Forcing  = 4 * Guess_hzeta[ v_r ] * ( Guess_eta[ v_r ] + Guess_hzeta[ w_r ] );
-          Forcing += 4 * Guess_hzeta[ v_i ] * ( Guess_eta[ v_i ] + Guess_hzeta[ w_i ] );
-          Forcing += 2 * Guess[ v_r ] * ( 2 * Guess_eta_hzeta[ v_r ]
-                       + Guess_hzeta_hzeta[ w_r ] - Guess_eta_eta[ w_r ] );
-          Forcing += 2 * Guess[ v_i ] * ( 2 * Guess_eta_hzeta[ v_i ]
-                       + Guess_hzeta_hzeta[ w_i ] - Guess_eta_eta[ w_i ] );
-          Forcing += 4 * Guess_eta[ w_r ] * ( Guess_hzeta[ w_r ] + Guess_eta[ v_r ] );
-          Forcing += 4 * Guess_eta[ w_i ] * ( Guess_hzeta[ w_i ] + Guess_eta[ v_i ] );
-          Forcing += 2 * Guess[ w_r ] * ( 2 * Guess_eta_hzeta[ w_r ]
-                       + Guess_eta_eta[ v_r ] - Guess_hzeta_hzeta[ v_r ] );
-          Forcing += 2 * Guess[ w_i ] * ( 2 * Guess_eta_hzeta[ w_i ]
-                       + Guess_eta_eta[ v_i ] - Guess_hzeta_hzeta[ v_i ] );
-
-          // Residual
-          B[ row ]      = - Guess_laplace[ Theta ]
-                          + 2. * ( 1. - BETA )
-                          * ( hzeta * ( Base[ UB ] + Guess[ U ] )
-                          * Guess_eta[ U ] + hzeta * Base[ UBd ] * Guess[ U ]
-                          - eta * ( Base[ UB ] + Guess[ U ] )
-                          * ( Guess_hzeta[ U ] )
-                          / ( ZETA0 * ZETA0 ) )
-                          - ( Base[ PhiB ] + Guess[ Phi ] ) * Guess_eta[ Theta ]
-                          - hzeta * Base[ ThetaBd ] * Guess[ Phi ]
-                          - ( hzeta * Base[ PsiB ] + Guess[ Psi ] )
-                          * ( Guess_hzeta[ Theta ] ) - Guess[ Psi ] * Base[ ThetaB ]
-                          - ( 2. - BETA ) * ( ( Base[ UB ] + Guess[ U ] )
-                          * Guess[ Theta ] + hzeta * Base[ ThetaB ] * Guess[ U ] )
-                          + Rsigma2 * Forcing;
-          ++row;
+        // Residual
+        B[ row ]      = - Guess_laplace[ Theta ]
+                        + 2. * ( 1. - BETA )
+                        * ( hzeta * ( Base[ UB ] + Guess[ U ] )
+                        * Guess_eta[ U ] + hzeta * Base[ UBd ] * Guess[ U ]
+                        - eta * ( Base[ UB ] + Guess[ U ] )
+                        * ( Guess_hzeta[ U ] )
+                        / ( ZETA0 * ZETA0 ) )
+                        - ( Base[ PhiB ] + Guess[ Phi ] ) * Guess_eta[ Theta ]
+                        - hzeta * Base[ ThetaBd ] * Guess[ Phi ]
+                        - ( hzeta * Base[ PsiB ] + Guess[ Psi ] )
+                        * ( Guess_hzeta[ Theta ] ) - Guess[ Psi ] * Base[ ThetaB ]
+                        - ( 2. - BETA ) * ( ( Base[ UB ] + Guess[ U ] )
+                        * Guess[ Theta ] + hzeta * Base[ ThetaB ] * Guess[ U ] )
+                        + Rsigma2 * Forcing;
+        ++row;
 
         }
 
@@ -1927,28 +1829,62 @@ namespace TSL
 
       } // End of loop over RHS eta nodes
 
-      // q_r_eta(0,0) = 1 (extra condition)
+      // q_r_eta(0,0) = 1e-5 (extra condition)
       double eta( ETA_NODES[ 0 ] );
       double Yd( SSI.mesh_Yd( eta ) );
       double Ydd( SSI.mesh_Ydd( eta ) );
       A( row, col( 0, 0, q_r ) ) = - 3 * Yd / ( 2 * dY );
       A( row, col( 0, 1, q_r ) ) =   4 * Yd / ( 2 * dY );
       A( row, col( 0, 2, q_r ) ) = - 1 * Yd / ( 2 * dY );
-      B[ row ] = 1.0 + ( 3 * Yd / ( 2 * dY ) ) * Q( 0, 0, q_r )
-                     - ( 4 * Yd / ( 2 * dY ) ) * Q( 0, 1, q_r )
-                     + ( 1 * Yd / ( 2 * dY ) ) * Q( 0, 2, q_r );
+      B[ row ] = 1e-5 + ( 3 * Yd / ( 2 * dY ) ) * Q( 0, 0, q_r )
+                      - ( 4 * Yd / ( 2 * dY ) ) * Q( 0, 1, q_r )
+                      + ( 1 * Yd / ( 2 * dY ) ) * Q( 0, 2, q_r );
       ++row;
 
-      // q_i_eta(0,0) = 1 (extra condition)
+      // q_i_eta(0,0) = 0 (extra condition)
       A( row, col( 0, 0, q_i ) ) = - 3 * Yd / ( 2 * dY );
       A( row, col( 0, 1, q_i ) ) =   4 * Yd / ( 2 * dY );
       A( row, col( 0, 2, q_i ) ) = - 1 * Yd / ( 2 * dY );
-      B[ row ] = 1.0 + ( 3 * Yd / ( 2 * dY ) ) * Q( 0, 0, q_i )
+      B[ row ] =       ( 3 * Yd / ( 2 * dY ) ) * Q( 0, 0, q_i )
                      - ( 4 * Yd / ( 2 * dY ) ) * Q( 0, 1, q_i )
                      + ( 1 * Yd / ( 2 * dY ) ) * Q( 0, 2, q_i );
       ++row;
 
+      // Extra condition (integral on centreline) ???
+      /*double int_r, int_i;
+      double eta, Yd;
 
+      for ( std::size_t j = 0; j < Y_NODES.size() - 1; ++j )
+      {
+        eta = ETA_NODES[ j ];
+        Yd = SSI.mesh_Yd( eta );
+        int_r += 0.5 * dY * ( Q( 0, j, v_r ) + Q( 0, j + 1, v_r ) ) / Yd;
+        int_i += 0.5 * dY * ( Q( 0, j, v_i ) + Q( 0, j + 1, v_i ) ) / Yd;
+      }
+
+      // int v_r = 1 on centreline
+      for ( std::size_t j = 0; j < Y_NODES.size() - 1; ++j )
+      {
+        eta = ETA_NODES[ j ];
+        Yd = SSI.mesh_Yd( eta );
+        A( row, col( 0, j, v_r ) )      += 0.5 * dY / Yd;
+        A( row, col( 0, j + 1, v_r ) )  += 0.5 * dY / Yd;
+      }
+
+      B[ row ] = 1.0 - int_r;
+      ++row;
+
+      // int v_i = 0 on centreline
+      for ( std::size_t j = 0; j < Y_NODES.size() - 1; ++j )
+      {
+        eta = ETA_NODES[ j ];
+        Yd = SSI.mesh_Yd( eta );
+        A( row, col( 0, j, v_i ) )      += 0.5 * dY / Yd;
+        A( row, col( 0, j + 1, v_i ) )  += 0.5 * dY / Yd;
+      }
+
+      B[ row ] = - int_i;
+      ++row;*/
 
       max_residual = B.norm_inf();
       std::cout << "***                                              Maximum residual = "
@@ -2001,8 +1937,10 @@ namespace TSL
         }
       }
 
-      C_GUESS.real( C_GUESS.real() + B[ size - 2 ] );
-      C_GUESS.imag( C_GUESS.imag() + B[ size - 1 ] );
+      double c_g_r_temp( C_GUESS.real() );
+      double c_g_i_temp( C_GUESS.imag() );
+      C_GUESS.real( c_g_r_temp + B[ size - 2 ] );
+      C_GUESS.imag( c_g_i_temp + B[ size - 1 ] );
 
       std::cout << "***    Iteration = " << iteration
                 << "    Maximum correction = " << B.norm_inf() << std::endl;
@@ -2025,27 +1963,27 @@ namespace TSL
       {
         double eta=ETA_NODES[j];
         // First 8 values are the wave
-        Q_OUTPUT( i, j, 0 )  = Q( i, j, v_r);
-        Q_OUTPUT( i, j, 1 )  = Q( i, j, v_i);
-        Q_OUTPUT( i, j, 2 )  = Q( i, j, w_r);
-        Q_OUTPUT( i, j, 3 )  = Q( i, j, w_i);
-        Q_OUTPUT( i, j, 4 )  = Q( i, j, q_r);
-        Q_OUTPUT( i, j, 5 )  = Q( i, j, q_i);
-        Q_OUTPUT( i, j, 6 )  = Q( i, j, s_r);
-        Q_OUTPUT( i, j, 7 )  = Q( i, j, s_i);
+        Q_OUTPUT( i, j, 0 )  = Q( i, j, v_r );
+        Q_OUTPUT( i, j, 1 )  = Q( i, j, v_i );
+        Q_OUTPUT( i, j, 2 )  = Q( i, j, w_r );
+        Q_OUTPUT( i, j, 3 )  = Q( i, j, w_i );
+        Q_OUTPUT( i, j, 4 )  = Q( i, j, q_r );
+        Q_OUTPUT( i, j, 5 )  = Q( i, j, q_i );
+        Q_OUTPUT( i, j, 6 )  = Q( i, j, s_r );
+        Q_OUTPUT( i, j, 7 )  = Q( i, j, s_i );
         // next 4 values output are the streak without the underlying base flow
-        Q_OUTPUT( i, j, 8 )  = Q( i, j, Phi);
-        Q_OUTPUT( i, j, 9 )  = Q( i, j, Psi);
-        Q_OUTPUT( i, j, 10 ) = Q( i, j, U);
-        Q_OUTPUT( i, j, 11 ) = Q( i, j, Theta);
+        Q_OUTPUT( i, j, 8 )  = Q( i, j, Phi );
+        Q_OUTPUT( i, j, 9 )  = Q( i, j, Psi );
+        Q_OUTPUT( i, j, 10 ) = Q( i, j, U );
+        Q_OUTPUT( i, j, 11 ) = Q( i, j, Theta );
         // final 4 values are the "full" solution, but still with the zeta0 scaling
-        Q_OUTPUT( i, j, 12 ) =   Q( i, j, Phi)
+        Q_OUTPUT( i, j, 12 ) =   Q( i, j, Phi )
                             + BASE_SOLUTION.get_interpolated_vars( eta )[PhiB];
-        Q_OUTPUT( i, j, 13 ) = Q( i, j, Psi)
+        Q_OUTPUT( i, j, 13 ) = Q( i, j, Psi )
                             + hzeta * BASE_SOLUTION.get_interpolated_vars( eta )[PsiB];
-        Q_OUTPUT( i, j, 14 ) =   Q( i, j, U)
+        Q_OUTPUT( i, j, 14 ) =   Q( i, j, U )
                             + BASE_SOLUTION.get_interpolated_vars( eta )[UB];
-        Q_OUTPUT( i, j, 15 ) = Q( i, j, Theta)
+        Q_OUTPUT( i, j, 15 ) = Q( i, j, Theta )
                             + hzeta * BASE_SOLUTION.get_interpolated_vars( eta )[ThetaB];
       }
     }

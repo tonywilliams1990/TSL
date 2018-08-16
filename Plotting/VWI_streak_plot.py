@@ -6,15 +6,15 @@ import matplotlib.pyplot as plt
 
 zeta0 = 1
 beta = 0.5
-N = 70
-M = 70
-K = 11
-R = 12000
-Sigma = 0.0002
+N = 80
+M = 80
+K = 10.5
+R = 25000000
+Sigma = 0
 
 
-data = np.loadtxt("./DATA/VWI/K_" + str(K) + "_R_" + str(R) + "_Sigma_" + str(Sigma) + "_" + str(N+1) + "x" + str(M+1) + "_20_20.dat")
-
+#data = np.loadtxt("./DATA/VWI/K_" + str(K) + "_R_" + str(R) + "_Sigma_" + str(Sigma) + "_" + str(N+1) + "x" + str(M+1) + "_20_20.dat")
+data = np.loadtxt("./DATA/VWI/K_" + str(K) + "_R_2.5e+07_Sigma_" + str(Sigma) + "_" + str(N+1) + "x" + str(M+1) + "_20_20.dat")
 
 zeta_hat = data[:,0]
 eta = data[:,1]

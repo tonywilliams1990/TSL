@@ -3,10 +3,10 @@ import matplotlib.mlab as mlab
 import matplotlib.pyplot as plt
 from itertools import cycle
 
-save_fig = False
-hide_axis_labels = False
+save_fig = True
+hide_axis_labels = True
 legend = True
-legend_text_colour = "red"
+legend_text_colour = "white"
 
 K = 9
 R_vals = [1000, 2500, 5000, 10000, 20000]
@@ -15,7 +15,7 @@ beta = 0.5
 zeta0 = 1
 markers = [".", "^", "o", "*", "v", "+", "D"]
 markercycler = cycle(markers)
-
+alpha_min = 0.04
 
 back_data = True
 
@@ -26,11 +26,12 @@ print "K\talpha_max\tmax_growth_rate"
 
 for R in R_vals :
 
-    data = np.loadtxt("./DATA/K_"+ str(K) + "_zeta0_1_beta_"+ str(beta) + "_" + str(N) + "x" + str(N) + "_32_32/First_eval_R_" + str(R * R) + ".dat")
+    data = np.loadtxt("./DATA/Viscous_stability_601_DATA/K_"+ str(K) + "_zeta0_1_beta_"+ str(beta) + "_" + str(N) + "x" + str(N) + "_32_32/First_eval_R_" + str(R * R) + ".dat")
 
-    alpha = data[:,0]
-    c_real = data[:,1]
-    c_imag = data[:,2]
+    alpha_filter = np.abs(data[:,0])>alpha_min
+    alpha = data[:,0][alpha_filter]
+    c_real = data[:,1][alpha_filter]
+    c_imag = data[:,2][alpha_filter]
 
     max_growth_rate = np.max( alpha * c_imag )
     index = np.argmax( alpha * c_imag )
@@ -40,10 +41,11 @@ for R in R_vals :
     plt.scatter(alpha, c_imag, c="black", marker=marker, clip_on=False, label="Rx^1/2 = " + str(R) )
 
     if back_data:
-        data_back = np.loadtxt("./DATA/K_"+ str(K) + "_zeta0_1_beta_"+ str(beta) + "_" + str(N) + "x" + str(N) + "_32_32/First_eval_back_R_" + str(R * R) + ".dat")
-        alpha_back = data_back[:,0]
-        c_real_back = data_back[:,1]
-        c_imag_back = data_back[:,2]
+        data_back = np.loadtxt("./DATA/Viscous_stability_601_DATA/K_"+ str(K) + "_zeta0_1_beta_"+ str(beta) + "_" + str(N) + "x" + str(N) + "_32_32/First_eval_back_R_" + str(R * R) + ".dat")
+        alpha_back_filter = np.abs(data_back[:,0])>alpha_min
+        alpha_back = data_back[:,0][alpha_back_filter]
+        c_real_back = data_back[:,1][alpha_back_filter]
+        c_imag_back = data_back[:,2][alpha_back_filter]
 
         alpha_back = alpha_back[0:8]
         c_imag_back = c_imag_back[0:8]

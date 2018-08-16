@@ -3,20 +3,21 @@ import matplotlib.mlab as mlab
 import matplotlib.pyplot as plt
 from itertools import cycle
 
-save_fig = False
-hide_axis_labels = False
+save_fig = True
+hide_axis_labels = True
 legend = True
-legend_text_colour = "red"
+legend_text_colour = "white"
 
-K_vals = [1, 2, 3, 4, 5]
-#K_vals = [8, 9, 10, 11, 12]
+#K_vals = [1, 2, 3, 4, 5]
+K_vals = [8, 9, 10, 11, 12]
 N = 601
-beta = 0
+beta = 0.5
 zeta0 = 1
 markers = [".", "^", "o", "*", "v", "+", "D"]
 markercycler = cycle(markers)
+tol = 0.003
 
-back_data = True
+back_data = False
 
 alpha_max_growth = 0
 max_growth_rate = 0
@@ -25,11 +26,16 @@ print "K\talpha_max\tmax_growth_rate"
 
 for K in K_vals :
 
-    data = np.loadtxt("./DATA/K_"+ str(K) + "_zeta0_1_beta_"+ str(beta) + "_" + str(N) + "x" + str(N) + "_32_32/First_eval.dat")
+    data = np.loadtxt("./DATA/Inviscid_stability_601_DATA/K_"+ str(K) + "_zeta0_1_beta_"+ str(beta) + "_" + str(N) + "x" + str(N) + "_32_32/First_eval.dat")
 
-    alpha = data[:,0]
-    c_real = data[:,1]
-    c_imag = data[:,2]
+    #alpha = data[:,0]
+    #c_real = data[:,1]
+    #c_imag = data[:,2]
+    # Filter out c_i < tol
+    c_imag_filter = np.abs(data[:,2])>tol
+    alpha = data[:,0][c_imag_filter]
+    c_real = data[:,1][c_imag_filter]
+    c_imag = data[:,2][c_imag_filter]
 
     max_growth_rate = np.max( alpha * c_imag )
     index = np.argmax( alpha * c_imag )
@@ -39,10 +45,11 @@ for K in K_vals :
     plt.scatter(alpha, c_imag, c="black", marker=marker, clip_on=False, label=" K = " + str(K) )
 
     if back_data:
-        data_back = np.loadtxt("./DATA/K_"+ str(K) + "_zeta0_1_beta_"+ str(beta) + "_" + str(N) + "x" + str(N) + "_32_32/First_eval_back.dat")
-        alpha_back = data_back[:,0]
-        c_real_back = data_back[:,1]
-        c_imag_back = data_back[:,2]
+        data_back = np.loadtxt("./DATA/Inviscid_stability_601_DATA/K_"+ str(K) + "_zeta0_1_beta_"+ str(beta) + "_" + str(N) + "x" + str(N) + "_32_32/First_eval_back.dat")
+        c_imag_back_filter = np.abs(data_back[:,2])>tol
+        alpha_back = data_back[:,0][c_imag_back_filter]
+        c_real_back = data_back[:,1][c_imag_back_filter]
+        c_imag_back = data_back[:,2][c_imag_back_filter]
 
         plt.scatter(alpha_back, c_imag_back, c="black", marker=marker, clip_on=False)
 
@@ -54,8 +61,10 @@ for K in K_vals :
     print K, "\t", alpha_max_growth, "\t\t", max_growth_rate
 
 axes = plt.gca()
-axes.set_xlim([0,0.65])
-axes.set_ylim([0,0.12])
+#axes.set_xlim([0,0.65])
+#axes.set_ylim([0,0.12])
+axes.set_xlim([0,1.0])
+axes.set_ylim([0,0.07])
 axes.set_axisbelow(True)
 plt.grid(True)
 

@@ -779,8 +779,10 @@ namespace TSL
 
         TwoD_node_mesh<double> q( X_NODES, Y_NODES, 4 );
         TwoD_node_mesh<double> q_output( HZETA_NODES, ETA_NODES, 8 );
+        OneD_node_mesh<double> base_soln( BASE_ETA_NODES, 6 );
         Q = q;
         Q_output = q_output;
+        BASE_SOLUTION = base_soln;
 
       }
 
@@ -1379,18 +1381,18 @@ namespace TSL
           {
             double eta=ETA_NODES[j];
             // first 4 values output are the without the underlying base flow
-            Q_output( i, j, 0 ) = Q( i, j, Phi);
-            Q_output( i, j, 1 ) = Q( i, j, Psi);
-            Q_output( i, j, 2 ) = Q( i, j, U);
-            Q_output( i, j, 3 ) = Q( i, j, Theta);
+            Q_output( i, j, 0 ) = Q( i, j, Phi );
+            Q_output( i, j, 1 ) = Q( i, j, Psi );
+            Q_output( i, j, 2 ) = Q( i, j, U );
+            Q_output( i, j, 3 ) = Q( i, j, Theta );
             // second 4 values are the "full" solution, but still with the zeta0 scaling
-            Q_output( i, j, 4 ) =   Q( i, j, Phi)
+            Q_output( i, j, 4 ) =   Q( i, j, Phi )
                                 + BASE_SOLUTION.get_interpolated_vars( eta )[PhiB];
-            Q_output( i, j, 5 ) = Q( i, j, Psi)
+            Q_output( i, j, 5 ) = Q( i, j, Psi )
                                 + hzeta * BASE_SOLUTION.get_interpolated_vars( eta )[PsiB];
-            Q_output( i, j, 6 ) =   Q( i, j, U)
+            Q_output( i, j, 6 ) =   Q( i, j, U )
                                 + BASE_SOLUTION.get_interpolated_vars( eta )[UB];
-            Q_output( i, j, 7 ) = Q( i, j, Theta)
+            Q_output( i, j, 7 ) = Q( i, j, Theta )
                                 + hzeta * BASE_SOLUTION.get_interpolated_vars( eta )[ThetaB];
           }
         }
@@ -1442,13 +1444,42 @@ namespace TSL
 
       /// Reset the solution mesh from an external mesh
       void set_solution( TwoD_node_mesh<double> sol ){
-        if ( SOLVED ){ Q_output = sol; }
+        if ( SOLVED ){
+          for ( std::size_t i = 0; i < N + 1; ++i )
+          {
+            for ( std::size_t j = 0; j < M + 1; ++j )
+            {
+              Q_output( i, j, 0 ) = sol( i, j, 0 );
+              Q_output( i, j, 1 ) = sol( i, j, 1 );
+              Q_output( i, j, 2 ) = sol( i, j, 2 );
+              Q_output( i, j, 3 ) = sol( i, j, 3 );
+              Q_output( i, j, 4 ) = sol( i, j, 4 );
+              Q_output( i, j, 5 ) = sol( i, j, 5 );
+              Q_output( i, j, 6 ) = sol( i, j, 6 );
+              Q_output( i, j, 7 ) = sol( i, j, 7 );
+              Q( i, j, 0 ) = sol( i, j, 0 );
+              Q( i, j, 1 ) = sol( i, j, 1 );
+              Q( i, j, 2 ) = sol( i, j, 2 );
+              Q( i, j, 3 ) = sol( i, j, 3 );
+            }
+          }
+        }
         else { throw Error( "set_solution() error equations have not been solved." ); }
       }
 
       /// Reset the base flow solution mesh from an external mesh
       void set_base_solution( OneD_node_mesh<double> base_sol ){
-        if ( SOLVED ){ BASE_SOLUTION = base_sol; }
+        if ( SOLVED ){
+          for ( std::size_t j = 0; j < M + 1; ++j )
+          {
+            BASE_SOLUTION( j, 0 ) = base_sol( j, 0 );
+            BASE_SOLUTION( j, 1 ) = base_sol( j, 1 );
+            BASE_SOLUTION( j, 2 ) = base_sol( j, 2 );
+            BASE_SOLUTION( j, 3 ) = base_sol( j, 3 );
+            BASE_SOLUTION( j, 4 ) = base_sol( j, 5 );
+            BASE_SOLUTION( j, 5 ) = base_sol( j, 6 );
+          }
+        }
         else { throw Error( "set_base_solution() error equations have not been solved." ); }
       }
 
@@ -1596,10 +1627,11 @@ namespace TSL
 
           if ( base_exists ){
             base.read( OUTPUT_PATH + "Base_soln.dat" );
-            std::cout << "  * UB'(eta=0) =" << base( 0, 1 ) << std::endl;
+            //std::cout << "  * UB'(eta=0) =" << base( 0, 1 ) << std::endl;
           }
 
           if ( exists && base_exists ){
+            setup();
             set_solved( true );
             set_solution( sol );
             set_base_solution( base );

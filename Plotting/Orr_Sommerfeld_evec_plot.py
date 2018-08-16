@@ -3,10 +3,10 @@ import numpy as np
 import matplotlib.mlab as mlab
 import matplotlib.pyplot as plt
 
-show_fig_1 = True
-show_fig_2 = True
-show_fig_3 = True
-show_vel = False
+show_fig_1 = False
+show_fig_2 = False
+show_fig_3 = False
+show_vel = True
 
 save_fig = False
 
@@ -16,7 +16,7 @@ K = 0
 R = 5000
 alpha = 0.4
 number_of_levels = 11
-
+evec = 1
 
 #data = np.loadtxt("./DATA/K_"+ str(K) + "_zeta0_" + str(zeta0) + "_beta_"+ str(beta) + "_301x301_32_32/eigenvectors_R_"+ str(R*R) +"/alpha_"+ str(alpha) + "_evecs.dat")
 data = np.loadtxt("./DATA/OS2D_global.dat")
@@ -69,6 +69,38 @@ evec4_imag_i = mlab.griddata(zeta_hat, eta, evec4_imag, xi, yi, interp = 'linear
 evec4_abs_i  = mlab.griddata(zeta_hat, eta, evec4_abs , xi, yi, interp = 'linear')
 vel_i        = mlab.griddata(zeta_hat, eta, vel       , xi, yi, interp = 'linear')
 
+evec_real = evec1_real
+evec_imag = evec1_imag
+evec_abs  = evec1_abs
+evec_real_i = evec1_real_i
+evec_imag_i = evec1_imag_i
+evec_abs_i  = evec1_abs_i
+
+if evec == 2:
+    evec_real = evec2_real
+    evec_imag = evec2_imag
+    evec_abs  = evec2_abs
+    evec_real_i = evec2_real_i
+    evec_imag_i = evec2_imag_i
+    evec_abs_i  = evec2_abs_i
+
+if evec == 3:
+    evec_real = evec3_real
+    evec_imag = evec3_imag
+    evec_abs  = evec3_abs
+    evec_real_i = evec3_real_i
+    evec_imag_i = evec3_imag_i
+    evec_abs_i  = evec3_abs_i
+
+if evec == 4:
+    evec_real = evec4_real
+    evec_imag = evec4_imag
+    evec_abs  = evec4_abs
+    evec_real_i = evec4_real_i
+    evec_imag_i = evec4_imag_i
+    evec_abs_i  = evec4_abs_i
+
+
 if show_fig_1:
 
     plt.figure(1)
@@ -76,9 +108,9 @@ if show_fig_1:
     origin = 'lower'
     cmap = plt.cm.YlGnBu_r
     #levels = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1]
-    levels = np.linspace(np.min(evec1_real),np.max(evec1_real),number_of_levels)
+    levels = np.linspace(np.min(evec_real),np.max(evec_real),number_of_levels)
 
-    CS = plt.contourf(xi, yi, evec1_real_i, levels,
+    CS = plt.contourf(xi, yi, evec_real_i, levels,
                       cmap=cmap,
                       origin=origin,
                       extend='both')
@@ -97,9 +129,9 @@ if show_fig_2:
     plt.figure(2)
     origin = 'lower'
     cmap = plt.cm.YlGnBu_r
-    levels = np.linspace(np.min(evec1_imag),np.max(evec1_imag),number_of_levels)
+    levels = np.linspace(np.min(evec_imag),np.max(evec_imag),number_of_levels)
 
-    CS = plt.contourf(xi, yi, evec1_imag_i, levels,
+    CS = plt.contourf(xi, yi, evec_imag_i, levels,
                       cmap=cmap,
                       origin=origin,
                       extend='both')
@@ -117,9 +149,9 @@ if show_fig_3:
     plt.figure(3)
     origin = 'lower'
     cmap = plt.cm.YlGnBu_r
-    levels = np.linspace(np.min(evec1_abs),np.max(evec1_abs),number_of_levels)
+    levels = np.linspace(np.min(evec_abs),np.max(evec_abs),number_of_levels)
 
-    CS = plt.contourf(xi, yi, evec1_abs_i, levels,
+    CS = plt.contourf(xi, yi, evec_abs_i, levels,
                       cmap=cmap,
                       origin=origin,
                       extend='both')

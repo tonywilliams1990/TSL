@@ -1,5 +1,6 @@
 #!/bin/bash
-home=/home/tony/Desktop/TSL
+#home=/home/tony/Desktop/TSL
+home=/home/scratch/williams/TSL
 #echo $home
 tar -xvzf petsc-3.9.1.tar.gz
 tar -xvzf slepc-3.9.1.tar.gz
