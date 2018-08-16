@@ -1,5 +1,5 @@
 all:
-	env ~/local/bin/scons -j4
+	env scons -j4
 
 clean:
-	env ~/local/bin/scons -c
+	env scons -c
