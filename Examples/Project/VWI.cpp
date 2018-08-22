@@ -182,26 +182,6 @@ int main()
     cout << "  * K = " << SSI.injection() << endl;
     // Decide how to vary K and Sigma and then resolve self-similar eqns
 
-    /*if ( SSI.injection() <= 4.0 )
-    {
-      K_step = 0.2;
-    }
-
-    if ( SSI.injection() <= 1.0 )
-    {
-      K_step = 0.1;
-    }
-
-    if ( SSI.wave_amplitude() >= 1.5 )
-    {
-      Sigma_step = 0.1;
-    }
-
-    if ( SSI.wave_amplitude() >= 2.0 )
-    {
-      Sigma_step = 0.05;
-    }*/
-
     if ( c_i > 0.0 )
     {
       SSI.injection() -= K_step;

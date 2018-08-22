@@ -1,4 +1,4 @@
-// Solve the 2D Orr-Sommerfeld equation
+// Solve the VWI interaction equations
 #include <cassert>
 #include <fstream>
 
@@ -10,16 +10,6 @@
 
 enum{ v, w, q, s };
 enum{ v_r, v_i, w_r, w_i, q_r, q_i, s_r, s_i, Phi, Psi, U, Theta };
-
-namespace TSL
-{
-  std::size_t eta_intervals;
-  std::size_t col( const std::size_t& i, const std::size_t& j, const std::size_t& k )
-  {
-    // Return the column number for the kth variable at node (i,j)
-    return 4 * ( i * ( eta_intervals + 1 ) + j ) + k;
-  }
-}
 
 using namespace std;
 using namespace TSL;
@@ -48,20 +38,17 @@ int main()
   // Define the domain + short scale injection parameters
   double hzeta_right( 20.0 );       // Size of the domain in the zeta_hat direction
   double eta_top( 20.0 );           // Size of the domain in the eta direction
-  std::size_t N( 100 );             // Number of intervals in the zeta_hat direction
-  std::size_t M( 100 );             // Number of intervals in the eta direction
+  std::size_t N( 80 );             // Number of intervals in the zeta_hat direction
+  std::size_t M( 80 );             // Number of intervals in the eta direction
   std::size_t MB( M * 100 );        // Number of eta intervals in the base flow ODE
   double beta( 0.5 );               // Hartree parameter
   double zeta0( 1.0 );              // Transpiration width
-  double K( 11.0 );                  // Transpiration parameter ( +ve = blowing )
-  double alpha( 0.8 );              // Wavenumber (alpha hat)
+  double K( 9.0 );                  // Transpiration parameter ( +ve = blowing )
+  double alpha( 0.4 );              // Wavenumber (alpha hat)
   double Rx( 5000 * 5000 );         // Local Reynolds number
   double Sigma( 0.0 );              // Wave amplitude
   double tol( 1e-3 );               // Tolerance for c_i = 0
   bool read_from_file( false );
-
-
-  TSL::eta_intervals = M;
 
   double K_min( 0.0 );
   double K_step( 0.5 );

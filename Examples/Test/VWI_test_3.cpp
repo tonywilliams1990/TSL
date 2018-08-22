@@ -41,15 +41,15 @@ int main()
   // Define the domain + short scale injection parameters
   double hzeta_right( 20.0 );       // Size of the domain in the zeta_hat direction
   double eta_top( 20.0 );           // Size of the domain in the eta direction
-  std::size_t N( 200 );             // Number of intervals in the zeta_hat direction
-  std::size_t M( 200 );             // Number of intervals in the eta direction
+  std::size_t N( 180 );             // Number of intervals in the zeta_hat direction
+  std::size_t M( 180 );             // Number of intervals in the eta direction
   std::size_t MB( M * 100 );        // Number of eta intervals in the base flow ODE
   double beta( 0.5 );               // Hartree parameter
   double zeta0( 1.0 );              // Transpiration width
-  double K( 8.9 );                  // Transpiration parameter ( +ve = blowing )
-  double alpha( 0.4 );              // Wavenumber (alpha hat)
+  double K( 11.2 );                  // Transpiration parameter ( +ve = blowing )
+  double alpha( 0.8 );              // Wavenumber (alpha hat)
   double Rx( 5000 * 5000 );         // Local Reynolds number
-  double Sigma( 0.05 );              // Wave amplitude
+  double Sigma( 0.0 );              // Wave amplitude
   double tol( 1e-3 );               // Tolerance for c_i = 0
   double conv_tol( 1e-4 );          // Convergence tolerance for inner loop
 
@@ -60,7 +60,7 @@ int main()
   double Sigma_step_initial( 0.05 );
   double Sigma_step( Sigma_step_initial );
 
-  std::complex<double> target( 0.782, 0.0 ); // Target for eigensolver
+  std::complex<double> target( 0.76, 0.0 ); // Target for eigensolver
 
   // Solve the self similar injection flow
   mySelfSimInjection SSI;
@@ -86,6 +86,7 @@ int main()
   // Solve self-similar equations on a coarse grid
   SSI.set_output_path();
   SSI.mesh_setup();
+  SSI.solve_check_exists();
 
   Vector<double> ETA_NODES      = SSI.eta_nodes();
   Vector<double> HZETA_NODES    = SSI.hzeta_nodes();
@@ -95,35 +96,8 @@ int main()
 
   TwoD_node_mesh<double> sol( HZETA_NODES, ETA_NODES, 8 ); // Mesh for storing the solution
   OneD_node_mesh<double> base( BASE_ETA_NODES, 6 );
-
-  // Don't bother solving it all again if the solution file already exists
-  bool exists;
-  exists = Utility::file_exists( SSI.output_path() + "Qout_" + Utility::stringify( zeta0 ) + ".dat" );
-  bool base_exists;
-  base_exists = Utility::file_exists( SSI.output_path() + "Base_soln.dat" );
-
-  if ( !exists || !base_exists ){
-    SSI.solve();
-    SSI.output();
-    SSI.output_base_solution();
-    sol = SSI.solution();
-    base = SSI.base_flow_solution();
-    cout << "  * zeta0 = " << SSI.injection_width() << ", A = " << SSI.mass_flux() << endl;
-  }
-  if ( exists ){
-    cout << "--- Reading solution from file" << endl;
-    sol.read( SSI.output_path() + "Qout_" + Utility::stringify( zeta0 ) + ".dat" );
-    cout << "--- Finished reading" << endl;
-  }
-  if ( base_exists ){
-    base.read( SSI.output_path() + "Base_soln.dat" );
-    std::cout << "  * UB'(eta=0) =" << base( 0, 1 ) << std::endl;
-  }
-  if ( exists && base_exists ){
-    SSI.set_solved( true );
-    SSI.set_solution( sol );
-    SSI.set_base_solution( base );
-  }
+  sol = SSI.solution();
+  base = SSI.base_flow_solution();
 
 
   /* Solve the 2D Orr-Sommerfeld equation (Global) */
@@ -139,18 +113,10 @@ int main()
   double c_i( 0.0 ); // Imaginary part of eigenvalue
   double c_r( 0.0 ); // Real part of eigenvalue
 
-  // Output K and Sigma to file
-  TrackerFile metric( "./DATA/K_vs_Sigma_alpha_" + Utility::stringify( alpha, 3 ) + ".dat" );
-  metric.push_ptr( &SSI.injection(), "K" );
-  metric.push_ptr( &Sigma, "Sigma" );
-  metric.push_ptr( &c_i, "c_i" );
-  metric.header();
 
   do{
 
     double c_i_minus, c_i_plus, Sigma_minus, Sigma_plus;
-
-    do{
 
         cout << "*** Solving the stability equations for v and w ***" << endl;
         orrsommerfeld_2D.update_SSI( SSI );
@@ -473,15 +439,6 @@ int main()
                 // ( UB' + UG_eta ) * Phi
                 A( row, col( i, j, Phi ) )          =   Base[ UBd ] + Guess_eta[ U ];
 
-                //TODO Forcing (LHS)
-
-                // Forcing (RHS)
-                /*std::complex<double> F_1;
-                F_1 = Guess[ v ] * ( conj( Guess_eta_eta[ v ] ) + conj( Guess_eta_hzeta[ w ] ) )
-                   + Guess[ w ] * ( conj( Guess_eta_hzeta[ v ] ) + conj( Guess_hzeta_hzeta[ w ] ) );
-                F_1 *= std::complex<double> (0.0, - 1.0 / alpha);
-                F_1 = F_1 + conj( F_1 );*/
-
                 // Residual
                 B[ row ]        = - Guess_laplace[ U ]
                                   + beta * ( 2. * Base[ UB ] + Guess[ U ] ) * Guess[ U ]
@@ -489,7 +446,6 @@ int main()
                                   * ( Guess_hzeta[ U ] )
                                   - ( Base[ PhiB ] + Guess[ Phi ] ) * Guess_eta[ U ]
                                   - Base[UBd] * Guess[Phi];
-                                  //+ std::pow( Rx, -2.0/3.0 ) * Sigma * Sigma * F_1;
                 ++row;
 
 
@@ -743,64 +699,13 @@ int main()
 
         SSI.set_solution( sol );
 
-      c_i = orrsommerfeld_2D.eigenvalues()[0].imag();
-      c_r = orrsommerfeld_2D.eigenvalues()[0].real();
-
-      // Decide how to vary Sigma
-      if ( c_i > 0.0 && std::abs( c_i ) > tol )
-      {
-        cout << "  * c_i = " << c_i << endl;
-        cout << "  * Sigma = " << Sigma << endl;
-        c_i_plus = c_i;
-        Sigma_plus = Sigma;
-        Sigma = Sigma_minus
-           + ( c_i_minus * ( Sigma_minus - Sigma_plus ) / ( c_i_plus - c_i_minus ) );
-        Sigma_step *= 0.1;
-        cout << "*** Stepping in sigma ***" << endl;
-        cout << "  * Step = " << Sigma_step << endl;
-      }
-      else if ( c_i < 0.0 && std::abs( c_i ) > tol )
-      {
-        cout << "  * c_i = " << c_i << endl;
-        cout << "  * Sigma = " << Sigma << endl;
-        c_i_minus = c_i;
-        Sigma_minus = Sigma;
-        Sigma += Sigma_step;
-        cout << "*** Stepping in sigma ***" << endl;
-        cout << "  * Step = " << Sigma_step << endl;
-      }
-
-      if ( c_i < 0.0 )
-      {
-        target.imag( c_i + 0.005 );
-      } else {
-        target.imag( 0.0 );
-      }
-      target.real( c_r );
-      orrsommerfeld_2D.set_target( target );
-      cout << "  * target = " << target << endl;
-
-    }while( std::abs( c_i ) > tol );
-
-    c_i = orrsommerfeld_2D.eigenvalues()[0].imag();
-    cout << "  * c_i = " << c_i << endl;
-    cout << "  * Sigma = " << Sigma << endl;
-    cout << "  * K = " << SSI.injection() << endl;
-    metric.update();
-    sol.dump( "./DATA/VWI_try_K_" + Utility::stringify( SSI.injection(), 3 )
-              + "_alpha_" + Utility::stringify( alpha, 3 ) + ".dat" );
-    // Step in K
-    SSI.injection() -= K_step;
-    cout << "*** Stepping in K ***" << endl;
-    Sigma_step = Sigma_step_initial; // Reset sigma step
-
   }while( SSI.injection() >= K_min );
 
   timer.print();
   timer.stop();
 
-  sol.dump( "./DATA/VWI_try_K_" + Utility::stringify( SSI.injection(), 3 )
-            + "_alpha_" + Utility::stringify( alpha, 3 ) + ".dat" );
+  //sol.dump( "./DATA/VWI_try_K_" + Utility::stringify( SSI.injection(), 3 )
+  //          + "_alpha_" + Utility::stringify( alpha, 3 ) + ".dat" );
 
 	cout << "FINISHED" << endl;
 

@@ -1214,8 +1214,8 @@ namespace TSL
                               - ( hzeta * Base[ PsiB ] + Guess[ Psi ] )
                               * ( Guess_hzeta[ Theta ] ) - Guess[ Psi ] * Base[ ThetaB ]
                               - ( 2. - BETA ) * ( ( Base[ UB ] + Guess[ U ] )
-                              * Guess[ Theta ] + hzeta * Base[ ThetaB ] * Guess[ U ] )
-                              + std::pow( RX, -1.0/6.0 ) * SIGMA * SIGMA * F_2;
+                              * Guess[ Theta ] + hzeta * Base[ ThetaB ] * Guess[ U ] );
+                              //+ std::pow( RX, -1.0/6.0 ) * SIGMA * SIGMA * F_2;
               ++row;
             }
 
@@ -1598,6 +1598,7 @@ namespace TSL
         solve_perturbation_eqns();
       }
 
+      //TODO the reading of the solution is dodgy (gives residuals when  reading back in )!!!
       void solve_check_exists()
       {
         TwoD_node_mesh<double> sol( HZETA_NODES, ETA_NODES, 8 ); // Mesh for storing the solution

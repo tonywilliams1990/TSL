@@ -30,12 +30,12 @@ int main()
   // Define the domain + short scale injection parameters
   double hzeta_right( 20.0 );       // Size of the domain in the zeta_hat direction
   double eta_top( 20.0 );           // Size of the domain in the eta direction
-  const std::size_t N( 90 );       // Number of intervals in the zeta_hat direction
-  const std::size_t M( 90 );       // Number of intervals in the eta direction
+  const std::size_t N( 180 );       // Number of intervals in the zeta_hat direction
+  const std::size_t M( 180 );       // Number of intervals in the eta direction
   const std::size_t MB( M * 100 );  // Number of eta intervals in the base flow ODE
   double beta( 0.5 );               // Hartree parameter
   double zeta0( 1.0 );              // Transpiration width
-  double K( 11.0 );                  // Transpiration parameter ( +ve = blowing )
+  double K( 11.2 );                  // Transpiration parameter ( +ve = blowing )
   double alpha( 0.8 );              // Wavenumber (alpha hat)
   double Rx( 5000 * 5000 );           // Local Reynolds number
 
@@ -72,7 +72,7 @@ int main()
   // Setup the generalised eigenvalue problem A p = c B p (solved using SLEPc)
   cout << "*** Setting up the generalised eigenvalue problem ***" << endl;
   cout << "--- K = " << K << ", alpha = " << alpha << ", Rx^1/2 = " << sqrt(Rx) << endl;
-#ifdef PETSC_Z
+
   // Create the OrrSommerfeld_2D object
   std::size_t nev( 1 );
   OrrSommerfeld_2D orrsommerfeld_2D( SSI, alpha, Rx, nev );
@@ -170,7 +170,7 @@ int main()
 
   timer.print();
   timer.stop();
-#endif
+
 	cout << "FINISHED" << endl;
 
 }

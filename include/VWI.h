@@ -53,14 +53,15 @@ namespace TSL
       Vector<double> BASE_ETA_NODES;
 
       // Solution
-      OneD_node_mesh<double> BASE_SOLUTION;            // Base flow ODE solution
-      TwoD_node_mesh<double> Q;        // Current guess mesh
-      TwoD_node_mesh<double> Q_OUTPUT; // Output mesh
+      OneD_node_mesh<double> BASE_SOLUTION;     // Base flow ODE solution
+      TwoD_node_mesh<double> Q;                 // Current guess mesh
+      TwoD_node_mesh<double> Q_OUTPUT;          // Output mesh
+      std::size_t NVARS;                        // Number of variables
 
       std::size_t col( const std::size_t& i, const std::size_t& j, const std::size_t& k )
       {
         // Return the column number for the kth variable at node (i,j)
-        return 12 * ( i * ( SSI.eta_intervals() + 1 ) + j ) + k;
+        return NVARS * ( i * ( SSI.eta_intervals() + 1 ) + j ) + k;
       }
 
     public:
@@ -93,6 +94,7 @@ namespace TSL
         TwoD_node_mesh<double> q_output( HZETA_NODES, ETA_NODES, 16 );
         Q        = q;
         Q_OUTPUT = q_output;
+        NVARS = 12;
 
         OUTPUT_PATH = SSI.output_path();
 
@@ -246,6 +248,10 @@ namespace TSL
 
       /// Solve the sparse eigenvalue problem using Newton iteration
       void solve_local();
+
+      /// Solve the streak equations with forcing
+      void solve_streak( TwoD_node_mesh<double>& q,
+                      TwoD_node_mesh< std::complex<double> >& eigenvectors);
 
       /// Virtual function for defining the transpiration function
       virtual double Phi_w_func( const double& hzeta )
@@ -1991,6 +1997,542 @@ namespace TSL
     SOLVED = true;
 
   } // End of solve_local method
+
+  /// Solve the streak equations with forcing
+  void VWI::solve_streak( TwoD_node_mesh<double>& q,
+                  TwoD_node_mesh< std::complex<double> >& eigenvectors)
+  {
+    std::size_t Phi( 0 );
+    std::size_t Psi( 1 );
+    std::size_t U( 2 );
+    std::size_t Theta( 3 );
+
+    NVARS = 4;
+
+    // Create the sparse matrices
+    std::size_t N_hzeta( N + 1 );
+    std::size_t N_eta( M + 1 );
+    std::size_t size( 4 * N_eta * N_hzeta );
+    Vector<double> B( size, 0.0 );;
+
+    // Step sizes
+    const double dY( Y_NODES[ 1 ] - Y_NODES[ 0 ] );
+    const double dX( X_NODES[ 1 ] - X_NODES[ 0 ] );
+
+    double Rsigma2( std::pow( RX, -1.0/6.0 ) * SIGMA * SIGMA );
+
+    // Iterate to a solution
+    double max_residual( 0.0 );             // Maximum residual
+    std::size_t iteration( 0 );             // Initialise iteration counter
+    std::size_t max_iterations( 30 );       // Maximum number of iterations
+
+    if( SPEED_UP ){ max_iterations = 500; }
+    // Eigen objects (only used if SPEED_UP=true)
+    Eigen::SparseMatrix<double, Eigen::ColMajor, long long> A_Eigen( size, size );
+    Eigen::SparseLU< Eigen::SparseMatrix<double, Eigen::ColMajor, long long> > solver;
+
+    do{
+      SparseMatrix<double> A( size, size );
+      std::cout << "  * Assembling sparse matrix problem" << std::endl;
+
+      Timer timer;
+      timer.start();
+
+      std::size_t row( 0 );
+
+      // hzeta = 0 boundary ( left boundary )
+      std::size_t i( 0 );
+
+      for ( std::size_t j = 0; j < M + 1 ; ++j )
+      {
+        double hzeta( HZETA_NODES[ 0 ] );
+        double Xd( SSI.mesh_Xd( hzeta ) );
+        double eta( ETA_NODES[ j ] );
+        Vector<double> Base( BASE_SOLUTION.get_interpolated_vars( eta ) );
+
+        // Phi_hzeta = 0
+        A( row, col( i, j, Phi ) )      = -3.*Xd/(2*dX);
+        A( row, col( i + 1, j, Phi ) )  =  4.*Xd/(2*dX);
+        A( row, col( i + 2, j, Phi ) )  = -1.*Xd/(2*dX);
+
+        B[ row ]                        = -( Xd*( -3*q(i,j,Phi) + 4*q(i+1,j,Phi)
+                                          -q(i+2,j,Phi) )/(2*dX) );
+        ++row;
+
+        // Psi = 0
+        A( row, col( i, j, Psi ) )      =   1;
+
+        B[ row ]                        = - q( i, j, Psi );
+        ++row;
+
+        // U_hzeta = 0
+        A( row, col( i, j, U ) )        = -3.*Xd/(2*dX);
+        A( row, col( i + 1, j, U ) )    =  4.*Xd/(2*dX);
+        A( row, col( i + 2, j, U ) )    = -1.*Xd/(2*dX);
+
+        B[ row ]                        = -( Xd*( -3*q(i,j,U) + 4*q(i+1,j,U)
+                                          -q(i+2,j,U) )/(2*dX) );
+        ++row;
+
+        // Theta = 0
+        A( row, col( i, j, Theta ) )    =   1;
+
+        B[ row ]                        = - q( i, j, Theta );
+        ++row;
+
+      } // end for loop over LHS eta nodes
+
+      // Interior points between the hzeta boundaries
+      for ( std::size_t i = 1; i < N; ++i )
+      {
+        // hzeta location
+        double hzeta( HZETA_NODES[ i ] );
+        double Xd( SSI.mesh_Xd( hzeta ) );
+        double Xdd( SSI.mesh_Xdd( hzeta ) );
+
+        // Wall transpiration
+        double Phi_w( Phi_w_func( hzeta ) );
+
+        // eta = 0 boundary ( bottom boundary )
+        std::size_t j( 0 );
+        double eta( ETA_NODES[ j ] );
+        double Yd( SSI.mesh_Yd( eta ) );
+
+        // Phi = Phi_w
+        A( row, col( i, j, Phi ) )        =  1.;
+        B[ row ]                          = -q( i, j, Phi ) + Phi_w;
+        ++row;
+        // Psi = 0
+        A( row, col( i, j, Psi ) )        =  1.;
+        B[ row ]                          = -q( i, j, Psi );
+        ++row;
+        // U = 0
+        A( row, col( i, j, U ) )          =  1.;
+        B[ row ]                          = -q( i, j, U );
+        ++row;
+        // theta = psi_eta  - phi_zeta on eta=0
+        A( row, col( i, j, Theta ) ) = 1;
+        A( row, col( i, j, Psi ) ) = Yd*3./(2*dY);
+        A( row, col( i, j + 1, Psi ) ) = -Yd*4./(2*dY);
+        A( row, col( i, j + 2, Psi ) ) = Yd/(2*dY);
+        A( row, col( i + 1, 0, Phi ) ) = Xd/(2*dX);
+        A( row, col( i - 1, 0, Phi ) ) = -Xd/(2*dX);
+        B[ row ] = -q( i, 0, Theta ) + Yd*( -3*q(i,0,Psi) + 4*q(i,1,Psi) - q(i,2,Psi) ) / (2*dY)
+          - ( q(i+1,0,Phi) -  q(i-1,0,Phi) )*Xd/(2*dX);
+
+        ++row;
+
+        // Main interior grid points
+        for ( std::size_t j = 1; j < M; ++j )
+        {
+          // eta location
+          double eta( ETA_NODES[ j ] );
+          double Yd( SSI.mesh_Yd( eta ) );
+          double Ydd( SSI.mesh_Ydd( eta ) );
+          Vector<double> Base( BASE_SOLUTION.get_interpolated_vars( eta ) );
+
+          // Laplacian coefficients for finite-differencing
+
+          // X(i,j-1)
+          double laplace_1 =  ( Yd*Yd/(dY*dY) - Ydd/ (2.*dY) ) ;
+          // X(i-1,j)
+          double laplace_3 = ( Xd*Xd/(dX*dX) - Xdd/(2.*dX) ) / ( ZETA0 * ZETA0 );
+          // X(i,j)
+          double laplace_4 = -2.*( Yd*Yd / (dY*dY)
+                             + Xd*Xd/( ZETA0 * ZETA0 * dX * dX ) );
+          // X(i+1,j)
+          double laplace_5 = ( Xdd/(2.*dX) + Xd*Xd/(dX*dX) ) / ( ZETA0 * ZETA0 );
+          // X(i,j+1)
+          double laplace_7 = ( Yd*Yd/(dY*dY) + Ydd/ (2.*dY) );
+
+          // Guessed/known components and various derivative values
+          Vector<double> Guess( q.get_nodes_vars( i, j ) );
+          Vector<double> Guess_eta( ( q.get_nodes_vars( i, j + 1 )
+                                    - q.get_nodes_vars( i, j - 1 ) ) * ( Yd /( 2 * dY )) );
+          Vector<double> Guess_hzeta( ( q.get_nodes_vars( i + 1, j )
+                                      - q.get_nodes_vars( i - 1, j ) )
+                                      * ( Xd /( 2 * dX )) );
+          Vector<double> Guess_laplace( q.get_nodes_vars( i, j - 1 ) * laplace_1
+                                     +  q.get_nodes_vars( i - 1, j ) * laplace_3
+                                     +  q.get_nodes_vars( i, j ) * laplace_4
+                                     +  q.get_nodes_vars( i + 1, j ) * laplace_5
+                                     +  q.get_nodes_vars( i, j + 1 ) * laplace_7 );
+
+          // Eigenvectors
+          Vector< std::complex<double> > Evec( eigenvectors.get_nodes_vars( i, j ) );
+          Vector< std::complex<double> > Evec_eta( ( eigenvectors.get_nodes_vars( i, j + 1 )
+                                    - eigenvectors.get_nodes_vars( i, j - 1 ) ) * ( Yd /( 2 * dY )) );
+          Vector< std::complex<double> > Evec_hzeta( ( eigenvectors.get_nodes_vars( i + 1, j )
+                                      - eigenvectors.get_nodes_vars( i - 1, j ) )
+                                      * ( Xd /( 2 * dX )) );
+
+          Vector< std::complex<double> > Evec_eta_eta( ( eigenvectors.get_nodes_vars( i, j + 1 ) * laplace_7
+                                        + eigenvectors.get_nodes_vars( i, j ) * ( - 2. * Yd * Yd / ( dY * dY ) )
+                                        + eigenvectors.get_nodes_vars( i, j - 1 ) * laplace_1 ) );
+          Vector< std::complex<double> > Evec_hzeta_hzeta( ( eigenvectors.get_nodes_vars( i + 1, j ) * laplace_5
+                                        + eigenvectors.get_nodes_vars( i, j ) * ( - 2. * Xd * Xd / ( ZETA0 * ZETA0 * dX * dX ))
+                                        + eigenvectors.get_nodes_vars( i - 1, j ) * laplace_3 ) );
+
+          Vector< std::complex<double> > Evec_eta_hzeta( ( eigenvectors.get_nodes_vars( i + 1, j + 1 )
+                                          + eigenvectors.get_nodes_vars( i - 1, j - 1 )
+                                          - eigenvectors.get_nodes_vars( i + 1, j - 1 )
+                                          - eigenvectors.get_nodes_vars( i - 1, j + 1 ) ) * ( Xd * Yd / ( 4 * dX * dY) ) );
+
+
+          ///////////////////////////////
+          // Self-sim streak equations //
+          ///////////////////////////////
+
+          //////////////////
+          // Phi equation //
+          //////////////////
+
+          // Laplacian of Phi
+          A( row, col( i, j - 1, Phi ) )      = laplace_1;
+          A( row, col( i - 1, j, Phi ) )      = laplace_3;
+          A( row, col( i, j, Phi ) )          = laplace_4;
+          A( row, col( i + 1, j, Phi ) )      = laplace_5;
+          A( row, col( i, j + 1, Phi ) )      = laplace_7;
+          // -(2-beta)*U_eta
+          A( row, col( i, j + 1, U ) )        = - ( 2. - BETA ) * Yd / ( 2 * dY );
+          A( row, col( i, j - 1, U ) )        =   ( 2. - BETA ) * Yd / ( 2 * dY );
+          // Theta_hzeta
+          A( row, col( i + 1, j, Theta ) )    =   Xd / ( 2 * dX );
+          A( row, col( i - 1, j, Theta ) )    = - Xd / ( 2 * dX );
+
+          // Residual
+          B[ row ]      = - Guess_laplace[ Phi ] + ( 2. - BETA ) * Guess_eta[ U ]
+                          - Guess_hzeta[ Theta ];
+
+          ++row;
+
+          //////////////////
+          // Psi equation //
+          //////////////////
+
+          // Laplacian of Psi
+          A( row, col( i, j - 1, Psi ) )      = laplace_1;
+          A( row, col( i - 1, j, Psi ) )      = laplace_3;
+          A( row, col( i, j, Psi ) )          = laplace_4;
+          A( row, col( i + 1, j, Psi ) )      = laplace_5;
+          A( row, col( i, j + 1, Psi ) )      = laplace_7;
+
+          // -(2-beta)*U_hzeta / (zeta0^2)
+          A( row, col( i + 1, j, U ) )        = - ( 2. - BETA ) * Xd
+                                                / ( 2. * dX * ZETA0 * ZETA0 );
+          A( row, col( i - 1, j, U ) )        =   ( 2. - BETA ) * Xd
+                                                / ( 2. * dX * ZETA0 * ZETA0 );
+
+          // -Theta_eta
+          A( row, col( i, j + 1, Theta ) )    = - Yd / ( 2 * dY );
+          A( row, col( i, j - 1, Theta ) )    =   Yd / ( 2 * dY );
+
+          // Residual
+          B[ row ]      = - Guess_laplace[ Psi ] + ( 2. - BETA )
+                          * ( Guess_hzeta[ U ] )
+                          / ( ZETA0 * ZETA0 )
+                          + Guess_eta[ Theta ];
+
+          ++row;
+
+          ////////////////
+          // U equation //
+          ////////////////
+
+          // Laplacian of U
+          A( row, col( i, j - 1, U ) )        = laplace_1;
+          A( row, col( i - 1, j, U ) )        = laplace_3;
+          A( row, col( i, j, U ) )            = laplace_4;
+          A( row, col( i + 1, j, U ) )        = laplace_5;
+          A( row, col( i, j + 1, U ) )        = laplace_7;
+
+          // -2 * beta * ( UB + UG ) * U
+          A( row, col( i, j, U ) )           += - 2.* BETA * ( Base[ UB ]
+                                                + Guess[ U ] );
+
+          // ( hzeta * PsiB + PsiG ) * U_hzeta
+          A( row, col( i + 1, j, U ) )       +=   ( hzeta * Base[ PsiB ] + Guess[ Psi ] )
+                                                * Xd / ( 2 * dX );
+          A( row, col( i - 1, j, U ) )       += - ( hzeta * Base[ PsiB ] + Guess[ Psi ] )
+                                                * Xd / ( 2 * dX );
+
+          // [ PhiB + PhiG ] * U_eta
+          A( row, col( i, j + 1, U ) )       +=   ( Base[ PhiB ] + Guess[ Phi ] )
+                                                * Yd / ( 2 * dY );
+          A( row, col( i, j - 1, U ) )       += - ( Base[ PhiB ] + Guess[ Phi ] )
+                                                * Yd / ( 2 * dY );
+
+          // [ UG_hzeta ] * Psi
+          A( row, col( i, j, Psi ) )          =   Guess_hzeta[ U ];
+
+          // ( UB' + UG_eta ) * Phi
+          A( row, col( i, j, Phi ) )          =    Base[ UBd ] + Guess_eta[ U ];
+
+          // Residual
+          B[ row ]        = - Guess_laplace[ U ]
+                            + BETA * ( 2. * Base[ UB ] + Guess[ U ] ) * Guess[ U ]
+                            - ( hzeta * Base[ PsiB ] + Guess[ Psi ] )
+                            * ( Guess_hzeta[ U ] )
+                            - ( Base[ PhiB ] + Guess[ Phi ] ) * Guess_eta[ U ]
+                            - Base[UBd] * Guess[Phi];
+          ++row;
+
+          ////////////////////
+          // Theta equation //
+          ////////////////////
+
+          // Laplacian of Theta
+          A( row, col( i, j - 1, Theta ) )     = laplace_1;
+          A( row, col( i - 1, j, Theta ) )     = laplace_3;
+          A( row, col( i, j, Theta ) )         = laplace_4;
+          A( row, col( i + 1, j, Theta ) )     = laplace_5;
+          A( row, col( i, j + 1, Theta ) )     = laplace_7;
+
+          // -2 * (1-beta) * (UB+UG) * [hzeta] * U_eta
+          A( row, col( i, j + 1, U ) )         = - 2. * ( 1. - BETA )
+                                                   * ( Base[ UB ] + Guess[ U ] )
+                                                   * ( hzeta )
+                                                   * Yd / ( 2 * dY );
+          A( row, col( i, j - 1, U ) )         =   2. * ( 1. - BETA )
+                                                   * ( Base[ UB ] + Guess[ U ] )
+                                                   * ( hzeta )
+                                                   * Yd / ( 2 * dY );
+
+          // -2 * (1-beta) * (UB' + UG) * ( hzeta ) * U
+          A( row, col( i, j, U ) )             = - 2. * ( 1. - BETA )
+                                                   * ( Base[ UBd ] + Guess_eta[ U ] )
+                                                   * ( hzeta );
+
+          // (2 * (1-beta) * eta * UG_hzeta / (zeta0^2)) * U
+          A( row, col( i, j, U ) )            +=  2. * ( 1. - BETA )
+                                                  * eta * Guess_hzeta[ U ]
+                                                  / ( ZETA0 * ZETA0 );
+
+          // 2 * (1-beta) * eta * (UB + UG) * U_hzeta / ( zeta0^2 )
+          A( row, col( i + 1, j, U ) )         =  2. * ( 1. - BETA ) * eta
+                                                  * ( Base[ UB ] + Guess[ U ] )
+                                                  * Xd / ( 2 * dX * ZETA0 * ZETA0 );
+          A( row, col( i - 1, j, U ) )         = -2. * ( 1. - BETA ) * eta
+                                                  * ( Base[ UB ] + Guess[ U ] )
+                                                  * Xd / ( 2 * dX * ZETA0 * ZETA0 );
+
+          // ( PhiB + PhiG ) * Theta_eta
+          A( row, col( i, j + 1, Theta ) )    +=  ( Base[ PhiB ] + Guess[ Phi ] ) * Yd
+                                                  / ( 2 * dY );
+          A( row, col( i, j - 1, Theta ) )    += -( Base[ PhiB ] + Guess[ Phi ] ) * Yd
+                                                  / ( 2 * dY );
+
+          // (hzeta * ThetaB' + ThetaG_eta ) * Phi
+          A( row, col( i, j, Phi ) )           =   hzeta * Base[ ThetaBd ]
+                                                 + Guess_eta[ Theta ];
+
+          // (hzeta * PsiB + PsiG ) * Theta_hzeta
+          A( row, col( i + 1, j, Theta ) )    +=  ( hzeta * Base[ PsiB ] + Guess[ Psi ] )
+                                                 * Xd / ( 2 * dX );
+          A( row, col( i - 1, j, Theta ) )    += -( hzeta * Base[ PsiB ] + Guess[ Psi ] )
+                                                 * Xd / ( 2 * dX );
+
+          // [ThetaB + ThetaG_hzeta] * Psi
+          A( row, col( i, j, Psi ) )           =  Base[ ThetaB ] + Guess_hzeta[ Theta ];
+
+          // (2-beta) * ( UB + UG ) * Theta
+          A( row, col( i, j, Theta ) )        +=   ( 2. - BETA ) * ( Base[ UB ]
+                                                 + Guess[ U ] );
+
+          // (2-beta) * ( hzeta * ThetaB + ThetaG ) * U
+          A( row, col( i, j, U ) )            +=   ( 2. - BETA ) * ( hzeta * Base[ ThetaB ]
+                                                 + Guess[ Theta ] );
+
+        // v,w,q,s = 0,1,2,3
+        double Forcing( 0.0 );
+        Forcing  = 4 * Evec_hzeta[ 0 ].real() * ( Evec_eta[ 0 ].real() + Evec_hzeta[ 1 ].real() );
+        Forcing += 4 * Evec_hzeta[ 0 ].imag() * ( Evec_eta[ 0 ].imag() + Evec_hzeta[ 1 ].imag() );
+        Forcing += 2 * Evec[ 0 ].real() * ( 2 * Evec_eta_hzeta[ 0 ].real()
+                     + Evec_hzeta_hzeta[ 1 ].real() - Evec_eta_eta[ 1 ].real() );
+        Forcing += 2 * Evec[ 0 ].imag() * ( 2 * Evec_eta_hzeta[ 0 ].imag()
+                     + Evec_hzeta_hzeta[ 1 ].imag() - Evec_eta_eta[ 1 ].imag() );
+
+        Forcing -= 4 * Evec_eta[ 1 ].real() * ( Evec_hzeta[ 1 ].real() + Evec_eta[ 0 ].real() );
+        Forcing -= 4 * Evec_eta[ 1 ].imag() * ( Evec_hzeta[ 1 ].imag() + Evec_eta[ 0 ].imag() );
+        Forcing -= 2 * Evec[ 1 ].real() * ( 2 * Evec_eta_hzeta[ 1 ].real()
+                     + Evec_eta_eta[ 0 ].real() - Evec_hzeta_hzeta[ 0 ].real() );
+        Forcing -= 2 * Evec[ 1 ].imag() * ( 2 * Evec_eta_hzeta[ 1 ].imag()
+                     + Evec_eta_eta[ 0 ].imag() - Evec_hzeta_hzeta[ 0 ].imag() );
+
+        //std::cout << " Forcing = " << Forcing << std::endl;
+
+
+        // Residual
+        B[ row ]      = - Guess_laplace[ Theta ]
+                        + 2. * ( 1. - BETA )
+                        * ( hzeta * ( Base[ UB ] + Guess[ U ] )
+                        * Guess_eta[ U ] + hzeta * Base[ UBd ] * Guess[ U ]
+                        - eta * ( Base[ UB ] + Guess[ U ] )
+                        * ( Guess_hzeta[ U ] )
+                        / ( ZETA0 * ZETA0 ) )
+                        - ( Base[ PhiB ] + Guess[ Phi ] ) * Guess_eta[ Theta ]
+                        - hzeta * Base[ ThetaBd ] * Guess[ Phi ]
+                        - ( hzeta * Base[ PsiB ] + Guess[ Psi ] )
+                        * ( Guess_hzeta[ Theta ] ) - Guess[ Psi ] * Base[ ThetaB ]
+                        - ( 2. - BETA ) * ( ( Base[ UB ] + Guess[ U ] )
+                        * Guess[ Theta ] + hzeta * Base[ ThetaB ] * Guess[ U ] )
+                        - Rsigma2 * Forcing;
+        ++row;
+
+        }
+
+        // eta = eta_inf boundary ( top boundary )
+        j = M ;
+        eta = ETA_NODES[ j ];
+        Yd = SSI.mesh_Yd( eta );
+
+        const double rsq =  eta * eta + ZETA0 * ZETA0 * hzeta * hzeta ;
+        // Phi_eta*( eta^2 + zeta_0^2*hzeta^2) + [ 2*eta - (eta^2 + zeta_0^2*hzeta^2)/eta ]*Phi = 0
+        A( row, col( i, j, Phi ) )        =   3.0 * Yd * rsq / (2*dY);
+        A( row, col( i, j - 1, Phi ) )    = - 4.0 * Yd * rsq / (2*dY);
+        A( row, col( i, j - 2, Phi ) )    =   1.0 * Yd * rsq / (2*dY);
+        A( row, col( i, j, Phi ) )       +=   2.0 * eta - ( rsq / eta );
+
+        B[ row ]                          = - ( 3 * q( i, j, Phi ) - 4 * q( i, j-1, Phi )
+                                            + q( i, j-2, Phi ) ) * Yd * rsq / ( 2 * dY )
+                                            + ( ( rsq / eta ) - 2.0 * eta ) * q( i, j, Phi );
+        ++row;
+
+        // Psi_eta*( eta^2 + zeta_0^2*hzeta^2) + 2 * eta * Psi = 0
+        A( row, col( i, j, Psi ) )        =   3.0 * Yd * rsq / (2*dY);
+        A( row, col( i, j - 1, Psi ) )    = - 4.0 * Yd * rsq / (2*dY);
+        A( row, col( i, j - 2, Psi ) )    =   1.0 * Yd * rsq / (2*dY);
+        A( row, col( i, j, Psi ) )       +=   2 * eta;
+
+        B[ row ]                          =  - (( 3 * q( i, j, Psi ) - 4 * q( i, j-1, Psi )
+                                             + q( i, j-2, Psi ) ) * Yd * rsq / ( 2 * dY ))
+                                             - 2 * eta * q( i, j, Psi );
+        ++row;
+
+        // U = 0
+        A( row, col( i, j, U ) )            =   1;
+        B[ row ]                            = - ( q( i, j, U ) );
+        ++row;
+
+        // Theta = 0
+        A( row, col( i, j, Theta ) )        =   1;
+        B[ row ]                            = - ( q( i, j, Theta ) );
+        ++row;
+
+      } // End of loop over interior nodes
+
+      // hzeta = hzeta_inf boundary ( right boundary )
+
+      for ( std::size_t j = 0; j < M + 1; ++j )
+      {
+        //offset for global problem
+        std::size_t i( N );
+        double hzeta( HZETA_NODES[ i ] );
+        double Xd( SSI.mesh_Xd( hzeta ) );
+        double eta( ETA_NODES[ j ] );
+
+
+        Vector<double> Base( BASE_SOLUTION.get_interpolated_vars( eta ) );
+
+        const double rsq =  eta*eta+hzeta*hzeta;
+
+        // (eta^2 + zeta_0^2 * hzeta^2) * Phi_hzeta + 2 * zeta_0^2 * hzeta * Phi = 0
+        A( row, col( i, j, Phi ) )          =   3.0 * Xd * rsq / ( 2 * dX );
+        A( row, col( i - 1, j, Phi ) )      = - 4.0 * Xd * rsq / ( 2 * dX );
+        A( row, col( i - 2, j, Phi ) )      =   1.0 * Xd * rsq / ( 2 * dX );
+        A( row, col( i, j, Phi ) )         +=   2 * ZETA0 * ZETA0 * hzeta;
+
+        B[ row ]        = - rsq * ( 3 * q( i, j, Phi) - 4 * q( i - 1, j, Phi)
+                          + q( i - 2, j, Phi) ) * Xd / ( 2 * dX )
+                          - 2 * ZETA0 * ZETA0 * hzeta * q( i, j, Phi );
+        ++row;
+
+        // (eta^2 + zeta_0^2 * hzeta^2)*Psi_hzeta + (2*zeta_0^2*hzeta-(eta^2 + zeta_0^2*hzeta^2)/hzeta)*Psi = 0
+        A( row, col( i, j, Psi ) )          =   3.0 * Xd * rsq / ( 2 * dX );
+        A( row, col( i - 1, j, Psi ) )      = - 4.0 * Xd * rsq / ( 2 * dX );
+        A( row, col( i - 2, j, Psi ) )      =   1.0 * Xd * rsq / ( 2 * dX );
+        A( row, col( i, j, Psi ) )         +=   2 * ZETA0 * ZETA0 * hzeta - (rsq / hzeta);
+
+
+        B[ row ]        = - (rsq * ( 3 * q( i, j, Psi ) - 4 * q( i - 1, j, Psi )
+                          + q( i - 2, j, Psi) ) * Xd / ( 2 * dX ))
+                          - 2 * ZETA0 * ZETA0 * hzeta  * q( i, j, Psi)
+                          + (rsq / hzeta)  * q( i, j, Psi);
+        ++row;
+
+        // hzeta * U_hzeta + 2 * U = 0
+        A( row, col( i, j, U ) )            =   hzeta * 3. * Xd / ( 2 * dX ) + 2.;
+        A( row, col( i - 1, j, U ) )        = - hzeta * 4. * Xd / ( 2 * dX );
+        A( row, col( i - 2, j, U ) )        =   hzeta * 1. * Xd / ( 2 * dX );
+
+        B[ row  ]       = - hzeta * ( 3 * q( i, j, U ) - 4 * q( i - 1, j, U )
+                          + q( i - 2, j, U) ) * Xd / ( 2 * dX ) - 2 * q( i, j, U );
+        ++row;
+
+        // hzeta * Theta_hzeta + Theta = 0
+        A( row, col( i, j, Theta )  )       =   hzeta * 3. * Xd / ( 2 * dX ) + 1.;
+        A( row, col( i - 1, j, Theta ) )    = - hzeta * 4. * Xd / ( 2 * dX );
+        A( row, col( i - 2, j, Theta ) )    =   hzeta * 1. * Xd / ( 2 * dX );
+
+        B[ row ]        = - hzeta * ( 3 * q( i, j, Theta ) - 4 * q( i - 1, j, Theta )
+                          + q( i - 2, j, Theta ) ) * Xd / ( 2 * dX ) - q( i, j, Theta ) ;
+        ++row;
+
+      } // End of loop over nodes
+
+
+      max_residual = B.norm_inf();
+      std::cout << "***                                              Maximum residual = "
+                << max_residual << std::endl;
+
+      // Solve the sparse system
+      Vector<double> x;
+      if( SPEED_UP )
+      {
+        // Convert things to Eigen to see if we can get some speed benefits
+        // Only decompose the matrix on the first iteration as it can be reused after
+        // This means more iterations but they should be quicker
+        if ( iteration == 0 )
+        {
+          A_Eigen = A.convert_to_Eigen();
+          solver.compute( A_Eigen );
+        }
+
+        Eigen::Matrix<double, -1, 1> B_Eigen( 4 * ( M + 1 ) * ( N + 1 ) );
+        B_Eigen = B.convert_to_Eigen_Matrix();
+
+        Eigen::Matrix<double, -1, 1> x_Eigen( 4 * ( M + 1 ) * ( N + 1 ) );
+        x_Eigen = solver.solve( B_Eigen );
+        x = x.convert_to_Vector( x_Eigen );
+      } else {
+        x = A.solve( B );
+      }
+      B = x;
+
+      timer.print();
+      timer.stop();
+
+      // Update the known values using the correction which we just found
+      for ( std::size_t i = 0; i < N + 1; ++i )
+      {
+        for ( std::size_t j = 0; j < M + 1; ++j )
+        {
+          q( i, j, Phi )   += B[ col( i, j, Phi ) ];
+          q( i, j, Psi )   += B[ col( i, j, Psi ) ];
+          q( i, j, U )     += B[ col( i, j, U ) ];
+          q( i, j, Theta ) += B[ col( i, j, Theta ) ];
+        }
+      }
+
+
+      std::cout << "***    Iteration = " << iteration
+                << "    Maximum correction = " << B.norm_inf() << std::endl;
+
+      ++iteration;
+    }while( ( max_residual > 1.e-8 ) && ( iteration < max_iterations ) );
+
+
+  } // End of solve_streak method
 
 } // End of namespace TSL
 

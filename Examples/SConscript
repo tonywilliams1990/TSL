@@ -52,6 +52,7 @@ env.Program( 'Project/VWI.out' , ['Project/VWI.cpp'] , OPTS = opts, LIBS = libs 
 env.Program( 'Project/OrrSommerfeld_2D_local.out' , ['Project/OrrSommerfeld_2D_local.cpp'] , OPTS = opts, LIBS = libs )
 env.Program( 'Project/VWI_local.out' , ['Project/VWI_local.cpp'] , OPTS = opts, LIBS = libs )
 env.Program( 'Project/VWI_global.out' , ['Project/VWI_global.cpp'] , OPTS = opts, LIBS = libs )
+env.Program( 'Project/VWI_system.out' , ['Project/VWI_system.cpp'] , OPTS = opts, LIBS = libs )
 
 # Example Problem codes
 
