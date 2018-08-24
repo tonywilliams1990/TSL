@@ -28,18 +28,18 @@ int main()
   cout << "*** ------- Solving the 2D OrrSommerfeld equation (EVP) ------- ***" << endl;
 
   // Define the domain + short scale injection parameters
-  double hzeta_right( 20.0 );       // Size of the domain in the zeta_hat direction
-  double eta_top( 20.0 );           // Size of the domain in the eta direction
-  const std::size_t N( 180 );       // Number of intervals in the zeta_hat direction
-  const std::size_t M( 180 );       // Number of intervals in the eta direction
+  double hzeta_right( 32.0 );       // Size of the domain in the zeta_hat direction
+  double eta_top( 32.0 );           // Size of the domain in the eta direction
+  const std::size_t N( 300 );       // Number of intervals in the zeta_hat direction
+  const std::size_t M( 300 );       // Number of intervals in the eta direction
   const std::size_t MB( M * 100 );  // Number of eta intervals in the base flow ODE
   double beta( 0.5 );               // Hartree parameter
   double zeta0( 1.0 );              // Transpiration width
-  double K( 11.2 );                  // Transpiration parameter ( +ve = blowing )
-  double alpha( 0.8 );              // Wavenumber (alpha hat)
-  double Rx( 5000 * 5000 );           // Local Reynolds number
+  double K( 8.0 );                  // Transpiration parameter ( +ve = blowing )
+  double alpha( 0.05 );              // Wavenumber (alpha hat)
+  double Rx( 10000 * 10000 );           // Local Reynolds number
 
-  std::complex<double> target(0.76,0.0); // Target for eigensolver
+  std::complex<double> target(0.77,0.0); // Target for eigensolver
   double alpha_max( 0.5 );
   double alpha_min( 0.01 );
 
@@ -66,8 +66,8 @@ int main()
 
   SSI.set_output_path();
   SSI.mesh_setup();
-  SSI.solve_check_exists();
-  //SSI.solve();
+  //SSI.solve_check_exists();
+  SSI.solve();
 
   // Setup the generalised eigenvalue problem A p = c B p (solved using SLEPc)
   cout << "*** Setting up the generalised eigenvalue problem ***" << endl;
@@ -82,16 +82,39 @@ int main()
   orrsommerfeld_2D.set_target( target );
   orrsommerfeld_2D.set_order( "EPS_TARGET_IMAGINARY" );
   orrsommerfeld_2D.calc_eigenvectors() = true;
+  /*
+  // Tracker
+  double c_r, c_i;
+  TrackerFile metric( "./DATA/Eval_vs_K_alpha_" + Utility::stringify( alpha, 3 ) + ".dat" );
+  metric.push_ptr( &SSI.injection(), "K" );
+  metric.push_ptr( &c_r, "c_r" );
+  metric.push_ptr( &c_i, "c_i" );
+  metric.header();
 
-  // Solve
-  Timer timer_OS;
-  timer_OS.start();
-  orrsommerfeld_2D.solve_evp();
-  orrsommerfeld_2D.output();
-  timer_OS.print();
-  timer_OS.stop();
+  do{
+    // Solve
+    Timer timer_OS;
+    timer_OS.start();
+    orrsommerfeld_2D.update_SSI( SSI );
+    orrsommerfeld_2D.solve_evp();
+    orrsommerfeld_2D.output();
+    timer_OS.print();
+    timer_OS.stop();
 
-  TwoD_node_mesh< std::complex<double> > evecs;
+
+    target = orrsommerfeld_2D.eigenvalues()[0];
+    orrsommerfeld_2D.set_target( target );
+    c_r = orrsommerfeld_2D.eigenvalues()[0].real();
+    c_i = orrsommerfeld_2D.eigenvalues()[0].imag();
+    metric.update();
+
+    SSI.injection() -= 0.1;
+    SSI.solve_perturbation_eqns();
+    cout << "--- K = " << SSI.injection() << endl;
+
+  }while( SSI.injection() >= 6.9 );*/
+
+  /*TwoD_node_mesh< std::complex<double> > evecs;
   evecs = orrsommerfeld_2D.eigenvectors(); // v, w, q, s
   double norm;
   norm = real( evecs.square_integral2D( v ) + evecs.square_integral2D( w ) );
@@ -144,7 +167,7 @@ int main()
     Yd = SSI.mesh_Yd( eta );
     sum += 0.5 * dY * ( evecs( 0, j, v ) + evecs( 0, j + 1, v ) ) / Yd;
   }
-  cout << "sum = " << sum << endl;
+  cout << "sum = " << sum << endl;*/
 
   //TODO set an initial guess somehow = faster convergence ???
   //orrsommerfeld_2D.set_initial_guess_from_evec( 0 );
@@ -153,8 +176,8 @@ int main()
 
   // Solve again (to see if it's any quicker)
   //timer_OS.start();
-  //orrsommerfeld_2D.solve_evp();
-  //orrsommerfeld_2D.output();
+  orrsommerfeld_2D.solve_evp();
+  orrsommerfeld_2D.output();
   //timer_OS.print();
   //timer_OS.stop();
 

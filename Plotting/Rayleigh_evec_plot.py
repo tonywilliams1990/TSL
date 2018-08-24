@@ -17,15 +17,16 @@ save_fig = True
 N = 600
 N_p_1 = N + 1
 zeta0 = 1
-beta = 0
-K = 4
-alpha = 0.5
+beta = 0.5
+K = 9
+alpha = 0.23
 number_of_levels = 11
 
-data = np.loadtxt("./DATA/K_"+ str(K) + "_zeta0_" + str(zeta0) + "_beta_"+ str(beta) + "_" + str(N_p_1) + "x" + str(N_p_1) + "_32_32/eigenvectors/alpha_"+ str(alpha) + "_evecs.dat")
-streak_data = np.loadtxt("./DATA/K_"+ str(K) + "_zeta0_" + str(zeta0) + "_beta_"+ str(beta) + "_" + str(N_p_1) + "x" + str(N_p_1) + "_32_32/Qout_"+ str(zeta0) +".dat")
+
+data = np.loadtxt("./DATA/Inviscid_stability_601_DATA/K_"+ str(K) + "_zeta0_" + str(zeta0) + "_beta_"+ str(beta) + "_" + str(N_p_1) + "x" + str(N_p_1) + "_32_32/eigenvectors/alpha_"+ str(alpha) + "_evecs.dat")
+streak_data = np.loadtxt("./DATA/Inviscid_stability_601_DATA/K_"+ str(K) + "_zeta0_" + str(zeta0) + "_beta_"+ str(beta) + "_" + str(N_p_1) + "x" + str(N_p_1) + "_32_32/Qout_"+ str(zeta0) +".dat")
 # Get the eigenvalue
-fname = "./DATA/K_"+ str(K) + "_zeta0_" + str(zeta0) + "_beta_"+ str(beta) + "_" + str(N_p_1) + "x" + str(N_p_1) + "_32_32/eigenvalues/alpha_"+ str(alpha) + "_evals.dat"
+fname = "./DATA/Inviscid_stability_601_DATA/K_"+ str(K) + "_zeta0_" + str(zeta0) + "_beta_"+ str(beta) + "_" + str(N_p_1) + "x" + str(N_p_1) + "_32_32/eigenvalues/alpha_"+ str(alpha) + "_evals.dat"
 eigenvalue_data = np.loadtxt(fname, dtype = str)
 eval_string = eigenvalue_data.tostring()
 eval_string = eval_string[1:]

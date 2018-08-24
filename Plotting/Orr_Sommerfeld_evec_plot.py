@@ -12,14 +12,15 @@ save_fig = False
 
 zeta0 = 1
 beta = 0.5
-K = 0
-R = 5000
-alpha = 0.4
+K = 8
+R = 10000
+alpha = 0.05
 number_of_levels = 11
-evec = 1
+evec = 0
 
-#data = np.loadtxt("./DATA/K_"+ str(K) + "_zeta0_" + str(zeta0) + "_beta_"+ str(beta) + "_301x301_32_32/eigenvectors_R_"+ str(R*R) +"/alpha_"+ str(alpha) + "_evecs.dat")
-data = np.loadtxt("./DATA/OS2D_global.dat")
+data = np.loadtxt("./DATA/K_"+ str(K) + "_zeta0_" + str(zeta0) + "_beta_"+ str(beta) + "_301x301_32_32/eigenvectors_R_"+ str(R*R) +"/alpha_"+ str(alpha) + "_evecs.dat")
+#data = np.loadtxt("./DATA/Viscous_stability_601_DATA/K_"+ str(K) + "_zeta0_" + str(zeta0) + "_beta_"+ str(beta) + "_601x601_32_32/eigenvectors_R_"+ str(R*R) +"/alpha_"+ str(alpha) + "_evecs.dat")
+#data = np.loadtxt("./DATA/OS2D_global.dat")
 
 zeta_hat = data[:,0]
 eta = data[:,1]
@@ -55,28 +56,24 @@ npts = 500
 
 xi = np.linspace(min_x, max_x, npts)
 yi = np.linspace(min_y, max_y, npts)
-evec1_real_i = mlab.griddata(zeta_hat, eta, evec1_real, xi, yi, interp = 'linear')
-evec1_imag_i = mlab.griddata(zeta_hat, eta, evec1_imag, xi, yi, interp = 'linear')
-evec1_abs_i  = mlab.griddata(zeta_hat, eta, evec1_abs , xi, yi, interp = 'linear')
-evec2_real_i = mlab.griddata(zeta_hat, eta, evec2_real, xi, yi, interp = 'linear')
-evec2_imag_i = mlab.griddata(zeta_hat, eta, evec2_imag, xi, yi, interp = 'linear')
-evec2_abs_i  = mlab.griddata(zeta_hat, eta, evec2_abs , xi, yi, interp = 'linear')
-evec3_real_i = mlab.griddata(zeta_hat, eta, evec3_real, xi, yi, interp = 'linear')
-evec3_imag_i = mlab.griddata(zeta_hat, eta, evec3_imag, xi, yi, interp = 'linear')
-evec3_abs_i  = mlab.griddata(zeta_hat, eta, evec3_abs , xi, yi, interp = 'linear')
-evec4_real_i = mlab.griddata(zeta_hat, eta, evec4_real, xi, yi, interp = 'linear')
-evec4_imag_i = mlab.griddata(zeta_hat, eta, evec4_imag, xi, yi, interp = 'linear')
-evec4_abs_i  = mlab.griddata(zeta_hat, eta, evec4_abs , xi, yi, interp = 'linear')
+
 vel_i        = mlab.griddata(zeta_hat, eta, vel       , xi, yi, interp = 'linear')
 
-evec_real = evec1_real
-evec_imag = evec1_imag
-evec_abs  = evec1_abs
-evec_real_i = evec1_real_i
-evec_imag_i = evec1_imag_i
-evec_abs_i  = evec1_abs_i
+if evec == 1:
+    evec1_real_i = mlab.griddata(zeta_hat, eta, evec1_real, xi, yi, interp = 'linear')
+    evec1_imag_i = mlab.griddata(zeta_hat, eta, evec1_imag, xi, yi, interp = 'linear')
+    evec1_abs_i  = mlab.griddata(zeta_hat, eta, evec1_abs , xi, yi, interp = 'linear')
+    evec_real = evec1_real
+    evec_imag = evec1_imag
+    evec_abs  = evec1_abs
+    evec_real_i = evec1_real_i
+    evec_imag_i = evec1_imag_i
+    evec_abs_i  = evec1_abs_i
 
 if evec == 2:
+    evec2_real_i = mlab.griddata(zeta_hat, eta, evec2_real, xi, yi, interp = 'linear')
+    evec2_imag_i = mlab.griddata(zeta_hat, eta, evec2_imag, xi, yi, interp = 'linear')
+    evec2_abs_i  = mlab.griddata(zeta_hat, eta, evec2_abs , xi, yi, interp = 'linear')
     evec_real = evec2_real
     evec_imag = evec2_imag
     evec_abs  = evec2_abs
@@ -85,6 +82,9 @@ if evec == 2:
     evec_abs_i  = evec2_abs_i
 
 if evec == 3:
+    evec3_real_i = mlab.griddata(zeta_hat, eta, evec3_real, xi, yi, interp = 'linear')
+    evec3_imag_i = mlab.griddata(zeta_hat, eta, evec3_imag, xi, yi, interp = 'linear')
+    evec3_abs_i  = mlab.griddata(zeta_hat, eta, evec3_abs , xi, yi, interp = 'linear')
     evec_real = evec3_real
     evec_imag = evec3_imag
     evec_abs  = evec3_abs
@@ -93,6 +93,9 @@ if evec == 3:
     evec_abs_i  = evec3_abs_i
 
 if evec == 4:
+    evec4_real_i = mlab.griddata(zeta_hat, eta, evec4_real, xi, yi, interp = 'linear')
+    evec4_imag_i = mlab.griddata(zeta_hat, eta, evec4_imag, xi, yi, interp = 'linear')
+    evec4_abs_i  = mlab.griddata(zeta_hat, eta, evec4_abs , xi, yi, interp = 'linear')
     evec_real = evec4_real
     evec_imag = evec4_imag
     evec_abs  = evec4_abs

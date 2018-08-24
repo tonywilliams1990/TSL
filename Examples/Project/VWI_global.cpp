@@ -38,8 +38,8 @@ int main()
   // Define the domain + short scale injection parameters
   double hzeta_right( 20.0 );       // Size of the domain in the zeta_hat direction
   double eta_top( 20.0 );           // Size of the domain in the eta direction
-  std::size_t N( 80 );             // Number of intervals in the zeta_hat direction
-  std::size_t M( 80 );             // Number of intervals in the eta direction
+  std::size_t N( 120 );             // Number of intervals in the zeta_hat direction
+  std::size_t M( 120 );             // Number of intervals in the eta direction
   std::size_t MB( M * 100 );        // Number of eta intervals in the base flow ODE
   double beta( 0.5 );               // Hartree parameter
   double zeta0( 1.0 );              // Transpiration width
@@ -48,7 +48,7 @@ int main()
   double Rx( 5000 * 5000 );         // Local Reynolds number
   double Sigma( 0.0 );              // Wave amplitude
   double tol( 1e-3 );               // Tolerance for c_i = 0
-  bool read_from_file( false );
+  bool read_from_file( true );
 
   double K_min( 0.0 );
   double K_step( 0.5 );
@@ -173,7 +173,7 @@ if ( !read_from_file )
 }
 
   //TwoD_node_mesh<double> solution;
-  vwi.speed_up() = false;
+  vwi.speed_up() = true;
 
   vwi.set_output_path();
   vwi.make_output_directory();
@@ -199,10 +199,10 @@ if ( !read_from_file )
       cout << "  * c = " << vwi.c_guess() << endl;
 
       //vwi.Reynolds() -= 50;
-      vwi.Sigma() += 0.01;
+      vwi.Sigma() += 0.1;
       //if ( c_i > 0 ){ vwi.injection() -= 0.1; }
       //if ( c_i <= 0 ){ vwi.Sigma() += 1e-4; }
-      //vwi.injection() -= 0.01;
+      //vwi.injection() -= 0.1;
 
     //}while( c_i < 0.01 && c_i > 0.0 );
     //vwi.injection() -= 0.05;
